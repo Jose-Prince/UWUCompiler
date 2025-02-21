@@ -1,0 +1,33 @@
+{
+import myToken
+}
+
+let nombre_1 = °a°
+let nombre_2 = °aHasdfkj°
+let nombre_3 = °arh°
+let nombre_4 = °a°
+
+rule gettoken = 
+		°[ ' '\t']° { continue }
+	| °['\n' ]° { return EOL }
+	| °['0'-'9']+° { 
+	return int(lxm)
+}
+	| °+° { return PLUS }
+	| °-° { return MINUS }
+	| °*° { return TIMES }
+	| °/° { return DIV }
+	| °(° { return LPAREN }
+	| °)° { return RPAREN }
+	| eof { return nil }
+
+	| °[nombre_1nombre_2{nombre_3}]° { return lexbuf }
+	| °[nombre_1nombre_2arh]° { return lexbuf }
+
+	| °{{nombre_3}}° { return lexbuf }
+	| °{arh}° { return lexbuf }
+
+
+{
+printf("hola")
+}

@@ -1,0 +1,21 @@
+{
+package main
+
+type TokenType = int
+
+const (
+	EOL TokenType = iota
+)
+}
+
+let nombre_2 = °aHasdfkj°
+let nombre_4 = °['0'-'9']+°
+
+rule gettoken = 
+		°[ \t\r]° { continue }
+	| °\n° { return EOL }
+	| eof { return nil }
+
+{
+// Comentario extra!
+}
