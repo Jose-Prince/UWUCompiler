@@ -9,7 +9,7 @@ import (
 	l "github.com/Jose-Prince/UWULexer/lib"
 )
 
-func printSideBySide(t *testing.T, markedIdx int, expected []l.RX_Token, result []l.RX_Token) {
+func PrintSideBySide(t *testing.T, markedIdx int, expected []l.RX_Token, result []l.RX_Token) {
 	maxLength := max(len(expected), len(result))
 	header1 := "EXPECTED:"
 	header2 := "VALUE:"
@@ -53,7 +53,7 @@ func compareTokensStreams(t *testing.T, originalInfix string, expected []l.RX_To
 		if !elem.Equals(&resultElem) {
 			t.Logf("ORIGINAL: %s", originalInfix)
 			t.Logf("EXPECTED (%s) != RESULT: (%s) IDX: %d", elem.ToString(), resultElem.ToString(), i)
-			printSideBySide(t, i, expected, result)
+			PrintSideBySide(t, i, expected, result)
 			t.FailNow()
 		}
 	}
