@@ -91,7 +91,7 @@ func fromTokenStreamToInfix(stream []l.RX_Token) string {
 		} else {
 			rune := elem.GetValue().GetValue()
 			switch rune {
-			case '|', '*', '.':
+			case '|', '*', '.', '(', ')', '[', ']':
 				b.WriteRune('\\')
 			default:
 			}
@@ -105,7 +105,7 @@ func fromTokenStreamToInfix(stream []l.RX_Token) string {
 func generateExpected(random *rand.Rand) []l.RX_Token {
 	expressionCount := random.Intn(100)
 	tokens := []l.RX_Token{}
-	possibleChars := []rune("ABCDEFGHIJKLMNÑOPQRSTUVWXYZabcdefghijklmnñopqrstuvwxyz0123456789,.-;:_¿?¡!'{}+*|\"#$%&/()=[]<>°¬")
+	possibleChars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.-;:_¿?¡!'{}+*|\"#$%&/()=[]<>°¬")
 	getRandomRune := func() rune {
 		return possibleChars[random.Intn(len(possibleChars))]
 	}

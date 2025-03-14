@@ -18,8 +18,9 @@ func InfixToTokens(infix string) []l.RX_Token {
 	previousCanBeANDedTo := false
 	tokens := []l.RX_Token{}
 
-	for i := range len(infix) {
-		currentChar := infix[i]
+	runes := []rune(infix)
+	for i := 0; i < len(runes); i++ {
+		currentChar := runes[i]
 		var token l.RX_Token
 
 		switch currentChar {
@@ -28,7 +29,7 @@ func InfixToTokens(infix string) []l.RX_Token {
 			previousCanBeANDedTo = false
 		case '*':
 			token = l.CreateOperatorToken(l.ZERO_OR_MANY)
-			previousCanBeANDedTo = false
+			previousCanBeANDedTo = true
 		case '(':
 			token = l.CreateValueToken('(')
 			previousCanBeANDedTo = false
@@ -36,7 +37,12 @@ func InfixToTokens(infix string) []l.RX_Token {
 			token = l.CreateValueToken(')')
 			previousCanBeANDedTo = true
 		case '\\':
-			token = l.CreateValueToken(rune(infix[i+1]))
+			if previousCanBeANDedTo {
+				tokens = append(tokens, l.CreateOperatorToken(l.AND))
+			}
+
+			token = l.CreateValueToken(rune(runes[i+1]))
+			i++
 			previousCanBeANDedTo = true
 		default:
 			if previousCanBeANDedTo {
