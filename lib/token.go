@@ -1,6 +1,9 @@
 package lib
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Operator int
 
@@ -114,6 +117,16 @@ func (self *RX_Token) Equals(other *RX_Token) bool {
 
 func (self *RX_Token) IsUninitialized() bool {
 	return self.dummy == nil && self.operator == nil && self.value == nil
+}
+
+func TokenStreamToString(stream []RX_Token) string {
+	b := strings.Builder{}
+	for _, elem := range stream {
+		b.WriteString(elem.ToString())
+		b.WriteByte(' ')
+	}
+
+	return b.String()
 }
 
 func (self *RX_Token) ToString() string {

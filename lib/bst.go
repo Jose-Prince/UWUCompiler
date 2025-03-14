@@ -99,7 +99,7 @@ func (b *BST) Insertion(postfix []RX_Token) {
 		i := len(nodes) - 1
 
 		if v.IsOperator() {
-			op := *v.GetOperator()
+			op := v.GetOperator()
 			switch op {
 			case AND, OR:
 				right := stack.Pop().GetValue()
@@ -144,7 +144,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 			node.extraProperties = row
 			table = append(table, &row)
 		} else {
-			op := *node.Val.GetOperator()
+			op := node.Val.GetOperator()
 			switch op {
 			case AND:
 				left := tree.nodes[node.left]
