@@ -5,12 +5,20 @@ import (
 	"strings"
 )
 
+// Represents a Regular Expression operator
 type Operator int
 
 const (
-	OR           Operator = iota // This OR that operator.
-	AND                          // Concatenation operator.
-	ZERO_OR_MANY                 // * Operator
+	OR            Operator = iota // |
+	AND                           // Concatenation operator
+	ZERO_OR_MANY                  // *
+	ONE_OR_MANY                   // +
+	OPTIONAL                      // ?
+	LEFT_PAREN                    // (
+	RIGHT_PAREN                   // )
+	LEFT_BRACKET                  // [
+	RIGHT_BRACKET                 // ]
+	SET_NEGATION                  // [^
 )
 
 // Serves to append extra metadata to a Regex pattern.
@@ -134,11 +142,25 @@ func (self *RX_Token) ToString() string {
 		displayOp := "invalid"
 		switch self.GetOperator() {
 		case OR:
-			displayOp = "OR"
+			displayOp = "|"
 		case AND:
-			displayOp = "AND"
+			displayOp = "."
 		case ZERO_OR_MANY:
 			displayOp = "*"
+		case ONE_OR_MANY:
+			displayOp = "+"
+		case OPTIONAL:
+			displayOp = "?"
+		case LEFT_PAREN:
+			displayOp = "("
+		case RIGHT_PAREN:
+			displayOp = ")"
+		case LEFT_BRACKET:
+			displayOp = "["
+		case RIGHT_BRACKET:
+			displayOp = "]"
+		case SET_NEGATION:
+			displayOp = "[^"
 		}
 		return fmt.Sprintf("{ opr = %s }", displayOp)
 	}

@@ -12,6 +12,7 @@ import (
 
 // Maps an operator in the form of a rune into a precedence number.
 // Smaller means it has more priority
+// Shunting yard only works with these 3 operator types!
 var precedence = map[byte]int{
 	'|': 2, // OR Operator
 	'.': 3, // AND Operator

@@ -63,11 +63,11 @@ func TestSimpleExpression(t *testing.T) {
 	infix := "(a|b)c"
 	result := InfixToTokens(infix)
 	expected := []l.RX_Token{
-		l.CreateValueToken('('),
+		l.CreateOperatorToken(l.LEFT_PAREN),
 		l.CreateValueToken('a'),
 		l.CreateOperatorToken(l.OR),
 		l.CreateValueToken('b'),
-		l.CreateValueToken(')'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
 		l.CreateOperatorToken(l.AND),
 		l.CreateValueToken('c'),
 	}
@@ -85,13 +85,30 @@ func fromTokenStreamToInfix(stream []l.RX_Token) string {
 				b.WriteByte('|')
 			case l.ZERO_OR_MANY:
 				b.WriteByte('*')
+			case l.ONE_OR_MANY:
+				b.WriteByte('+')
+			case l.OPTIONAL:
+				b.WriteByte('?')
+			case l.LEFT_PAREN:
+				b.WriteByte('(')
+			case l.RIGHT_PAREN:
+				b.WriteByte(')')
+			case l.LEFT_BRACKET:
+				b.WriteByte('[')
+			case l.RIGHT_BRACKET:
+				b.WriteByte(']')
+			case l.SET_NEGATION:
+				b.WriteString("[^")
+			case l.AND:
+				// Ignore it since it's implicit...
 			default:
+				b.WriteString("<INVALID OPERATOR>")
 			}
 
 		} else {
 			rune := elem.GetValue().GetValue()
 			switch rune {
-			case '|', '*', '.', '(', ')', '[', ']':
+			case '|', '*', '.', '(', ')', '[', ']', '+', '?':
 				b.WriteRune('\\')
 			default:
 			}
@@ -117,9 +134,50 @@ func generateExpected(random *rand.Rand) []l.RX_Token {
 			return l.AND
 		}
 	}
+	getRandomOneOp := func() l.Operator {
+		switch random.Intn(3) {
+		case 0:
+			return l.ZERO_OR_MANY
+		case 1:
+			return l.ONE_OR_MANY
+		default:
+			return l.OPTIONAL
+		}
+	}
 
 	for i := range expressionCount {
 		switch random.Intn(5) {
+		case 0: // Between parenthesis
+			a := l.CreateValueToken(getRandomRune())
+			b := l.CreateValueToken(getRandomRune())
+			op := l.CreateOperatorToken(getRandomTwoOp())
+
+			tokens = append(tokens, l.CreateOperatorToken(l.LEFT_PAREN))
+			tokens = append(tokens, a)
+			tokens = append(tokens, op)
+			tokens = append(tokens, b)
+			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
+		case 1: // Between brackets
+			a := l.CreateValueToken(getRandomRune())
+			b := l.CreateValueToken(getRandomRune())
+			op := l.CreateOperatorToken(getRandomTwoOp())
+
+			tokens = append(tokens, l.CreateOperatorToken(l.LEFT_BRACKET))
+			tokens = append(tokens, a)
+			tokens = append(tokens, op)
+			tokens = append(tokens, b)
+			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_BRACKET))
+		case 2: // Between set negation
+			a := l.CreateValueToken(getRandomRune())
+			b := l.CreateValueToken(getRandomRune())
+			op := l.CreateOperatorToken(getRandomTwoOp())
+
+			tokens = append(tokens, l.CreateOperatorToken(l.SET_NEGATION))
+			tokens = append(tokens, a)
+			tokens = append(tokens, op)
+			tokens = append(tokens, b)
+			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_BRACKET))
+
 		default: // Simple two value expression
 			a := l.CreateValueToken(getRandomRune())
 			b := l.CreateValueToken(getRandomRune())
@@ -131,17 +189,18 @@ func generateExpected(random *rand.Rand) []l.RX_Token {
 		}
 
 		if i+1 < expressionCount {
-			addStar := random.Intn(2) == 0
-			if addStar {
-				tokens = append(tokens, l.CreateOperatorToken(l.ZERO_OR_MANY))
+			addOneOp := random.Intn(2) == 0
+			if addOneOp {
+				tokens = append(tokens, l.CreateOperatorToken(getRandomOneOp()))
 			}
 
 			tokens = append(tokens, l.CreateOperatorToken(getRandomTwoOp()))
 		}
 	}
-	addStar := random.Intn(2) == 0
-	if addStar {
-		tokens = append(tokens, l.CreateOperatorToken(l.ZERO_OR_MANY))
+
+	addOneOp := random.Intn(2) == 0
+	if addOneOp {
+		tokens = append(tokens, l.CreateOperatorToken(getRandomOneOp()))
 	}
 
 	return tokens
