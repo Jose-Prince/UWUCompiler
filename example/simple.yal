@@ -1,21 +1,29 @@
 {
-package main
-
-type TokenType = int
-
-const (
-	EOL TokenType = iota
-)
+    package main
 }
 
-let nombre_2 = °aHasdfkj°
-let nombre_4 = °['0'-'9']+°
+(* Definición de patrones *)
+
+let delim = [' ''\t''\n']
+let ws = {delim}+
+let letra = ['A'-'Z''a'-'z']
+let digito = ['0'-'9']
+let id = {letra}({letra}|{digito})*
+let numero = {digito}+(\.{digito}+)?
+let literal = \"({letra}|{digito})*\"
+let operator = '+'|'-'|'*'|'/'
+let oprel = '=='|'<='|'>='|'<'|'>'
 
 rule gettoken = 
-		°[ \t\r]° { continue }
-	| °\n° { return EOL }
-	| eof { return nil }
-
-{
-// Comentario extra!
-}
+	  {ws}	        { continue } (* Ignora white spaces, tabs y nueva línea)
+	| {id}          { return ID }
+	| {numero}      { return NUM }
+    | {literal}     { return LIT }
+    | {operator}    { return OP }
+    | {oprel}       { return OPREL }
+    | '='           { return ASSIGN }
+    | '('           { return LPAREN }
+    | ')'           { return RPAREN }
+    | '{'           { return LBRACE }
+    | '}'           { return RBRACE }
+    | eof           { return nil }
