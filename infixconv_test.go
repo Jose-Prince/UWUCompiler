@@ -75,10 +75,10 @@ func TestSimpleExpression(t *testing.T) {
 	compareTokensStreams(t, infix, expected, result)
 }
 
-func fromTokenStreamToInfix(stream []l.RX_Token) string {
+func fromTokenStreamToInfixString(stream *[]l.RX_Token) string {
 	b := strings.Builder{}
 
-	for _, elem := range stream {
+	for _, elem := range *stream {
 		if elem.IsOperator() {
 			switch elem.GetOperator() {
 			case l.OR:
@@ -213,7 +213,7 @@ func FuzzInfixExpr(f *testing.F) {
 		random := rand.New(source)
 
 		expected := generateExpectedInfix(random)
-		infix := fromTokenStreamToInfix(expected)
+		infix := fromTokenStreamToInfixString(&expected)
 		result := InfixToTokens(infix)
 
 		compareTokensStreams(t, infix, expected, result)
