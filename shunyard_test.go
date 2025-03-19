@@ -11,7 +11,7 @@ func FuzzInfixToPostfix(f *testing.F) {
 		source := rand.NewSource(seed)
 		random := rand.New(source)
 
-		expected := generateExpected(random)
+		expected := generateExpectedInfix(random)
 		infix := fromTokenStreamToInfix(expected)
 		result := InfixToTokens(infix)
 

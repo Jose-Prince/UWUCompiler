@@ -119,7 +119,7 @@ func fromTokenStreamToInfix(stream []l.RX_Token) string {
 	return b.String()
 }
 
-func generateExpected(random *rand.Rand) []l.RX_Token {
+func generateExpectedInfix(random *rand.Rand) []l.RX_Token {
 	expressionCount := random.Intn(100)
 	tokens := []l.RX_Token{}
 	possibleChars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.-;:_¿?¡!'{}+*|\"#$%&/()=[]<>°¬")
@@ -212,7 +212,7 @@ func FuzzInfixExpr(f *testing.F) {
 		source := rand.NewSource(seed)
 		random := rand.New(source)
 
-		expected := generateExpected(random)
+		expected := generateExpectedInfix(random)
 		infix := fromTokenStreamToInfix(expected)
 		result := InfixToTokens(infix)
 
