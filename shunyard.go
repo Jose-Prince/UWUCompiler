@@ -380,9 +380,9 @@ func toPostFix(alph *Alphabet, infixExpression *string, stack *shunStack, output
 
 				// Concatenate previous expression with itself
 				// And add * operator at the end
-				tryToAppendWithPrecedence(stack, '.', output)
 				toPostFix(alph, &previousExpr, &shunStack{}, output)
 				tryToAppendWithPrecedence(stack, '*', output)
+				tryToAppendWithPrecedence(stack, '.', output)
 
 				previousExprStack.AppendTop("+")
 				previousExprStack.Push("")
