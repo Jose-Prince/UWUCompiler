@@ -53,7 +53,7 @@
       pkgs = nixpkgsFor.${system};
     in {
       default = pkgs.mkShell {
-        buildInputs = with pkgs; [go gopls gotools go-tools gdlv];
+        buildInputs = with pkgs; [go gopls gotools go-tools gdlv delve];
       };
     });
 
