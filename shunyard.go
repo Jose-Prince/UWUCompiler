@@ -99,10 +99,10 @@ func appendValueToOutput(infixExpr *[]l.RX_Token,
 	if *i != 0 && *previousCanBeANDedTo {
 		if *state == NORMAL || *state == IN_PARENTHESIS {
 			log.Default().Printf("Trying to append '.' operator...")
-			tryToAppendWithPrecedence(stack, '.', output)
+			tryToAppendWithPrecedence(stack, l.AND, output)
 		} else {
 			log.Default().Printf("Trying to append '|' operator...")
-			tryToAppendWithPrecedence(stack, '|', output)
+			tryToAppendWithPrecedence(stack, l.OR, output)
 		}
 	}
 
@@ -130,7 +130,7 @@ func appendValueToOutput(infixExpr *[]l.RX_Token,
 					if *state == IN_BRACKETS {
 						for j := rune(0); j <= (endRune - startRune); j++ {
 							if j >= 1 {
-								tryToAppendWithPrecedence(stack, '|', output)
+								tryToAppendWithPrecedence(stack, l.OR, output)
 							}
 
 							val := startRune + j
@@ -321,7 +321,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 				} else {
 					if previousCanBeANDedTo {
-						tryToAppendWithPrecedence(stack, '.', output)
+						tryToAppendWithPrecedence(stack, l.AND, output)
 					}
 
 					stack.Push(op)
@@ -345,7 +345,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 				}
 
 				if previousCanBeANDedTo {
-					tryToAppendWithPrecedence(stack, '.', output)
+					tryToAppendWithPrecedence(stack, l.AND, output)
 				}
 
 				stack.Push(op)
