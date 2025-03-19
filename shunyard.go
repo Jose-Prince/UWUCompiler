@@ -13,36 +13,41 @@ import (
 // Maps an operator in the form of a rune into a precedence number.
 // Smaller means it has more priority
 // Shunting yard only works with these 3 operator types!
-var precedence = map[byte]int{
-	'|': 2, // OR Operator
-	'.': 3, // AND Operator
-	'*': 1, // ZERO_OR_MORE
+var precedence = map[l.Operator]int{
+	l.OR:           2, // OR Operator
+	l.AND:          3, // AND Operator
+	l.ZERO_OR_MANY: 1, // ZERO_OR_MORE
 }
 
-func toOperator(self byte) l.Optional[l.Operator] {
-	log.Default().Printf("Trying to get operator from: %c", self)
-
-	switch self {
-	case '|':
-		return l.CreateValue(l.OR)
-	case '.':
-		return l.CreateValue(l.AND)
-	case '*':
-		return l.CreateValue(l.ZERO_OR_MANY)
-	default:
-		return l.CreateNull[l.Operator]()
+func isDigit(t *l.RX_Token) bool {
+	if !t.IsValue() {
+		return false
 	}
-}
 
-func isDigit(b byte) bool {
+	tValue := t.GetValue()
+	if !tValue.HasValue() {
+		return false
+	}
+
+	b := tValue.GetValue()
 	return b >= '0' && b <= '9'
 }
 
-func isLetter(b byte) bool {
+func isLetter(t *l.RX_Token) bool {
+	if !t.IsValue() {
+		return false
+	}
+
+	tValue := t.GetValue()
+	if !tValue.HasValue() {
+		return false
+	}
+
+	b := tValue.GetValue()
 	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
-func tryToAppendWithPrecedence(stack *l.Stack[byte], operator byte, output *[]l.RX_Token) {
+func tryToAppendWithPrecedence(stack *shunStack, operator l.Operator, output *[]l.RX_Token) {
 	if stack.Empty() {
 		log.Default().Printf("Adding %c to stack!", operator)
 		stack.Push(operator)
@@ -59,11 +64,10 @@ func tryToAppendWithPrecedence(stack *l.Stack[byte], operator byte, output *[]l.
 		stack.Push(operator)
 	} else {
 		for stackPrecedence <= currentPrecedence {
-			poppedRune := stack.Pop().GetValue()
+			op := stack.Pop().GetValue()
 
-			op := toOperator(poppedRune)
-			log.Default().Printf("Adding %c to output...", poppedRune)
-			*output = append(*output, l.CreateOperatorToken(op.GetValue()))
+			log.Default().Printf("Adding %s to output...", op.ToString())
+			*output = append(*output, l.CreateOperatorToken(op))
 
 			if stack.Empty() {
 				break
@@ -81,17 +85,17 @@ func tryToAppendWithPrecedence(stack *l.Stack[byte], operator byte, output *[]l.
 	}
 }
 
-func appendValueToOutput(infixExpr *string,
-	currentChar *byte,
+func appendValueToOutput(infixExpr *[]l.RX_Token,
+	currentToken *l.RX_Token,
 	i *int,
 	previousCanBeANDedTo *bool,
 	state *regexState,
 	stack *shunStack,
 	output *shunOutput,
 	previousExprStack *l.ExprStack,
-	negativeBuffer *strings.Builder,
+	negativeBuffer *[]*l.RX_Token,
 ) {
-	log.Default().Printf("Iteration: (%c) %d != 0 && previousCanBeANDed: %t", *currentChar, *i, *previousCanBeANDedTo)
+	log.Default().Printf("Iteration: (%s) %d != 0 && previousCanBeANDed: %t", currentToken.ToString(), *i, *previousCanBeANDedTo)
 	if *i != 0 && *previousCanBeANDedTo {
 		if *state == NORMAL || *state == IN_PARENTHESIS {
 			log.Default().Printf("Trying to append '.' operator...")
@@ -102,84 +106,92 @@ func appendValueToOutput(infixExpr *string,
 		}
 	}
 
-	rangeStart := *currentChar
+	rangeStart := currentToken
 	if *state == IN_BRACKETS || *state == IN_NEGATIVE_BRACKETS {
-		log.Default().Printf("Checking if the char (%c) is a range start...", *currentChar)
-		previousExprStack.AppendTop(string(*currentChar))
+		log.Default().Printf("Checking if the token (%s) is a range start...", currentToken.ToString())
+		previousExprStack.AppendTop(*currentToken)
 
 		if isLetter(rangeStart) || isDigit(rangeStart) {
-			nextChar := (*infixExpr)[*i+1]
+			nextToken := (*infixExpr)[*i+1]
 
-			if nextChar == '-' {
-				rangeEnd := (*infixExpr)[*i+2]
+			if rangeOp := l.CreateValueToken('-'); nextToken.Equals(&rangeOp) {
+				rangeEnd := &(*infixExpr)[*i+2]
 				isEndTheSameAsStart := (isLetter(rangeStart) && isLetter(rangeEnd)) || (isDigit(rangeStart) && isDigit(rangeStart))
 
-				log.Default().Printf("The end char (%c) is the same type as start? %v", rangeEnd, isEndTheSameAsStart)
+				log.Default().Printf("The end token (%s) is the same type as start? %v", rangeEnd.ToString(), isEndTheSameAsStart)
 				if isEndTheSameAsStart {
-					if rangeEnd < rangeStart {
+					if rangeEnd.GetValue().GetValue() < rangeStart.GetValue().GetValue() {
 						rangeEnd, rangeStart = rangeStart, rangeEnd
 					}
 
+					startRune := rangeStart.GetValue().GetValue()
+					endRune := rangeEnd.GetValue().GetValue()
+
 					if *state == IN_BRACKETS {
-						for j := byte(0); j <= (rangeEnd - rangeStart); j++ {
+						for j := rune(0); j <= (endRune - startRune); j++ {
 							if j >= 1 {
 								tryToAppendWithPrecedence(stack, '|', output)
 							}
 
-							val := rune(rangeStart + j)
+							val := startRune + j
 							log.Default().Printf("Adding %c to output...", val)
 							*output = append(*output, l.CreateValueToken(val))
 						}
 
 						// We already parsed '-' and the other byte
 						// So we need to ignore them
-						*i += 2
+						// *i += 2
 						// continue
-						return
+						// return
 					} else if *state == IN_NEGATIVE_BRACKETS {
-						for j := byte(0); j <= (rangeEnd - rangeStart); j++ {
-							val := rune(rangeStart + j)
+						for j := rune(0); j <= (endRune - startRune); j++ {
+							val := startRune + j
 							log.Default().Printf("Adding %c to negative buffer...", val)
-							negativeBuffer.WriteRune(val)
+							valTk := l.CreateValueToken(val)
+							*negativeBuffer = append(*negativeBuffer, &valTk)
 						}
 
-						// We already parsed '-' and the other byte
-						// So we need to ignore them
-						previousExprStack.AppendTop("-")
-						previousExprStack.AppendTop(string((*infixExpr)[*i+2]))
-						*i += 2
 						// continue
-						return
+						// return
 					}
+
+					// We already parsed '-' and the other byte
+					// So we need to ignore them
+					rangeTk := l.CreateValueToken('-')
+					previousExprStack.AppendTop(rangeTk)
+					previousExprStack.AppendTop(*rangeEnd)
+					*i += 2
+					return
 				}
 			}
 		}
 	}
 
 	if *state == IN_NEGATIVE_BRACKETS {
-		negativeBuffer.WriteByte(*currentChar)
+		*negativeBuffer = append(*negativeBuffer, currentToken)
 
 	} else if *state == IN_BRACKETS || *state == IN_PARENTHESIS {
-		expr := ""
+		var expr l.ExprStackItem
 		if !previousExprStack.IsEmpty() {
 			expr = previousExprStack.Peek().GetValue()
 		}
 
-		log.Default().Printf("Appending %s to expression: %s", string(*currentChar), expr)
-		previousExprStack.AppendTop(string(*currentChar))
+		log.Default().Printf("Appending %s to expression: %s", currentToken.ToString(), expr)
+		previousExprStack.AppendTop(*currentToken)
 	} else {
-		expr := ""
+		var expr l.ExprStackItem
 		if !previousExprStack.IsEmpty() {
 			expr = previousExprStack.Peek().GetValue()
 		}
 
-		log.Default().Printf("Changing previous expr from `%s` to `%s`", expr, string(*currentChar))
+		var newExpr l.ExprStackItem = []l.RX_Token{*currentToken}
+		log.Default().Printf("Changing previous expr from `%s` to `%s`", expr, newExpr)
 		previousExprStack.Pop()
-		previousExprStack.Push(string(*currentChar))
+		previousExprStack.Push(newExpr)
 	}
 
-	log.Default().Printf("Adding %c to output...", *currentChar)
-	*output = append(*output, l.CreateValueToken(rune(*currentChar)))
+	log.Default().Printf("Adding %s to output...", currentToken.ToString())
+	*output = append(*output, *currentToken)
 	*previousCanBeANDedTo = true
 
 }
@@ -193,215 +205,222 @@ const (
 	IN_PARENTHESIS                         // We are inside ( )
 )
 
-type shunStack = l.Stack[byte]
+type shunStack = l.Stack[l.Operator]
 type shunOutput = []l.RX_Token
 
-func toPostFix(alph *Alphabet, infixExpression *string, stack *shunStack, output *shunOutput) {
+func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, output *shunOutput) {
 	infixExpr := *infixExpression
 	previousCanBeANDedTo := false
 	state := NORMAL
 
-	negativeBuffer := strings.Builder{}
+	// Contains all the characters that should NOT be added when a `l.SET_NEGATION` operator is closed
+	negativeBuffer := []*l.RX_Token{}
 	previousExprStack := l.ExprStack{}
 	for i := 0; i < len(infixExpr); i++ {
-		currentChar := infixExpr[i]
-		log.Default().Printf("Currently checking: `%c`", currentChar)
+		currentToken := infixExpr[i]
+		log.Default().Printf("Currently checking: `%s`", currentToken.ToString())
 
-		switch currentChar {
-		case '|':
-			if state == IN_NEGATIVE_BRACKETS {
-				negativeBuffer.WriteByte('|')
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				if stack.Empty() {
-					log.Default().Printf("Adding `%c` to stack!", currentChar)
-					stack.Push(currentChar)
+		if currentToken.IsOperator() {
+			op := currentToken.GetOperator()
+			switch op {
+			case l.OR:
+				if state == IN_NEGATIVE_BRACKETS {
+					negativeBuffer = append(negativeBuffer, &currentToken)
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 				} else {
-					tryToAppendWithPrecedence(stack, currentChar, output)
-				}
-				previousCanBeANDedTo = false
-			}
-
-			previousExprStack.AppendTop("|")
-
-		case '*':
-			if state == IN_NEGATIVE_BRACKETS {
-				negativeBuffer.WriteByte(currentChar)
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				tryToAppendWithPrecedence(stack, currentChar, output)
-				previousCanBeANDedTo = true
-			}
-			previousExprStack.AppendTop("*")
-
-		case '?':
-			if state == IN_NEGATIVE_BRACKETS {
-				negativeBuffer.WriteByte(currentChar)
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				log.Default().Printf("'?' found! Concatenating with epsilon...")
-
-				// Concatenate previous expression with epsilon
-				// And add * operator at the end
-				tryToAppendWithPrecedence(stack, '|', output)
-				*output = append(*output, l.CreateEpsilonToken())
-
-				previousCanBeANDedTo = true
-			}
-			previousExprStack.AppendTop("?")
-
-		case '(':
-			if state == IN_NEGATIVE_BRACKETS {
-				negativeBuffer.WriteByte('(')
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				if previousCanBeANDedTo {
-					tryToAppendWithPrecedence(stack, '.', output)
+					if stack.Empty() {
+						log.Default().Printf("Adding `%c` to stack!", currentToken)
+						stack.Push(op)
+					} else {
+						tryToAppendWithPrecedence(stack, op, output)
+					}
+					previousCanBeANDedTo = false
 				}
 
-				stack.Push('(')
-				previousCanBeANDedTo = false
-				state = IN_PARENTHESIS
+				previousExprStack.AppendTop(currentToken)
 
-				expr := ""
-				if !previousExprStack.IsEmpty() {
-					expr = previousExprStack.Peek().GetValue()
-				}
-
-				log.Default().Printf("The previous expression before deleting is: %s", expr)
-				previousExprStack.Pop()     // Deletes previous expression
-				previousExprStack.Push("(") // Adds ( context
-				previousExprStack.Push("")  // Adds inner ( ) context
-			}
-
-		case ')':
-			if state == IN_NEGATIVE_BRACKETS {
-				negativeBuffer.WriteByte(')')
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				log.Default().Printf("Popping until it finds: '('")
-				for peeked := stack.Peek(); peeked.GetValue() != '('; peeked = stack.Peek() {
-					val := stack.Pop()
-					op := toOperator(val.GetValue()).GetValue()
-
-					*output = append(*output, l.CreateOperatorToken(op))
-				}
-
-				// Popping '('
-				stack.Pop()
-				state = NORMAL
-				previousExprStack.AppendTop(")")
-				previousExprStack.Pop() // Popping inner ( ) context
-			}
-
-		case '[':
-			if state == IN_BRACKETS {
-				*output = append(*output, l.CreateValueToken('['))
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				if previousCanBeANDedTo {
-					tryToAppendWithPrecedence(stack, '.', output)
-				}
-
-				stack.Push('[')
-				nextChar := infixExpr[i+1]
-				previousCanBeANDedTo = false
-
-				if nextChar == '^' {
-					state = IN_NEGATIVE_BRACKETS
-					i++
+			case l.ZERO_OR_MANY:
+				if state == IN_NEGATIVE_BRACKETS {
+					negativeBuffer = append(negativeBuffer, &currentToken)
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 				} else {
+					tryToAppendWithPrecedence(stack, op, output)
+					previousCanBeANDedTo = true
+				}
+				previousExprStack.AppendTop(currentToken)
+
+			case l.OPTIONAL:
+				if state == IN_NEGATIVE_BRACKETS {
+					negativeBuffer = append(negativeBuffer, &currentToken)
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+				} else {
+					log.Default().Printf("'?' found! Concatenating with epsilon...")
+
+					// Concatenate previous expression with epsilon
+					// And add * operator at the end
+					tryToAppendWithPrecedence(stack, l.OR, output)
+					*output = append(*output, l.CreateEpsilonToken())
+
+					previousCanBeANDedTo = true
+				}
+				previousExprStack.AppendTop(currentToken)
+
+			case l.LEFT_PAREN:
+				if state == IN_NEGATIVE_BRACKETS {
+					negativeBuffer = append(negativeBuffer, &currentToken)
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+				} else {
+					if previousCanBeANDedTo {
+						tryToAppendWithPrecedence(stack, l.AND, output)
+					}
+
+					stack.Push(l.LEFT_PAREN)
+					previousCanBeANDedTo = false
+					state = IN_PARENTHESIS
+
+					var expr l.ExprStackItem
+					if !previousExprStack.IsEmpty() {
+						expr = previousExprStack.Peek().GetValue()
+					}
+
+					log.Default().Printf("The previous expression before deleting is: %s", expr)
+					previousExprStack.Pop() // Deletes previous expression
+					var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
+					previousExprStack.Push(parenCtx)       // Adds ( context
+					previousExprStack.Push([]l.RX_Token{}) // Adds inner ( ) context
+				}
+			case l.RIGHT_PAREN:
+				if state == IN_NEGATIVE_BRACKETS {
+					negativeBuffer = append(negativeBuffer, &currentToken)
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+				} else {
+					log.Default().Printf("Popping until it finds: '('")
+					for peeked := stack.Peek(); peeked.GetValue() != l.OR; peeked = stack.Peek() {
+						val := stack.Pop()
+						op := val.GetValue()
+
+						*output = append(*output, l.CreateOperatorToken(op))
+					}
+
+					// Popping '('
+					stack.Pop()
+					state = NORMAL
+					previousExprStack.Pop() // Popping inner ( ) context
+					previousExprStack.AppendTop(currentToken)
+				}
+
+			case l.LEFT_BRACKET:
+				if state == IN_NEGATIVE_BRACKETS {
+					*output = append(*output, l.CreateValueToken('['))
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+				} else {
+					if previousCanBeANDedTo {
+						tryToAppendWithPrecedence(stack, '.', output)
+					}
+
+					stack.Push(op)
+					previousCanBeANDedTo = false
 					state = IN_BRACKETS
+
+					var expr l.ExprStackItem
+					if !previousExprStack.IsEmpty() {
+						expr = previousExprStack.Peek().GetValue()
+					}
+					log.Default().Printf("The previous expression before deleting is: %s", expr)
+					previousExprStack.Pop() // Deletes previous expression
+
+					var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
+					previousExprStack.Push(parenCtx)       // Adds [ context
+					previousExprStack.Push([]l.RX_Token{}) // Adds inner [ ] context
+				}
+			case l.SET_NEGATION:
+				if state != NORMAL || state != IN_PARENTHESIS {
+					panic("Invalid Regular Expression! A set negation can't be inside brackets or another set negation!")
 				}
 
-				expr := ""
+				if previousCanBeANDedTo {
+					tryToAppendWithPrecedence(stack, '.', output)
+				}
+
+				stack.Push(op)
+				previousCanBeANDedTo = false
+				state = IN_NEGATIVE_BRACKETS
+
+				var expr l.ExprStackItem
 				if !previousExprStack.IsEmpty() {
 					expr = previousExprStack.Peek().GetValue()
 				}
 				log.Default().Printf("The previous expression before deleting is: %s", expr)
 				previousExprStack.Pop() // Deletes previous expression
-				if state == IN_NEGATIVE_BRACKETS {
-					previousExprStack.AppendTop("[^")
-				} else {
-					previousExprStack.Push("[") // Adds [ context
+
+				var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
+				previousExprStack.Push(parenCtx)       // Adds [ context
+				previousExprStack.Push([]l.RX_Token{}) // Adds inner [ ] context
+
+			case l.RIGHT_BRACKET:
+				log.Default().Printf("Popping until it finds: '['")
+				for peeked := stack.Peek(); peeked.GetValue() != l.LEFT_BRACKET; peeked = stack.Peek() {
+					val := stack.Pop()
+					op := val.GetValue()
+
+					*output = append(*output, l.CreateOperatorToken(op))
 				}
-				previousExprStack.Push("") // Adds inner [ ] context
-			}
+				// Popping '['
+				stack.Pop()
+				previousExprStack.Pop() // Popping inner [ ] context
+				previousExprStack.AppendTop(currentToken)
 
-		case ']':
-			log.Default().Printf("Popping until it finds: '['")
-			for peeked := stack.Peek(); peeked.GetValue() != '['; peeked = stack.Peek() {
-				val := stack.Pop()
-				op := toOperator(val.GetValue()).GetValue()
+				log.Default().Printf("Checking if IN_NEGATIVE_BRACKETS: %d == %d", state, IN_NEGATIVE_BRACKETS)
+				if state == IN_NEGATIVE_BRACKETS {
+					diff := alph.GetCharsNotIn(&negativeBuffer)
+					log.Default().Printf("Obtaining diff: `%s`", diff)
 
-				*output = append(*output, l.CreateOperatorToken(op))
-			}
-			// Popping '['
-			stack.Pop()
-			previousExprStack.Pop() // Popping inner [ ] context
-			previousExprStack.AppendTop("]")
+					for idx, val := range diff {
+						if idx >= 1 {
+							tryToAppendWithPrecedence(stack, l.OR, output)
+						}
 
-			log.Default().Printf("Checking if IN_NEGATIVE_BRACKETS: %d == %d", state, IN_NEGATIVE_BRACKETS)
-			if state == IN_NEGATIVE_BRACKETS {
-				diff := alph.GetCharsNotIn(negativeBuffer.String())
-				log.Default().Printf("Obtaining diff: `%s`", diff)
-
-				for idx, val := range diff {
-					if idx >= 1 {
-						tryToAppendWithPrecedence(stack, '|', output)
+						log.Default().Printf("Appending %c to output...", val)
+						*output = append(*output, l.CreateValueToken(rune(val)))
 					}
 
-					log.Default().Printf("Appending %c to output...", val)
-					*output = append(*output, l.CreateValueToken(rune(val)))
+					// Last '|' must be appended to output as well
+					*output = append(*output, l.CreateOperatorToken(stack.Pop().GetValue()))
 				}
 
-				// Last '|' must be appended to output as well
-				*output = append(*output, l.CreateOperatorToken(toOperator(stack.Pop().GetValue()).GetValue()))
-			}
-
-			negativeBuffer = strings.Builder{}
-			state = NORMAL
-			previousCanBeANDedTo = true
-
-		case '+':
-			if state == IN_NEGATIVE_BRACKETS {
-				negativeBuffer.WriteByte(currentChar)
-			} else if state == IN_BRACKETS {
-				appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			} else {
-				previousExpr := previousExprStack.Pop().GetValue()
-				log.Default().Printf("'+' found! Getting previous expression... `%s`", previousExpr)
-
-				// Concatenate previous expression with itself
-				// And add * operator at the end
-				tryToAppendWithPrecedence(stack, '.', output)
-				toPostFix(alph, &previousExpr, &shunStack{}, output)
-				tryToAppendWithPrecedence(stack, '*', output)
-
-				previousExprStack.AppendTop("+")
-				previousExprStack.Push("")
+				negativeBuffer = []*l.RX_Token{}
+				state = NORMAL
 				previousCanBeANDedTo = true
-			}
 
-		case '\\':
-			previousExprStack.AppendTop("\\")
-			nextChar := infixExpr[i+1]
-			previousExprStack.AppendTop(string(nextChar))
-			log.Default().Printf("Escape sequence found! Adding %c as a char...", nextChar)
-			if previousCanBeANDedTo {
-				appendValueToOutput(&infixExpr, &nextChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-			}
-			*output = append(*output, l.CreateValueToken(rune(nextChar)))
-			i += 1
+			case l.ONE_OR_MANY:
+				if state == IN_NEGATIVE_BRACKETS {
+					negativeBuffer = append(negativeBuffer, &currentToken)
+				} else if state == IN_BRACKETS {
+					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+				} else {
+					previousExpr := previousExprStack.Pop().GetValue()
+					log.Default().Printf("'+' found! Getting previous expression... `%s`", previousExpr)
 
-		default:
-			appendValueToOutput(&infixExpr, &currentChar, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+					// Concatenate previous expression with itself
+					// And add * operator at the end
+					tryToAppendWithPrecedence(stack, l.AND, output)
+					toPostFix(alph, &previousExpr, &shunStack{}, output)
+					tryToAppendWithPrecedence(stack, l.ZERO_OR_MANY, output)
+
+					previousExprStack.AppendTop(l.CreateOperatorToken(op))
+					previousExprStack.Push([]l.RX_Token{})
+					previousCanBeANDedTo = true
+				}
+
+			default:
+				appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+			}
 		}
 	}
 
@@ -412,12 +431,10 @@ func toPostFix(alph *Alphabet, infixExpression *string, stack *shunStack, output
 		} else {
 			stack.Pop()
 		}
-		op := toOperator(val)
+		op := val
 
-		if op.HasValue() {
-			log.Default().Printf("Adding %c to output...", val)
-			*output = append(*output, l.CreateOperatorToken(op.GetValue()))
-		}
+		log.Default().Printf("Adding %c to output...", val)
+		*output = append(*output, l.CreateOperatorToken(op))
 	}
 }
 
@@ -433,10 +450,11 @@ func NewAlphabetFromString(chars string) Alphabet {
 	return output
 }
 
-func (alph *Alphabet) GetCharsNotIn(chars string) string {
+func (alph *Alphabet) GetCharsNotIn(tokens *[]*l.RX_Token) string {
 	charsMap := make(map[rune]struct{})
 
-	for _, rune := range chars {
+	for _, token := range *tokens {
+		rune := token.GetValue().GetValue()
 		charsMap[rune] = struct{}{}
 	}
 
@@ -462,10 +480,10 @@ func (alph *Alphabet) GetCharsNotIn(chars string) string {
 // You can define you're own alphabet
 var DEFAULT_ALPHABET = NewAlphabetFromString("abcdefghijklmnñopqrstuvwxyz0123456789:;\"\\'`,._{[()]}*+?¿¡!@#$%&/=~|")
 
-func (alph Alphabet) ToPostfix(infixExpression string) []l.RX_Token {
-	stack := l.Stack[byte]{}
+func (alph Alphabet) ToPostfix(infixExpression *[]l.RX_Token) []l.RX_Token {
+	stack := shunStack{}
 	output := []l.RX_Token{}
 
-	toPostFix(&alph, &infixExpression, &stack, &output)
+	toPostFix(&alph, infixExpression, &stack, &output)
 	return output
 }
