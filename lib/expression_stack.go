@@ -1,11 +1,18 @@
 package lib
 
-import "strings"
+type ExprStackItem = []RX_Token
+type ExprStack []ExprStackItem
 
-type ExprStack []*string
+// func (self *ExprStackItem) ToString() string {
+// 	s := strings.Builder{}
+// 	for t := range self {
+// 		// TODO: Implement!
+// 	}
+// 	return s.String()
+// }
 
-func (self *ExprStack) Push(expression string) {
-	*self = append(*self, &expression)
+func (self *ExprStack) Push(tokens ExprStackItem) {
+	*self = append(*self, tokens)
 }
 
 func (self *ExprStack) IsEmpty() bool {
@@ -15,39 +22,39 @@ func (self *ExprStack) IsEmpty() bool {
 	return length == 0
 }
 
-func (self *ExprStack) Peek() Optional[string] {
+func (self *ExprStack) Peek() Optional[ExprStackItem] {
 	ref := *self
 	length := len(ref)
 
 	if length == 0 {
-		return CreateNull[string]()
+		return CreateNull[ExprStackItem]()
 	}
 
 	val := ref[length-1]
-	return CreateValue(*val)
+	return CreateValue(val)
 
 }
 
-func (self *ExprStack) Pop() Optional[string] {
+func (self *ExprStack) Pop() Optional[ExprStackItem] {
 	ref := *self
 	length := len(ref)
 
 	if length == 0 {
-		return CreateNull[string]()
+		return CreateNull[ExprStackItem]()
 	}
 
 	val := ref[length-1]
 	*self = ref[:length-1]
 
-	return CreateValue(*val)
+	return CreateValue(val)
 }
 
-func (self *ExprStack) AppendTop(char string) {
+func (self *ExprStack) AppendTop(token RX_Token) {
 	if self.IsEmpty() {
-		self.Push(char)
+		self.Push([]RX_Token{token})
 	} else {
-		for _, val := range *self {
-			*val = strings.Join([]string{*val, char}, "")
+		for i, val := range *self {
+			(*self)[i] = append(val, token)
 		}
 	}
 }
