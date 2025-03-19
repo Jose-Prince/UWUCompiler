@@ -21,6 +21,35 @@ const (
 	SET_NEGATION                  // [^
 )
 
+func (self *Operator) ToString() string {
+	displayOp := "invalid"
+
+	switch *self {
+	case OR:
+		displayOp = "|"
+	case AND:
+		displayOp = "."
+	case ZERO_OR_MANY:
+		displayOp = "*"
+	case ONE_OR_MANY:
+		displayOp = "+"
+	case OPTIONAL:
+		displayOp = "?"
+	case LEFT_PAREN:
+		displayOp = "("
+	case RIGHT_PAREN:
+		displayOp = ")"
+	case LEFT_BRACKET:
+		displayOp = "["
+	case RIGHT_BRACKET:
+		displayOp = "]"
+	case SET_NEGATION:
+		displayOp = "[^"
+	}
+
+	return displayOp
+}
+
 // Serves to append extra metadata to a Regex pattern.
 type DummyInfo struct {
 	// The code to execute once the Regex pattern is identified.
@@ -135,35 +164,6 @@ func TokenStreamToString(stream []RX_Token) string {
 	}
 
 	return b.String()
-}
-
-func (self *Operator) ToString() string {
-	displayOp := "invalid"
-
-	switch *self {
-	case OR:
-		displayOp = "|"
-	case AND:
-		displayOp = "."
-	case ZERO_OR_MANY:
-		displayOp = "*"
-	case ONE_OR_MANY:
-		displayOp = "+"
-	case OPTIONAL:
-		displayOp = "?"
-	case LEFT_PAREN:
-		displayOp = "("
-	case RIGHT_PAREN:
-		displayOp = ")"
-	case LEFT_BRACKET:
-		displayOp = "["
-	case RIGHT_BRACKET:
-		displayOp = "]"
-	case SET_NEGATION:
-		displayOp = "[^"
-	}
-
-	return displayOp
 }
 
 func (self *RX_Token) ToString() string {

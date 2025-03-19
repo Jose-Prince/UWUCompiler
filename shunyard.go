@@ -176,7 +176,7 @@ func appendValueToOutput(infixExpr *[]l.RX_Token,
 			expr = previousExprStack.Peek().GetValue()
 		}
 
-		log.Default().Printf("Appending %s to expression: %s", currentToken.ToString(), expr)
+		log.Default().Printf("Appending %s to expression: %s", currentToken.ToString(), l.ExprStackItem_ToString(&expr))
 		previousExprStack.AppendTop(*currentToken)
 	} else {
 		var expr l.ExprStackItem
@@ -185,7 +185,7 @@ func appendValueToOutput(infixExpr *[]l.RX_Token,
 		}
 
 		var newExpr l.ExprStackItem = []l.RX_Token{*currentToken}
-		log.Default().Printf("Changing previous expr from `%s` to `%s`", expr, newExpr)
+		log.Default().Printf("Changing previous expr from `%s` to `%s`", l.ExprStackItem_ToString(&expr), l.ExprStackItem_ToString(&newExpr))
 		previousExprStack.Pop()
 		previousExprStack.Push(newExpr)
 	}
@@ -230,7 +230,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 				} else {
 					if stack.Empty() {
-						log.Default().Printf("Adding `%c` to stack!", currentToken)
+						log.Default().Printf("Adding `%s` to stack!", currentToken.ToString())
 						stack.Push(op)
 					} else {
 						tryToAppendWithPrecedence(stack, op, output)
@@ -287,7 +287,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 						expr = previousExprStack.Peek().GetValue()
 					}
 
-					log.Default().Printf("The previous expression before deleting is: %s", expr)
+					log.Default().Printf("The previous expression before deleting is: %s", l.ExprStackItem_ToString(&expr))
 					previousExprStack.Pop() // Deletes previous expression
 					var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
 					previousExprStack.Push(parenCtx)       // Adds ( context
@@ -332,7 +332,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					if !previousExprStack.IsEmpty() {
 						expr = previousExprStack.Peek().GetValue()
 					}
-					log.Default().Printf("The previous expression before deleting is: %s", expr)
+					log.Default().Printf("The previous expression before deleting is: %s", l.ExprStackItem_ToString(&expr))
 					previousExprStack.Pop() // Deletes previous expression
 
 					var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
@@ -340,8 +340,11 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					previousExprStack.Push([]l.RX_Token{}) // Adds inner [ ] context
 				}
 			case l.SET_NEGATION:
-				if state != NORMAL || state != IN_PARENTHESIS {
+				if state != NORMAL {
 					panic("Invalid Regular Expression! A set negation can't be inside brackets or another set negation!")
+				} else if state != IN_PARENTHESIS {
+					panic("Invalid Regular Expression! A set negation can't be inside brackets or another set negation!")
+
 				}
 
 				if previousCanBeANDedTo {
@@ -356,7 +359,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 				if !previousExprStack.IsEmpty() {
 					expr = previousExprStack.Peek().GetValue()
 				}
-				log.Default().Printf("The previous expression before deleting is: %s", expr)
+				log.Default().Printf("The previous expression before deleting is: %s", l.ExprStackItem_ToString(&expr))
 				previousExprStack.Pop() // Deletes previous expression
 
 				var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
@@ -405,7 +408,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 				} else {
 					previousExpr := previousExprStack.Pop().GetValue()
-					log.Default().Printf("'+' found! Getting previous expression... `%s`", previousExpr)
+					log.Default().Printf("'+' found! Getting previous expression... `%s`", l.ExprStackItem_ToString(&previousExpr))
 
 					// Concatenate previous expression with itself
 					// And add * operator at the end

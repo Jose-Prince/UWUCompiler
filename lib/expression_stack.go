@@ -1,6 +1,25 @@
 package lib
 
+import "strings"
+
 type ExprStackItem = []RX_Token
+
+func ExprStackItem_ToString(self *ExprStackItem) string {
+	b := strings.Builder{}
+
+	b.WriteString("[ ")
+	for i, elm := range *self {
+		b.WriteString(elm.ToString())
+
+		if i+1 < len(*self) {
+			b.WriteString(", ")
+		}
+	}
+	b.WriteString(" ]")
+
+	return b.String()
+}
+
 type ExprStack []ExprStackItem
 
 // func (self *ExprStackItem) ToString() string {
