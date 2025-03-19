@@ -90,6 +90,9 @@ func (b *BST) List() []*BSTNode {
 }
 
 func (b *BST) Insertion(postfix []RX_Token) {
+    postfix = append(postfix, CreateValueToken('#'))
+    postfix = append(postfix, CreateOperatorToken(AND))
+
 	var stack Stack[int]
 	var nodes []BSTNode
 

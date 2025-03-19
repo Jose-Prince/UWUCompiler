@@ -182,93 +182,83 @@ func (self *AFDStateTable[T]) Get(a *AFDState, b *AFDState) (T, bool) {
 }
 
 func ConvertFromTableToAFD(table []*TableRow) *AFD {
-	afd := &AFD{
-		Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
-		AcceptanceStates: NewSet[string](),
-	}
+    afd := &AFD{
+        Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
+        AcceptanceStates: NewSet[string](),
+    }
 
-	alphabet := NewSet[string]()
+    alphabet := NewSet[string]()
 
-	// recognizes the alphabet of the afd
-	for i := range table {
-		if table[i].simbol != "" && table[i].simbol != "#" {
-			alphabet.Add(table[i].simbol)
-		}
-	}
+    // Identificar el alfabeto del AFD
+    for _, row := range table {
+        if row.simbol != "" && row.simbol != "#" {
+            alphabet.Add(row.simbol)
+        }
+    }
 
-	// Creates trap state
-	trapState := "TRAP"
-	afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
-	for value := range alphabet {
-		afd.Transitions[trapState][value] = trapState
-	}
+    // Crear estado trampa
+    trapState := "TRAP"
+    afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
+    for value := range alphabet {
+        afd.Transitions[trapState][value] = trapState
+    }
 
-	// Set AFD initial state
-	afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
+    // Estado inicial del AFD
+    afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
 
-	var states Queue[string]
-	states.Enqueue(afd.InitialState)
+    newStates := NewSet[string]()
+    newStates.Add(afd.InitialState)
 
-	visited := NewSet[string]()
-	visited.Add(afd.InitialState)
+    visited := NewSet[string]()
+    visited.Add(afd.InitialState)
 
-	// Determines transitions for AFD
-	for !states.IsEmpty() {
-		currentState, _ := states.Dequeue()
+    // Calcular transiciones del AFD
+    for !newStates.IsEmpty() {
+        currentStates := newStates.ToSlice()
+        newStates.Clear()
 
-		for value := range alphabet {
-			var nextState []int
-			nextStateSet := make(map[int]bool)
-			for _, strIndex := range strings.Split(currentState, ",") {
-				if strIndex != "" {
-					index, err := strconv.Atoi(strIndex)
-					if err != nil {
-						fmt.Println("Error converting to string:", err)
-						continue
-					}
+        for _, n := range currentStates {
+            if _, exists := afd.Transitions[n]; !exists {
+                afd.Transitions[n] = make(map[AlphabetInput]AFDState)
+            }
 
-					if table[index].simbol == value {
-						for _, pos := range table[index].followpos {
-							nextStateSet[pos] = true
-						}
-					}
-				}
-			}
+            indexList := stringToIntSlice(n)
 
-			nextState = make([]int, 0, len(nextStateSet))
-			for key := range nextStateSet {
-				nextState = append(nextState, key)
-			}
+            for a := range alphabet {
+                newFollowpos := NewSet[int]()
 
-			strNextState := convertSliceIntToString(nextState)
-			if strNextState == "" {
-				strNextState = trapState
-			}
+                for _, index := range indexList {
+                    if table[index].simbol == a {
+                        for _, follow := range table[index].followpos {
+                            newFollowpos.Add(follow)
+                        }
+                    }
+                }
 
-			if _, exists := afd.Transitions[currentState]; !exists {
-				afd.Transitions[currentState] = make(map[AlphabetInput]AFDState)
-			}
+                newState := convertSliceIntToString(newFollowpos.ToSlice())
+                if newState == "" {
+                    newState = trapState
+                }
+                
+                afd.Transitions[n][a] = newState
+                
+                if newState != trapState && visited.Add(newState) {
+                    newStates.Add(newState)
+                }
+            }
+        }
+    }
 
-			afd.Transitions[currentState][value] = strNextState
+    // Determinar estados de aceptación
+    finalNode := len(table) - 2
+    finalNodeStr := fmt.Sprintf("%d", finalNode)
+    for state := range visited {
+        if strings.Contains(state, finalNodeStr) {
+            afd.AcceptanceStates.Add(state)
+        }
+    }
 
-			if strNextState != trapState && !visited.Contains(strNextState) {
-				visited.Add(strNextState)
-				states.Enqueue(strNextState)
-			}
-		}
-
-	}
-
-	// Determines final states
-	finalNode := len(table) - 2
-
-	for i := range visited {
-		if strings.Contains(i, fmt.Sprintf("%d", finalNode)) {
-			afd.AcceptanceStates.Add(i)
-		}
-	}
-
-	return afd
+    return afd
 }
 
 func (self *AFD) Derivation(w string) bool {
