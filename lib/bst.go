@@ -132,10 +132,15 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 	for _, node := range nodes {
 		if node.IsLeaf() {
 			nullable := !(node.Val.IsValue() && node.Val.GetValue().HasValue())
-			firstPos := []int{node.Key}
-			lastPos := []int{node.Key}
+			firstPos := []int{}
+            lastPos := []int{}
 
-			var simbol string
+            if node.Val.GetValue().HasValue() {
+			    firstPos = append(firstPos, i)
+    			lastPos = append(lastPos, i)
+            }			
+
+            var simbol string
 			if !nullable {
 				simbol = string(node.Val.GetValue().GetValue())
 			}
