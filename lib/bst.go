@@ -138,6 +138,13 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 			if node.Val.GetValue().HasValue() {
 				firstPos = append(firstPos, i)
 				lastPos = append(lastPos, i)
+			} else {
+				for j := i - 1; j >= 0; j-- {
+					if tree.nodes[j].Val.IsOperator() && (tree.nodes[j].Val.Equals(CreateOperatorToken(AND)) || tree.nodes[j].Val.Equals(CreateOperatorToken(ZERO_OR_MANY))) {
+						lastPos = append(lastPos, tree.nodes[j].extraProperties.lastpos...)
+						break
+					}
+				}
 			}
 
 			var simbol string
@@ -152,7 +159,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 			tree.nodes[i].extraProperties = row
 			//table = append(table, &row)
 		} else {
-			op := node.Val.GetOperator()
+			op := *node.Val.GetOperator()
 			switch op {
 			case AND:
 				left := tree.nodes[node.left]
@@ -168,6 +175,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				if left.IsNullable() {
 					lastPos = append(lastPos, left.extraProperties.lastpos...)
 				}
+
 				//table = append(table, &TableRow{nullable: nullable, firstpos: firstPos, lastpos: lastPos})
 
 				row := TableRow{
@@ -192,6 +200,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				lastPos := right.extraProperties.lastpos
 				lastPos = append(lastPos, left.extraProperties.lastpos...)
 
+				//table = append(table, &TableRow{nullable: nullable, firstpos: firstPos, lastpos: lastPos})
 				row := TableRow{
 					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
 				}
@@ -205,6 +214,13 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 
 				lastPos := left.extraProperties.lastpos
 
+				for j := i - 1; j >= 0; j-- {
+					if tree.nodes[j].Val.Equals(CreateOperatorToken(AND)) && j != i-1 {
+						lastPos = append(lastPos, tree.nodes[j].extraProperties.lastpos...)
+						break
+					}
+				}
+				//table = append(table, &TableRow{nullable: nullable, firstpos: firstPos, lastpos: lastPos})
 				row := TableRow{
 					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
 				}
