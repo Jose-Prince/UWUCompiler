@@ -54,41 +54,6 @@ func (b *BSTNode) IsLeaf() bool {
 	return b.left == -1 && b.right == -1
 }
 
-func (b *BST) List() []*BSTNode {
-
-	// FIXME: This operation changes the tree everytime because the values are references!
-	// Should be fixed now...
-	son := 0
-	for {
-		if b.nodes[son].left < 0 {
-			break
-		}
-
-		son = b.nodes[son].left
-	}
-
-	result := []*BSTNode{}
-
-	for {
-		result = append(result, &b.nodes[son])
-
-		father := b.nodes[son].father
-		if father >= 0 {
-			brother := b.nodes[father].right
-			if brother >= 0 {
-				result = append(result, &b.nodes[brother])
-			}
-		}
-
-		if father >= 0 {
-			break
-		}
-		son = father
-	}
-
-	return result
-}
-
 func (b *BST) Insertion(postfix []RX_Token) {
 	postfix = append(postfix, CreateValueToken('#'))
 	postfix = append(postfix, CreateOperatorToken(AND))
