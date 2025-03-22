@@ -287,18 +287,6 @@ func convertSliceIntToString(slice []int) string {
 	return sb.String()
 }
 
-func stringToIntSlice(str string) []int {
-	var intSlice []int
-	for _, s := range str {
-		num, err := strconv.Atoi(string(s))
-		if err != nil {
-			return []int{}
-		}
-		intSlice = append(intSlice, num)
-	}
-	return intSlice
-}
-
 func sortNumbers(input string) string {
 	numberStrings := strings.Split(strings.TrimSuffix(input, ","), ",")
 
