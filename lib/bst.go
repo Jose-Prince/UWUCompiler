@@ -93,6 +93,8 @@ func (b *BST) Insertion(postfix []RX_Token) {
 
 func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 	table := []*TableRow{}
+	andToken := CreateOperatorToken(AND)
+	zeroToken := CreateOperatorToken(ZERO_OR_MANY)
 
 	for i, node := range tree.nodes {
 		if node.IsLeaf() {
@@ -105,7 +107,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				lastPos = append(lastPos, i)
 			} else {
 				for j := i - 1; j >= 0; j-- {
-					if tree.nodes[j].Val.IsOperator() && (tree.nodes[j].Val.Equals(CreateOperatorToken(AND)) || tree.nodes[j].Val.Equals(CreateOperatorToken(ZERO_OR_MANY))) {
+					if tree.nodes[j].Val.IsOperator() && (tree.nodes[j].Val.Equals(&andToken) || tree.nodes[j].Val.Equals(&zeroToken)) {
 						lastPos = append(lastPos, tree.nodes[j].extraProperties.lastpos...)
 						break
 					}
@@ -122,9 +124,8 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 			}
 
 			tree.nodes[i].extraProperties = row
-			//table = append(table, &row)
 		} else {
-			op := *node.Val.GetOperator()
+			op := node.Val.GetOperator()
 			switch op {
 			case AND:
 				left := tree.nodes[node.left]
@@ -140,8 +141,6 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				if left.IsNullable() {
 					lastPos = append(lastPos, left.extraProperties.lastpos...)
 				}
-
-				//table = append(table, &TableRow{nullable: nullable, firstpos: firstPos, lastpos: lastPos})
 
 				row := TableRow{
 					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
@@ -165,7 +164,6 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				lastPos := right.extraProperties.lastpos
 				lastPos = append(lastPos, left.extraProperties.lastpos...)
 
-				//table = append(table, &TableRow{nullable: nullable, firstpos: firstPos, lastpos: lastPos})
 				row := TableRow{
 					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
 				}
@@ -180,12 +178,11 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				lastPos := left.extraProperties.lastpos
 
 				for j := i - 1; j >= 0; j-- {
-					if tree.nodes[j].Val.Equals(CreateOperatorToken(AND)) && j != i-1 {
+					if tree.nodes[j].Val.Equals(&andToken) && j != i-1 {
 						lastPos = append(lastPos, tree.nodes[j].extraProperties.lastpos...)
 						break
 					}
 				}
-				//table = append(table, &TableRow{nullable: nullable, firstpos: firstPos, lastpos: lastPos})
 				row := TableRow{
 					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
 				}
@@ -206,92 +203,6 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 
 		table = append(table, &row)
 	}
-	// sets Leaf i first
-	// for i, v := range nodes {
-	// 	newRow := new(TableRow)
-
-	// 	if v.Val.value != nil && v.Val.value.HasValue() {
-	// 		// nullable
-	// 		newRow.nullable = false
-
-	// 		// firstpos
-	// 		newRow.firtspos = append(newRow.firtspos, i)
-
-	// 		// lastpos
-	// 		newRow.lastpos = append(newRow.lastpos, i)
-
-	// 		// simbol
-	// 		newRow.simbol = string(v.Val.value.GetValue())
-
-	// 	} else if v.Val.value != nil && !v.Val.value.HasValue() {
-	// 		newRow.nullable = true
-	// 	} else if *v.Val.operator == AND {
-	// 		var c1 int
-
-	// 		if nodes[i-1].Val.operator != nil {
-	// 			if *nodes[i-1].Val.operator == OR {
-	// 				c1 = 4
-	// 			} else {
-	// 				c1 = 2
-	// 			}
-	// 		} else {
-	// 			c1 = 2
-	// 		}
-
-	// 		//nullable
-	// 		newRow.nullable = table[i-c1].nullable == true && table[i-1].nullable == true
-
-	// 		// firstpos
-	// 		if table[i-2].nullable == true {
-	// 			union_slice := append(table[i-c1].firtspos, table[i-1].firtspos...)
-	// 			newRow.firtspos = append(newRow.firtspos, union_slice...)
-	// 		} else {
-	// 			newRow.firtspos = append(newRow.firtspos, table[i-c1].firtspos...)
-	// 		}
-
-	// 		// lastpos
-	// 		if table[i-1].nullable == true {
-	// 			union_slice := append(table[i-c1].lastpos, table[i-1].lastpos...)
-	// 			newRow.lastpos = append(newRow.lastpos, union_slice...)
-	// 		} else {
-	// 			newRow.lastpos = append(newRow.lastpos, table[i-1].lastpos...)
-	// 		}
-
-	// 		// followpos
-	// 		for _, pos := range table[i-c1].lastpos {
-	// 			table[pos].followpos = append(table[pos].followpos, table[i-1].firtspos...)
-	// 		}
-
-	// 	} else if *v.Val.operator == OR {
-	// 		// nullable
-	// 		newRow.nullable = table[i-2].nullable == true || table[i-1].nullable == true
-
-	// 		// firtspos
-	// 		union_slice := append(table[i-2].firtspos, table[i-1].firtspos...)
-	// 		newRow.firtspos = append(newRow.firtspos, union_slice...)
-
-	// 		// lastpos
-	// 		union_slice = append(table[i-2].lastpos, table[i-1].lastpos...)
-	// 		newRow.lastpos = append(newRow.lastpos, union_slice...)
-
-	// 	} else {
-	// 		// nullable
-	// 		newRow.nullable = true
-
-	// 		// firstpos
-	// 		newRow.firtspos = append(newRow.firtspos, table[i-1].firtspos...)
-
-	// 		// lastpos
-	// 		newRow.lastpos = append(newRow.lastpos, table[i-1].lastpos...)
-
-	// 		// followpos
-	// 		for _, pos := range newRow.lastpos {
-	// 			table[pos].followpos = append(table[pos].followpos, newRow.firtspos...)
-	// 		}
-	// 	}
-
-	// 	table = append(table, newRow)
-	// }
 
 	return table
 }
