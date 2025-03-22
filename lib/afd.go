@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -242,6 +243,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 				}
 
 				newState := convertSliceIntToString(newFollowpos.ToSlice())
+				newState = sortNumbers(newState)
 				if newState == "" {
 					newState = trapState
 				}
@@ -295,4 +297,27 @@ func stringToIntSlice(str string) []int {
 		intSlice = append(intSlice, num)
 	}
 	return intSlice
+}
+
+func sortNumbers(input string) string {
+	numberStrings := strings.Split(strings.TrimSuffix(input, ","), ",")
+
+	numbers := make([]int, len(numberStrings))
+	for i, str := range numberStrings {
+		num, err := strconv.Atoi(str)
+		if err != nil {
+			fmt.Println("Error convirtiendo a entero:", err)
+			return ""
+		}
+		numbers[i] = num
+	}
+
+	sort.Ints(numbers)
+
+	result := make([]string, len(numbers))
+	for i, num := range numbers {
+		result[i] = strconv.Itoa(num)
+	}
+
+	return strings.Join(result, ",") + ","
 }
