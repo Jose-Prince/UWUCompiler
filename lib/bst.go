@@ -43,7 +43,7 @@ type TableRow struct {
 	firstpos  []int
 	lastpos   []int
 	followpos []int
-	simbol    string
+	simbol    rune
 }
 
 func (b *BSTNode) IsNullable() bool {
@@ -114,9 +114,9 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				}
 			}
 
-			var simbol string
+			var simbol rune
 			if !nullable {
-				simbol = string(node.Val.GetValue().GetValue())
+				simbol = node.Val.GetValue().GetValue()
 			}
 
 			row := TableRow{
@@ -143,7 +143,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				}
 
 				row := TableRow{
-					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
+					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: '\x00',
 				}
 				tree.nodes[i].extraProperties = row
 				for _, i := range left.extraProperties.lastpos {
@@ -165,7 +165,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 				lastPos = append(lastPos, left.extraProperties.lastpos...)
 
 				row := TableRow{
-					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
+					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: '\x00',
 				}
 				tree.nodes[i].extraProperties = row
 
@@ -184,7 +184,7 @@ func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
 					}
 				}
 				row := TableRow{
-					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: "",
+					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: '\x00',
 				}
 				tree.nodes[i].extraProperties = row
 

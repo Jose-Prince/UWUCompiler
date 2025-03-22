@@ -8,7 +8,7 @@ import (
 )
 
 type AFDState = string
-type AlphabetInput = string
+type AlphabetInput = RX_Token
 
 type TransitionInput struct {
 	State AFDState
@@ -188,11 +188,11 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 		AcceptanceStates: NewSet[string](),
 	}
 
-	alphabet := NewSet[string]()
+	alphabet := NewSet[rune]()
 
 	// Identificar el alfabeto del AFD
 	for _, row := range table {
-		if row.simbol != "" && row.simbol != "#" {
+		if row.simbol != '\x00' && row.simbol != '#' {
 			alphabet.Add(row.simbol)
 		}
 	}
@@ -201,7 +201,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	trapState := "TRAP"
 	afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
 	for value := range alphabet {
-		afd.Transitions[trapState][value] = trapState
+		afd.Transitions[trapState][CreateValueToken(value)] = trapState
 	}
 
 	// Estado inicial del AFD
@@ -248,7 +248,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 					newState = trapState
 				}
 
-				afd.Transitions[n][a] = newState
+				afd.Transitions[n][CreateValueToken(a)] = newState
 
 				if newState != trapState && visited.Add(newState) {
 					newStates.Add(newState)
@@ -272,7 +272,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 func (self *AFD) Derivation(w string) bool {
 	state := self.InitialState
 	for _, ch := range w {
-		state = self.Transitions[state][string(ch)]
+		state = self.Transitions[state][CreateValueToken(ch)]
 	}
 
 	return self.AcceptanceStates.Contains(state)
