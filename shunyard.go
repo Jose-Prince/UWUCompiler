@@ -412,9 +412,9 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 
 					// Concatenate previous expression with itself
 					// And add * operator at the end
-					tryToAppendWithPrecedence(stack, l.AND, output)
 					toPostFix(alph, &previousExpr, &shunStack{}, output)
 					tryToAppendWithPrecedence(stack, l.ZERO_OR_MANY, output)
+					tryToAppendWithPrecedence(stack, l.AND, output)
 
 					previousExprStack.AppendTop(l.CreateOperatorToken(op))
 					previousExprStack.Push([]l.RX_Token{})
