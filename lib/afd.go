@@ -182,83 +182,89 @@ func (self *AFDStateTable[T]) Get(a *AFDState, b *AFDState) (T, bool) {
 }
 
 func ConvertFromTableToAFD(table []*TableRow) *AFD {
-    afd := &AFD{
-        Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
-        AcceptanceStates: NewSet[string](),
-    }
+	afd := &AFD{
+		Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
+		AcceptanceStates: NewSet[string](),
+	}
 
-    alphabet := NewSet[string]()
+	alphabet := NewSet[string]()
 
-    // Identificar el alfabeto del AFD
-    for _, row := range table {
-        if row.simbol != "" && row.simbol != "#" {
-            alphabet.Add(row.simbol)
-        }
-    }
+	// Identificar el alfabeto del AFD
+	for _, row := range table {
+		if row.simbol != "" && row.simbol != "#" {
+			alphabet.Add(row.simbol)
+		}
+	}
 
-    // Crear estado trampa
-    trapState := "TRAP"
-    afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
-    for value := range alphabet {
-        afd.Transitions[trapState][value] = trapState
-    }
+	// Crear estado trampa
+	trapState := "TRAP"
+	afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
+	for value := range alphabet {
+		afd.Transitions[trapState][value] = trapState
+	}
 
-    // Estado inicial del AFD
-    afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
+	// Estado inicial del AFD
+	afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
 
-    newStates := NewSet[string]()
-    newStates.Add(afd.InitialState)
+	newStates := NewSet[string]()
+	newStates.Add(afd.InitialState)
 
-    visited := NewSet[string]()
-    visited.Add(afd.InitialState)
+	visited := NewSet[string]()
+	visited.Add(afd.InitialState)
 
-    // Calcular transiciones del AFD
-    for !newStates.IsEmpty() {
-        currentStates := newStates.ToSlice()
-        newStates.Clear()
+	// Calcular transiciones del AFD
+	for !newStates.IsEmpty() {
+		currentStates := newStates.ToSlice()
+		newStates.Clear()
 
-        for _, n := range currentStates {
-            if _, exists := afd.Transitions[n]; !exists {
-                afd.Transitions[n] = make(map[AlphabetInput]AFDState)
-            }
+		for _, n := range currentStates {
+			if _, exists := afd.Transitions[n]; !exists {
+				afd.Transitions[n] = make(map[AlphabetInput]AFDState)
+			}
 
-            indexList := stringToIntSlice(n)
+			indexList := strings.SplitAfter(n, ",")
 
-            for a := range alphabet {
-                newFollowpos := NewSet[int]()
+			for a := range alphabet {
+				newFollowpos := NewSet[int]()
 
-                for _, index := range indexList {
-                    if table[index].simbol == a {
-                        for _, follow := range table[index].followpos {
-                            newFollowpos.Add(follow)
-                        }
-                    }
-                }
+				for _, index := range indexList {
+					if index != "" {
 
-                newState := convertSliceIntToString(newFollowpos.ToSlice())
-                if newState == "" {
-                    newState = trapState
-                }
-                
-                afd.Transitions[n][a] = newState
-                
-                if newState != trapState && visited.Add(newState) {
-                    newStates.Add(newState)
-                }
-            }
-        }
-    }
+						num, err := strconv.Atoi(index[:len(index)-1])
+						if err == nil {
+							if table[num].simbol == a {
+								for _, follow := range table[num].followpos {
+									newFollowpos.Add(follow)
+								}
+							}
+						}
+					}
+				}
 
-    // Determinar estados de aceptación
-    finalNode := len(table) - 2
-    finalNodeStr := fmt.Sprintf("%d", finalNode)
-    for state := range visited {
-        if strings.Contains(state, finalNodeStr) {
-            afd.AcceptanceStates.Add(state)
-        }
-    }
+				newState := convertSliceIntToString(newFollowpos.ToSlice())
+				if newState == "" {
+					newState = trapState
+				}
 
-    return afd
+				afd.Transitions[n][a] = newState
+
+				if newState != trapState && visited.Add(newState) {
+					newStates.Add(newState)
+				}
+			}
+		}
+	}
+
+	// Determinar estados de aceptación
+	finalNode := len(table) - 2
+	finalNodeStr := fmt.Sprintf("%d", finalNode)
+	for state := range visited {
+		if strings.Contains(state, finalNodeStr) {
+			afd.AcceptanceStates.Add(state)
+		}
+	}
+
+	return afd
 }
 
 func (self *AFD) Derivation(w string) bool {
