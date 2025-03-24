@@ -15,8 +15,14 @@ func main() {
 	lexFilePath := os.Args[1]
 	fmt.Println("Parsing file:", lexFilePath)
 
-	// TODO: Parse lex file
+	// TODO: Parse lex file instead of using a default values
 	var lexFileData LexFileData
+	lexFileData = LexFileData{
+		Rule: map[string]string{
+			"a|b": "fmt.Println(\"Hello!\")",
+			"db":  "fmt.Println(\"Goodbye!\")",
+		},
+	}
 
 	// Combine all regexes into a single regex
 	infix := []lib.RX_Token{}
@@ -42,6 +48,8 @@ func main() {
 	}
 
 	// TODO: Regex to AFD
+	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
+	fmt.Println("The Postfix expression is:", postfix)
 
 	// TODO: Generate AFD simulator (lexer)
 }
