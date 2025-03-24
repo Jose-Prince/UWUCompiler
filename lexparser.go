@@ -1,12 +1,12 @@
 package main
 
 import (
-    "github.com/Jose-Prince/UWULexer/lib"
-    "strings"
-    "os"
-    "fmt"
-    "bufio"
-    "regexp"
+	"bufio"
+	"fmt"
+	"github.com/Jose-Prince/UWULexer/lib"
+	"os"
+	"regexp"
+	"strings"
 )
 
 type LexFileData struct {
@@ -62,118 +62,119 @@ type LexFileData struct {
 // }
 
 func LexParser(yalexFile string) LexFileData {
-    file, err := os.Open(yalexFile)
-    if err != nil {
-        fmt.Println("Error opening the file:", err)
-        return LexFileData{}
-    }
-    defer file.Close()
+	file, err := os.Open(yalexFile)
+	if err != nil {
+		fmt.Println("Error opening the file:", err)
+		return LexFileData{}
+	}
+	defer file.Close()
 
-    // Identifies priority
-    var index uint
-    index = 1
+	// Identifies priority
+	var index uint
+	index = 1
 
-    var info lib.DummyInfo
+	var info lib.DummyInfo
 
-    scanner := bufio.NewScanner(file)
-    var header, footer strings.Builder
-    dummyRules := make(map[string]string)
-    rules := make(map[string]lib.DummyInfo)
-    state := 0 // 0: Reading header, 1: Reading rules, 2: Reading footer
-    
-    // Regex to identify
-    ruleDeclaration := regexp.MustCompile(`(?i)\b(rule)\b`) // Ignores line "rule gettoken ="
-    ruleRegex := regexp.MustCompile(`^\s*let\s+([^\s=]+)\s*=\s*(.*)`)
-    regexBrackets := regexp.MustCompile(`\{([^}]*)\}`) // Identifies what is inside {}
-    
-    for scanner.Scan() {
-        line := strings.TrimSpace(scanner.Text())
+	scanner := bufio.NewScanner(file)
+	var header, footer strings.Builder
+	dummyRules := make(map[string]string)
+	rules := make(map[string]lib.DummyInfo)
+	state := 0 // 0: Reading header, 1: Reading rules, 2: Reading footer
 
-        // Header identification
-        if line == "{" && state == 0 {
-            continue
-        }else if line == "}" && state == 0 {
-            state = 1
-            continue
-        } else if state == 0 {
-            header.WriteString(line + "\n")
-            continue
-        }
+	// Regex to identify
+	ruleDeclaration := regexp.MustCompile(`(?i)\b(rule)\b`) // Ignores line "rule gettoken ="
+	ruleRegex := regexp.MustCompile(`^\s*let\s+([^\s=]+)\s*=\s*(.*)`)
+	regexBrackets := regexp.MustCompile(`\{([^}]*)\}`) // Identifies what is inside {}
 
-        if ruleDeclaration.MatchString(line){
-            continue
-        }
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 
-        // Rules identification
-        match := ruleRegex.FindStringSubmatch(line)
+		// Header identification
+		if line == "{" && state == 0 {
+			continue
+		} else if line == "}" && state == 0 {
+			state = 1
+			continue
+		} else if state == 0 {
+			header.WriteString(line + "\n")
+			continue
+		}
 
-        if len(match) > 2 {
-            resolvedValue := resolveRule(match[2], dummyRules)
-            dummyRules[match[1]] = resolvedValue
-            continue
-        }
+		if ruleDeclaration.MatchString(line) {
+			continue
+		}
 
-        bracketsMatches := regexBrackets.FindAllStringSubmatch(line, -1)
+		// Rules identification
+		match := ruleRegex.FindStringSubmatch(line)
 
-        if len(bracketsMatches) > 1 {
-            firstBracketContent := bracketsMatches[0][1]
-            
-            // Regex saved in DummyRules
-            regexValue := dummyRules[firstBracketContent]
+		if len(match) > 2 {
+			resolvedValue := resolveRule(match[2], dummyRules)
+			dummyRules[match[1]] = resolvedValue
+			continue
+		}
 
-            if len(bracketsMatches) > 1 {
-                secondBracketContent := bracketsMatches[1][1] 
-                info.Code = secondBracketContent
-                info.Priority = index
+		bracketsMatches := regexBrackets.FindAllStringSubmatch(line, -1)
 
-                rules[regexValue] = info
-                
-                index++
-            }
-        }
+		if len(bracketsMatches) > 1 {
+			firstBracketContent := bracketsMatches[0][1]
 
-        // Footer identification
-        if line == "{" && state == 1 {
-            state = 2
-            continue
-        } else if state == 2 {
-            if line == "}" {
-                continue
-            }
-            footer.WriteString(line + "\n")
-        }
-    }
+			// Regex saved in DummyRules
+			regexValue := dummyRules[firstBracketContent]
 
-    if err := scanner.Err(); err != nil {
-        fmt.Println("Error scaning the file:", err)
-    }
+			if len(bracketsMatches) > 1 {
+				secondBracketContent := bracketsMatches[1][1]
+				info.Code = secondBracketContent
+				info.Priority = index
+				info.Regex = regexValue
 
-    fileData := LexFileData{
-        Header: header.String(),
-        Footer: footer.String(),
-        Rule: rules,
-    }
+				rules[regexValue] = info
 
-    return fileData
+				index++
+			}
+		}
+
+		// Footer identification
+		if line == "{" && state == 1 {
+			state = 2
+			continue
+		} else if state == 2 {
+			if line == "}" {
+				continue
+			}
+			footer.WriteString(line + "\n")
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error scaning the file:", err)
+	}
+
+	fileData := LexFileData{
+		Header: header.String(),
+		Footer: footer.String(),
+		Rule:   rules,
+	}
+
+	return fileData
 }
 
 // Replace rules into other rules
 func resolveRule(rule string, rules map[string]string) string {
-    re := regexp.MustCompile(`\{([^\}]+)\}`)
-    matches := re.FindAllStringSubmatch(rule, -1)
+	re := regexp.MustCompile(`\{([^\}]+)\}`)
+	matches := re.FindAllStringSubmatch(rule, -1)
 
-    if len(matches) == 0 {
-        return rule
-    }
+	if len(matches) == 0 {
+		return rule
+	}
 
-    for _, match := range matches {
-        ruleName := match[1]
-        if value, exists := rules[ruleName]; exists {
-            rule = strings.ReplaceAll(rule, match[0], value)
-        } else {
-            rule = strings.ReplaceAll(rule, match[0], ruleName)
-        }
-    }
+	for _, match := range matches {
+		ruleName := match[1]
+		if value, exists := rules[ruleName]; exists {
+			rule = strings.ReplaceAll(rule, match[0], value)
+		} else {
+			rule = strings.ReplaceAll(rule, match[0], ruleName)
+		}
+	}
 
-    return resolveRule(rule, rules)
+	return resolveRule(rule, rules)
 }
