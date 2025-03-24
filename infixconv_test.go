@@ -159,6 +159,31 @@ func generateExpectedInfix(random *rand.Rand) []l.RX_Token {
 			tokens = append(tokens, b)
 			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
 
+		case 1: // Nested parenthesis
+			a := l.CreateValueToken(getRandomRune())
+			b := l.CreateValueToken(getRandomRune())
+			c := l.CreateValueToken(getRandomRune())
+			d := l.CreateValueToken(getRandomRune())
+			op1 := l.CreateOperatorToken(getRandomTwoOp())
+			op2 := l.CreateOperatorToken(getRandomTwoOp())
+			op3 := l.CreateOperatorToken(getRandomTwoOp())
+
+			tokens = append(tokens, l.CreateOperatorToken(l.LEFT_PAREN))
+			tokens = append(tokens, l.CreateOperatorToken(l.LEFT_PAREN))
+			tokens = append(tokens, a)
+			tokens = append(tokens, op1)
+			tokens = append(tokens, b)
+			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
+
+			tokens = append(tokens, op3)
+
+			tokens = append(tokens, l.CreateOperatorToken(l.LEFT_PAREN))
+			tokens = append(tokens, c)
+			tokens = append(tokens, op2)
+			tokens = append(tokens, d)
+			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
+			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
+
 		default: // Simple two value expression
 			a := l.CreateValueToken(getRandomRune())
 			b := l.CreateValueToken(getRandomRune())
