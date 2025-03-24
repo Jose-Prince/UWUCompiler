@@ -123,6 +123,49 @@ func TestDummyTokens(t *testing.T) {
 	compareTokensStreams(t, "a|b (Dummy token)", expected, result)
 }
 
+func TestZeroOrManyOperator(t *testing.T) {
+	expected := []l.RX_Token{
+		l.CreateValueToken('a'),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('a'),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateOperatorToken(l.ZERO_OR_MANY),
+		l.CreateOperatorToken(l.AND),
+	}
+	infix := []l.RX_Token{
+		l.CreateOperatorToken(l.LEFT_PAREN),
+		l.CreateValueToken('a'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
+		l.CreateOperatorToken(l.ONE_OR_MANY),
+	}
+	result := DEFAULT_ALPHABET.ToPostfix(&infix)
+	compareTokensStreams(t, "(a|b)+", expected, result)
+}
+
+func TestOptionalOperator(t *testing.T) {
+	expected := []l.RX_Token{
+		l.CreateValueToken('a'),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.AND),
+		l.CreateEpsilonToken(),
+		l.CreateOperatorToken(l.OR),
+	}
+	infix := []l.RX_Token{
+		l.CreateOperatorToken(l.LEFT_PAREN),
+		l.CreateValueToken('a'),
+		l.CreateOperatorToken(l.AND),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
+		l.CreateOperatorToken(l.OPTIONAL),
+	}
+	result := DEFAULT_ALPHABET.ToPostfix(&infix)
+	compareTokensStreams(t, "(ab)?", expected, result)
+}
+
 // func TestFuzzFail(t *testing.T) {
 // 	source := rand.NewSource(int64(69326))
 // 	random := rand.New(source)
