@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "Please ONLY supply a lex file")
+		panic("Please ONLY supply a lex file!")
 	}
 
 	lexFilePath := os.Args[1]
