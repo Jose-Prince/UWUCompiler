@@ -187,7 +187,7 @@ func generateExpectedInfix(random *rand.Rand) []l.RX_Token {
 	return tokens
 }
 
-func FuzzInfixExpr(f *testing.F) {
+func FuzzFromInfixToRegex(f *testing.F) {
 	f.Add(int64(69420))
 	f.Fuzz(func(t *testing.T, seed int64) {
 		source := rand.NewSource(seed)

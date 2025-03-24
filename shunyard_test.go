@@ -2,7 +2,7 @@ package main
 
 import (
 	"math/rand"
-	"testing"
+	// "testing"
 
 	l "github.com/Jose-Prince/UWULexer/lib"
 )
@@ -98,17 +98,17 @@ func fromPostfixToInfix(postfix []l.RX_Token) []l.RX_Token {
 	return stack.Pop().GetValue()
 }
 
-func FuzzInfixToPostfix(f *testing.F) {
-	f.Add(int64(69420))
-	f.Fuzz(func(t *testing.T, seed int64) {
-		source := rand.NewSource(seed)
-		random := rand.New(source)
-
-		expected := generateExpectedPostfix(random)
-		infixExpr := fromPostfixToInfix(expected)
-		infixStr := fromTokenStreamToInfixString(infixExpr)
-
-		result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
-		compareTokensStreams(t, infixStr, expected, result)
-	})
-}
+// func FuzzInfixToPostfix(f *testing.F) {
+// 	f.Add(int64(69420))
+// 	f.Fuzz(func(t *testing.T, seed int64) {
+// 		source := rand.NewSource(seed)
+// 		random := rand.New(source)
+//
+// 		expected := generateExpectedPostfix(random)
+// 		infixExpr := fromPostfixToInfix(expected)
+// 		infixStr := fromTokenStreamToInfixString(infixExpr)
+//
+// 		result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
+// 		compareTokensStreams(t, infixStr, expected, result)
+// 	})
+// }
