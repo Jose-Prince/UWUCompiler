@@ -9,16 +9,33 @@ import (
 	"github.com/Jose-Prince/UWULexer/lib"
 )
 
+const CMD_HELP string = `
+UWULexer is a Lexer generator similar to Yalex and Lex.
+Usage:
+	UWULexer <lexfile> [outputFileToWriteCodeTo]
+
+Example:
+	- To produce the Lexer code inside a file named MyLexer.go
+	UWULexer ./input.lex MyLexer.go
+`
+
 func main() {
 	// Disable loggin
 	log.SetOutput(io.Discard)
 
-	if len(os.Args) != 2 {
-		panic("Please ONLY supply a lex file!")
+	if len(os.Args) != 2 || len(os.Args) != 3 {
+		fmt.Fprintf(os.Stderr, "Please ONLY supply a lex file!")
+		panic(CMD_HELP)
 	}
 
 	lexFilePath := os.Args[1]
 	fmt.Println("Parsing file:", lexFilePath)
+
+	outputLexerFile := "out_lexer.go"
+	if len(os.Args) == 3 {
+		outputLexerFile = os.Args[2]
+	}
+	fmt.Println("Output file will be:", outputLexerFile)
 
 	// TODO: Parse lex file instead of using a default values
 	var lexFileData LexFileData
@@ -81,4 +98,6 @@ func main() {
 	fmt.Println("The AFD is:", afd.String())
 
 	// TODO: Generate AFD simulator (lexer)
+
+	WriteLexFile(outputLexerFile, lexFileData, afd)
 }
