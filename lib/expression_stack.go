@@ -9,7 +9,7 @@ func ExprStackItem_ToString(self *ExprStackItem) string {
 
 	b.WriteString("[ ")
 	for i, elm := range *self {
-		b.WriteString(elm.ToString())
+		b.WriteString(elm.String())
 
 		if i+1 < len(*self) {
 			b.WriteString(", ")
@@ -31,6 +31,12 @@ type ExprStack []ExprStackItem
 // }
 
 func (self *ExprStack) Push(tokens ExprStackItem) {
+	if !self.IsEmpty() {
+		for _, token := range tokens {
+			self.AppendTop(token)
+		}
+	}
+
 	*self = append(*self, tokens)
 }
 
@@ -71,9 +77,9 @@ func (self *ExprStack) Pop() Optional[ExprStackItem] {
 func (self *ExprStack) AppendTop(token RX_Token) {
 	if self.IsEmpty() {
 		self.Push([]RX_Token{token})
-	} else {
-		for i, val := range *self {
-			(*self)[i] = append(val, token)
-		}
+	}
+
+	for i, val := range *self {
+		(*self)[i] = append(val, token)
 	}
 }

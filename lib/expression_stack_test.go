@@ -22,14 +22,14 @@ func printSideBySide(t *testing.T, markedIdx int, expected []RX_Token, result []
 		}
 
 		if i < len(expected)-1 {
-			elem := expected[i].ToString()
+			elem := expected[i].String()
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, elem))
 		} else {
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, "<N/A>"))
 		}
 
 		if i < len(result)-1 {
-			elem := result[i].ToString()
+			elem := result[i].String()
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, elem))
 		} else {
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, "<N/A>"))
@@ -46,7 +46,7 @@ func printSideBySide(t *testing.T, markedIdx int, expected []RX_Token, result []
 func areEqual(t *testing.T, expected []RX_Token, result []RX_Token) bool {
 	for i, elem := range expected {
 		if i >= len(result) {
-			t.Logf("EXPECTED (%s) != RESULT: (< No value on idx >) IDX: %d", elem.ToString(), i)
+			t.Logf("EXPECTED (%s) != RESULT: (< No value on idx >) IDX: %d", elem.String(), i)
 			printSideBySide(t, i, expected, result)
 			return false
 		}
@@ -54,7 +54,7 @@ func areEqual(t *testing.T, expected []RX_Token, result []RX_Token) bool {
 		resultElem := result[i]
 
 		if !elem.Equals(&resultElem) {
-			t.Logf("EXPECTED (%s) != RESULT: (%s) IDX: %d", elem.ToString(), resultElem.ToString(), i)
+			t.Logf("EXPECTED (%s) != RESULT: (%s) IDX: %d", elem.String(), resultElem.String(), i)
 			printSideBySide(t, i, expected, result)
 			return false
 		}

@@ -18,7 +18,7 @@ const (
 	RIGHT_PAREN                  // )
 )
 
-func (self *Operator) ToString() string {
+func (self *Operator) String() string {
 	displayOp := "invalid"
 
 	switch *self {
@@ -67,21 +67,21 @@ type RX_Token struct {
 
 func (self *RX_Token) GetValue() Optional[rune] {
 	if !self.IsValue() {
-		panic(fmt.Sprintf("The token `%s` is not a value!", self.ToString()))
+		panic(fmt.Sprintf("The token `%s` is not a value!", self.String()))
 	}
 	return *self.value
 }
 
 func (self *RX_Token) GetOperator() Operator {
 	if !self.IsOperator() {
-		panic(fmt.Sprintf("The token `%s` is not an operator!", self.ToString()))
+		panic(fmt.Sprintf("The token `%s` is not an operator!", self.String()))
 	}
 	return *self.operator
 }
 
 func (self *RX_Token) GetDummy() DummyInfo {
 	if !self.IsDummy() {
-		panic(fmt.Sprintf("The token `%s` is not a dummy token!", self.ToString()))
+		panic(fmt.Sprintf("The token `%s` is not a dummy token!", self.String()))
 	}
 
 	return *self.dummy
@@ -150,17 +150,17 @@ func (self *RX_Token) IsUninitialized() bool {
 func TokenStreamToString(stream []RX_Token) string {
 	b := strings.Builder{}
 	for _, elem := range stream {
-		b.WriteString(elem.ToString())
+		b.WriteString(elem.String())
 		b.WriteByte(' ')
 	}
 
 	return b.String()
 }
 
-func (self *RX_Token) ToString() string {
+func (self *RX_Token) String() string {
 	if self.IsOperator() {
 		op := self.GetOperator()
-		return fmt.Sprintf("{ opr = %s }", op.ToString())
+		return fmt.Sprintf("{ opr = %s }", op.String())
 	}
 
 	if self.IsValue() {

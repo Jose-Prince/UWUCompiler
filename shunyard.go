@@ -67,7 +67,7 @@ func tryToAppendWithPrecedence(stack *shunStack, operator l.Operator, output *[]
 		for stackPrecedence <= currentPrecedence {
 			op := stack.Pop().GetValue()
 
-			log.Default().Printf("Adding %s to output...", op.ToString())
+			log.Default().Printf("Adding %s to output...", op.String())
 			*output = append(*output, l.CreateOperatorToken(op))
 
 			if stack.Empty() {
@@ -91,7 +91,7 @@ func appendValueToOutput(
 	previousCanBeANDedTo *bool,
 	output *shunOutput,
 ) {
-	log.Default().Printf("Adding %s to output...", currentToken.ToString())
+	log.Default().Printf("Adding %s to output...", currentToken.String())
 	*output = append(*output, *currentToken)
 	*previousCanBeANDedTo = true
 }
@@ -106,14 +106,14 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 	previousExprStack := l.ExprStack{}
 	for i := 0; i < len(infixExpr); i++ {
 		currentToken := infixExpr[i]
-		log.Default().Printf("Currently checking: `%s`", currentToken.ToString())
+		log.Default().Printf("Currently checking: `%s`", currentToken.String())
 
 		if currentToken.IsOperator() {
 			op := currentToken.GetOperator()
 			switch op {
 			case l.OR, l.AND:
 				if stack.Empty() {
-					log.Default().Printf("Adding `%s` to stack!", currentToken.ToString())
+					log.Default().Printf("Adding `%s` to stack!", currentToken.String())
 					stack.Push(op)
 				} else {
 					tryToAppendWithPrecedence(stack, op, output)
@@ -186,9 +186,11 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 				previousCanBeANDedTo = true
 
 			default:
-				panic(fmt.Sprintf("Unrecognized operator `%s`!", currentToken.ToString()))
+				panic(fmt.Sprintf("Unrecognized operator `%s`!", currentToken.String()))
 			}
 		} else {
+			previousExprStack.Pop()
+			previousExprStack.Push([]l.RX_Token{currentToken})
 			appendValueToOutput(&currentToken, &previousCanBeANDedTo, output)
 		}
 	}

@@ -24,15 +24,15 @@ func PrintSideBySide(t *testing.T, markedIdx int, expected []l.RX_Token, result 
 			b.WriteString("\033[31m")
 		}
 
-		if i < len(expected)-1 {
-			elem := expected[i].ToString()
+		if i < len(expected) {
+			elem := expected[i].String()
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, elem))
 		} else {
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, "<N/A>"))
 		}
 
-		if i < len(result)-1 {
-			elem := result[i].ToString()
+		if i < len(result) {
+			elem := result[i].String()
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, elem))
 		} else {
 			b.WriteString(fmt.Sprintf("%-*s", maxLeftLength, "<N/A>"))
@@ -50,7 +50,7 @@ func compareTokensStreams(t *testing.T, originalInfix string, expected []l.RX_To
 	for i, elem := range expected {
 		if i >= len(result) {
 			t.Logf("ORIGINAL: %s", originalInfix)
-			t.Logf("EXPECTED (%s) != RESULT: (< No value on idx >) IDX: %d", elem.ToString(), i)
+			t.Logf("EXPECTED (%s) != RESULT: (< No value on idx >) IDX: %d", elem.String(), i)
 			PrintSideBySide(t, i, expected, result)
 			t.FailNow()
 		}
@@ -59,7 +59,7 @@ func compareTokensStreams(t *testing.T, originalInfix string, expected []l.RX_To
 
 		if !elem.Equals(&resultElem) {
 			t.Logf("ORIGINAL: %s", originalInfix)
-			t.Logf("EXPECTED (%s) != RESULT: (%s) IDX: %d", elem.ToString(), resultElem.ToString(), i)
+			t.Logf("EXPECTED (%s) != RESULT: (%s) IDX: %d", elem.String(), resultElem.String(), i)
 			PrintSideBySide(t, i, expected, result)
 			t.FailNow()
 		}
