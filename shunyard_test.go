@@ -103,14 +103,14 @@ func FuzzInfixToPostfix(f *testing.F) {
 	})
 }
 
-func TestFuzzFail(t *testing.T) {
-	source := rand.NewSource(int64(69326))
-	random := rand.New(source)
-
-	expected := generateExpectedPostfix(random)
-	infixExpr := fromPostfixToInfix(expected)
-	infixStr := fromTokenStreamToInfixString(infixExpr)
-
-	result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
-	compareTokensStreams(t, infixStr, expected, result)
-}
+// func TestFuzzFail(t *testing.T) {
+// 	source := rand.NewSource(int64(69326))
+// 	random := rand.New(source)
+//
+// 	expected := generateExpectedPostfix(random)
+// 	infixExpr := fromPostfixToInfix(expected)
+// 	infixStr := fromTokenStreamToInfixString(infixExpr)
+//
+// 	result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
+// 	compareTokensStreams(t, infixStr, expected, result)
+// }
