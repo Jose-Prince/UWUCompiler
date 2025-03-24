@@ -43,6 +43,8 @@ func (self *Operator) String() string {
 
 // Serves to append extra metadata to a Regex pattern.
 type DummyInfo struct {
+	// Original string regex associated with this dummy.
+	Regex string
 	// The code to execute once the Regex pattern is identified.
 	Code string
 	// Used to break ties when parsing tokens!
@@ -52,7 +54,7 @@ type DummyInfo struct {
 }
 
 func (self *DummyInfo) Equals(other *DummyInfo) bool {
-	return self.Code == other.Code
+	return self.Regex == other.Regex
 }
 
 // Represents a token.
