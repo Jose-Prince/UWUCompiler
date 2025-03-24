@@ -57,12 +57,12 @@ func (afd *AFD) ToSVG() string {
 	transitionLabels := make(map[[2]string][]string)
 
 	// Recopilar transiciones
-	// for from, transitions := range afd.Transitions {
-	//     for input, to := range transitions {
-	//         key := [2]string{from, to}
-	//         transitionLabels[key] = append(transitionLabels[key], input)
-	//     }
-	// }
+	for from, transitions := range afd.Transitions {
+		for input, to := range transitions {
+			key := [2]string{from, to}
+			transitionLabels[key] = append(transitionLabels[key], input)
+		}
+	}
 
 	// Dibujar los estados
 	for state, pos := range statePositions {
