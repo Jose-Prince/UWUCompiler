@@ -1,6 +1,13 @@
 package main
 
-import "github.com/Jose-Prince/UWULexer/lib"
+import (
+    "github.com/Jose-Prince/UWULexer/lib"
+    "strings"
+    "os"
+    "fmt"
+    "bufio"
+    "regexp"
+)
 
 type LexFileData struct {
 	Header string
@@ -26,9 +33,9 @@ type LexFileData struct {
 // let oprel = '=='|'<='|'>='|'<'|'>'
 //
 // rule gettoken =
-// 	  {ws}	        { continue } (* Ignora white spaces, tabs y nueva línea)
-// 	| {id}          { return ID }
-// 	| {numero}      { return NUM }
+// 	     {ws}	       { continue } (* Ignora white spaces, tabs y nueva línea)
+// 	   | {id}          { return ID }
+// 	   | {numero}      { return NUM }
 //     | {literal}     { return LIT }
 //     | {operator}    { return OP }
 //     | {oprel}       { return OPREL }
@@ -53,3 +60,112 @@ type LexFileData struct {
 //		...etc etc que hueva escribir todos xD
 // 	}
 // }
+
+func LexParser(yalexFile string) {
+    file, err := os.Open(yalexFile)
+    if err != nil {
+        fmt.Println("Error opening the file:", err)
+        return
+    }
+    defer file.Close()
+
+    // Identifies priority
+    var index uint
+    index = 1
+
+    var info lib.DummyInfo
+
+    scanner := bufio.NewScanner(file)
+    var header, footer strings.Builder
+    dummyRules := make(map[string]string)
+    rules := make(map[string]lib.DummyInfo)
+    state := 0 // 0: Reading header, 1: Reading rules, 2: Reading footer
+    
+    // Regex to identify
+    ruleDeclaration := regexp.MustCompile(`(?i)\b(rule)\b`) // Ignores line "rule gettoken ="
+    ruleRegex := regexp.MustCompile(`^\s*let\s+([^\s=]+)\s*=\s*(.*)`)
+    regexBrackets := regexp.MustCompile(`\{([^}]*)\}`) // Identifies what is inside {}
+    
+    for scanner.Scan() {
+        line := strings.TrimSpace(scanner.Text())
+
+        // Header identification
+        if line == "{" && state == 0 {
+            continue
+        }else if line == "}" && state == 0 {
+            state = 1
+            continue
+        } else if state == 0 {
+            header.WriteString(line + "\n")
+            continue
+        }
+
+        if ruleDeclaration.MatchString(line){
+            continue
+        }
+
+        // Rules identification
+        match := ruleRegex.FindStringSubmatch(line)
+
+        if len(match) > 2 {
+            resolvedValue := resolveRule(match[2], dummyRules)
+            dummyRules[match[1]] = resolvedValue
+            continue
+        }
+
+        bracketsMatches := regexBrackets.FindAllStringSubmatch(line, -1)
+
+        if len(bracketsMatches) > 1 {
+            firstBracketContent := bracketsMatches[0][1]
+            
+            // Regex saved in DummyRules
+            regexValue := dummyRules[firstBracketContent]
+
+            if len(bracketsMatches) > 1 {
+                secondBracketContent := bracketsMatches[1][1] 
+                info.Code = secondBracketContent
+                info.Priority = index
+
+                rules[regexValue] = info
+                
+                index++
+            }
+        }
+
+        // Footer identification
+        if line == "{" && state == 1 {
+            state = 2
+            continue
+        } else if state == 2 {
+            if line == "}" {
+                continue
+            }
+            footer.WriteString(line + "\n")
+        }
+    }
+
+    if err := scanner.Err(); err != nil {
+        fmt.Println("Error scaning the file:", err)
+    }
+}
+
+// Replace rules into other rules
+func resolveRule(rule string, rules map[string]string) string {
+    re := regexp.MustCompile(`\{([^\}]+)\}`)
+    matches := re.FindAllStringSubmatch(rule, -1)
+
+    if len(matches) == 0 {
+        return rule
+    }
+
+    for _, match := range matches {
+        ruleName := match[1]
+        if value, exists := rules[ruleName]; exists {
+            rule = strings.ReplaceAll(rule, match[0], value)
+        } else {
+            rule = strings.ReplaceAll(rule, match[0], ruleName)
+        }
+    }
+
+    return resolveRule(rule, rules)
+}
