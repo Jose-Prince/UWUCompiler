@@ -103,6 +103,26 @@ func FuzzInfixToPostfix(f *testing.F) {
 	})
 }
 
+func TestDummyTokens(t *testing.T) {
+	dummyCode := "Hello"
+	expected := []l.RX_Token{
+		l.CreateValueToken('a'),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateDummyToken(l.DummyInfo{Code: dummyCode}),
+		l.CreateOperatorToken(l.AND),
+	}
+	infix := []l.RX_Token{
+		l.CreateValueToken('a'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.AND),
+		l.CreateDummyToken(l.DummyInfo{Code: dummyCode}),
+	}
+	result := DEFAULT_ALPHABET.ToPostfix(&infix)
+	compareTokensStreams(t, "a|b (Dummy token)", expected, result)
+}
+
 // func TestFuzzFail(t *testing.T) {
 // 	source := rand.NewSource(int64(69326))
 // 	random := rand.New(source)

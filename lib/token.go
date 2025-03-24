@@ -44,11 +44,11 @@ func (self *Operator) String() string {
 // Serves to append extra metadata to a Regex pattern.
 type DummyInfo struct {
 	// The code to execute once the Regex pattern is identified.
-	code string
+	Code string
 }
 
 func (self *DummyInfo) Equals(other *DummyInfo) bool {
-	return self.code == other.code
+	return self.Code == other.Code
 }
 
 // Represents a token.
@@ -119,6 +119,12 @@ func CreateEpsilonToken() RX_Token {
 	}
 }
 
+func CreateDummyToken(info DummyInfo) RX_Token {
+	return RX_Token{
+		dummy: &info,
+	}
+}
+
 func (self *RX_Token) Equals(other *RX_Token) bool {
 	if self.IsOperator() && other.IsOperator() {
 		return *self.operator == *other.operator
@@ -174,7 +180,7 @@ func (self *RX_Token) String() string {
 	}
 
 	if self.IsDummy() {
-		return fmt.Sprintf("{ dummy = `%s` }", self.GetDummy().code)
+		return fmt.Sprintf("{ dummy = `%s` }", self.GetDummy().Code)
 	}
 
 	return "{ undefined token type }"
