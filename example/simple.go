@@ -144,12 +144,21 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error opening the source file! %v", err)
 	}
 
-	previousParsingResult := -1000
-	afdState := "1" // INITIAL AFD STATE!
+	// previousParsingResult := -1000
+	// afdState := "0" // INITIAL AFD STATE!
 	for i := 0; i < len(sourceFileContent); i++ {
-		parsingResult := gettoken(&afdState, rune(sourceFileContent[i]))
-		if previousParsingResult != parsingResult {
 
+		afdState := "0" // INITIAL AFD STATE!
+		previousParsingResult := -1000
+		for j := i; j < len(sourceFileContent); j++ {
+			parsingResult := gettoken(&afdState, rune(sourceFileContent[i]))
+			if parsingResult == UNRECOGNIZABLE {
+				fmt.Println(Token{Start: j, Type: previousParsingResult})
+				i = j
+				break
+			} else if parsingResult != GIVE_NEXT {
+				previousParsingResult = parsingResult
+			}
 		}
 	}
 }
