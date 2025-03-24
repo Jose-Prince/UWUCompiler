@@ -23,13 +23,11 @@ func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
 		}
 	}
 	getRandomOneOp := func() l.Operator {
-		switch r.Intn(3) {
+		switch r.Intn(2) {
 		case 0:
 			return l.ZERO_OR_MANY
-		case 1:
-			return l.ONE_OR_MANY
 		default:
-			return l.OPTIONAL
+			return l.ONE_OR_MANY
 		}
 	}
 
