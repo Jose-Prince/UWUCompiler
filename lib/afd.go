@@ -25,6 +25,32 @@ type AFD struct {
 	AcceptanceStates Set[AFDState]
 }
 
+func (self *AFD) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+	b.WriteString("InitState = `")
+	b.WriteString(self.InitialState)
+	b.WriteString("`, AcceptanceStates = [ ")
+	for state, _ := range self.AcceptanceStates {
+		b.WriteString(state)
+		b.WriteString(" ")
+	}
+	b.WriteString("], Transitions = [\n")
+	for originalState, transitions := range self.Transitions {
+		for input, nextState := range transitions {
+			b.WriteString(originalState)
+			b.WriteString(" ")
+			b.WriteString(input.String())
+			b.WriteString(" -> ")
+			b.WriteString(nextState)
+			b.WriteRune('\n')
+		}
+	}
+	b.WriteString("]")
+	b.WriteString(" }")
+	return b.String()
+}
+
 type AFDPairType int
 
 func (self *AFD) GetAllStates() []AFDState {

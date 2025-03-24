@@ -74,9 +74,11 @@ func main() {
 				lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
 			},
 			"4": {
-				lib.CreateDummyToken(lib.DummyInfo{Regex: "(abc)|c"}): "f",
+				lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
 			},
 		}}
+
+	fmt.Println("The AFD is:", afd.String())
 
 	// TODO: Generate AFD simulator (lexer)
 }

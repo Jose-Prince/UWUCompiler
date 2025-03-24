@@ -186,7 +186,7 @@ func (self *RX_Token) String() string {
 	}
 
 	if self.IsDummy() {
-		return fmt.Sprintf("{ dummy = `%s` }", self.GetDummy().Code)
+		return fmt.Sprintf("{ dummy = `%s` }", self.GetDummy().Regex)
 	}
 
 	return "{ undefined token type }"
