@@ -48,6 +48,13 @@ func PrintSideBySide(t *testing.T, markedIdx int, expected []l.RX_Token, result 
 
 func compareTokensStreams(t *testing.T, originalInfix string, expected []l.RX_Token, result []l.RX_Token) {
 	for i, elem := range expected {
+		if i >= len(result) {
+			t.Logf("ORIGINAL: %s", originalInfix)
+			t.Logf("EXPECTED (%s) != RESULT: (< No value on idx >) IDX: %d", elem.ToString(), i)
+			PrintSideBySide(t, i, expected, result)
+			t.FailNow()
+		}
+
 		resultElem := result[i]
 
 		if !elem.Equals(&resultElem) {
@@ -75,10 +82,10 @@ func TestSimpleExpression(t *testing.T) {
 	compareTokensStreams(t, infix, expected, result)
 }
 
-func fromTokenStreamToInfixString(stream *[]l.RX_Token) string {
+func fromTokenStreamToInfixString(stream []l.RX_Token) string {
 	b := strings.Builder{}
 
-	for _, elem := range *stream {
+	for _, elem := range stream {
 		if elem.IsOperator() {
 			switch elem.GetOperator() {
 			case l.OR:
@@ -213,7 +220,7 @@ func FuzzInfixExpr(f *testing.F) {
 		random := rand.New(source)
 
 		expected := generateExpectedInfix(random)
-		infix := fromTokenStreamToInfixString(&expected)
+		infix := fromTokenStreamToInfixString(expected)
 		result := InfixToTokens(infix)
 
 		compareTokensStreams(t, infix, expected, result)

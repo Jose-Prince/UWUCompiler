@@ -3,6 +3,7 @@ package main
 // You can rename package names when importing them!
 // Here the "l" alias is being used!
 import (
+	"fmt"
 	"log"
 	"slices"
 	"strings"
@@ -196,15 +197,6 @@ func appendValueToOutput(infixExpr *[]l.RX_Token,
 
 }
 
-type regexState int
-
-const (
-	NORMAL               regexState = iota // We just started parsing the Regexp
-	IN_BRACKETS                            // We are inside [ ]
-	IN_NEGATIVE_BRACKETS                   // We are inside [^ ]
-	IN_PARENTHESIS                         // We are inside ( )
-)
-
 type shunStack = l.Stack[l.Operator]
 type shunOutput = []l.RX_Token
 
@@ -300,7 +292,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 				} else {
 					log.Default().Printf("Popping until it finds: '('")
-					for peeked := stack.Peek(); peeked.GetValue() != l.OR; peeked = stack.Peek() {
+					for peeked := stack.Peek(); peeked.GetValue() != l.LEFT_PAREN; peeked = stack.Peek() {
 						val := stack.Pop()
 						op := val.GetValue()
 
@@ -310,96 +302,10 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 					// Popping '('
 					stack.Pop()
 					state = NORMAL
+					previousCanBeANDedTo = true
 					previousExprStack.Pop() // Popping inner ( ) context
 					previousExprStack.AppendTop(currentToken)
 				}
-
-			case l.LEFT_BRACKET:
-				if state == IN_NEGATIVE_BRACKETS {
-					*output = append(*output, l.CreateValueToken('['))
-				} else if state == IN_BRACKETS {
-					appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
-				} else {
-					if previousCanBeANDedTo {
-						tryToAppendWithPrecedence(stack, l.AND, output)
-					}
-
-					stack.Push(op)
-					previousCanBeANDedTo = false
-					state = IN_BRACKETS
-
-					var expr l.ExprStackItem
-					if !previousExprStack.IsEmpty() {
-						expr = previousExprStack.Peek().GetValue()
-					}
-					log.Default().Printf("The previous expression before deleting is: %s", l.ExprStackItem_ToString(&expr))
-					previousExprStack.Pop() // Deletes previous expression
-
-					var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
-					previousExprStack.Push(parenCtx)       // Adds [ context
-					previousExprStack.Push([]l.RX_Token{}) // Adds inner [ ] context
-				}
-			case l.SET_NEGATION:
-				if state != NORMAL {
-					panic("Invalid Regular Expression! A set negation can't be inside brackets or another set negation!")
-				} else if state != IN_PARENTHESIS {
-					panic("Invalid Regular Expression! A set negation can't be inside brackets or another set negation!")
-
-				}
-
-				if previousCanBeANDedTo {
-					tryToAppendWithPrecedence(stack, l.AND, output)
-				}
-
-				stack.Push(op)
-				previousCanBeANDedTo = false
-				state = IN_NEGATIVE_BRACKETS
-
-				var expr l.ExprStackItem
-				if !previousExprStack.IsEmpty() {
-					expr = previousExprStack.Peek().GetValue()
-				}
-				log.Default().Printf("The previous expression before deleting is: %s", l.ExprStackItem_ToString(&expr))
-				previousExprStack.Pop() // Deletes previous expression
-
-				var parenCtx l.ExprStackItem = []l.RX_Token{currentToken}
-				previousExprStack.Push(parenCtx)       // Adds [ context
-				previousExprStack.Push([]l.RX_Token{}) // Adds inner [ ] context
-
-			case l.RIGHT_BRACKET:
-				log.Default().Printf("Popping until it finds: '['")
-				for peeked := stack.Peek(); peeked.GetValue() != l.LEFT_BRACKET; peeked = stack.Peek() {
-					val := stack.Pop()
-					op := val.GetValue()
-
-					*output = append(*output, l.CreateOperatorToken(op))
-				}
-				// Popping '['
-				stack.Pop()
-				previousExprStack.Pop() // Popping inner [ ] context
-				previousExprStack.AppendTop(currentToken)
-
-				log.Default().Printf("Checking if IN_NEGATIVE_BRACKETS: %d == %d", state, IN_NEGATIVE_BRACKETS)
-				if state == IN_NEGATIVE_BRACKETS {
-					diff := alph.GetCharsNotIn(&negativeBuffer)
-					log.Default().Printf("Obtaining diff: `%s`", diff)
-
-					for idx, val := range diff {
-						if idx >= 1 {
-							tryToAppendWithPrecedence(stack, l.OR, output)
-						}
-
-						log.Default().Printf("Appending %c to output...", val)
-						*output = append(*output, l.CreateValueToken(rune(val)))
-					}
-
-					// Last '|' must be appended to output as well
-					*output = append(*output, l.CreateOperatorToken(stack.Pop().GetValue()))
-				}
-
-				negativeBuffer = []*l.RX_Token{}
-				state = NORMAL
-				previousCanBeANDedTo = true
 
 			case l.ONE_OR_MANY:
 				if state == IN_NEGATIVE_BRACKETS {
@@ -422,8 +328,10 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 				}
 
 			default:
-				appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
+				panic(fmt.Sprintf("Unrecognized operator `%s`!", currentToken.ToString()))
 			}
+		} else {
+			appendValueToOutput(&infixExpr, &currentToken, &i, &previousCanBeANDedTo, &state, stack, output, &previousExprStack, &negativeBuffer)
 		}
 	}
 

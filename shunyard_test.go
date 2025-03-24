@@ -8,7 +8,7 @@ import (
 )
 
 func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
-	expressionCount := r.Intn(100)
+	expressionCount := r.Intn(2) + 1 // Minimum of 1 expressions
 	postfixExpr := []l.RX_Token{}
 	possibleChars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.-;:_¿?¡!'{}+*|\"#$%&/()=[]<>°¬")
 	getRandomRune := func() rune {
@@ -58,10 +58,10 @@ func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
 	return postfixExpr
 }
 
-func fromPostfixToInfix(postfix *[]l.RX_Token) []l.RX_Token {
+func fromPostfixToInfix(postfix []l.RX_Token) []l.RX_Token {
 	stack := l.Stack[[]l.RX_Token]{}
 
-	for _, elem := range *postfix {
+	for _, elem := range postfix {
 		if elem.IsOperator() {
 			op := elem.GetOperator()
 			switch op {
@@ -70,27 +70,18 @@ func fromPostfixToInfix(postfix *[]l.RX_Token) []l.RX_Token {
 				a := stack.Pop()
 
 				combined := []l.RX_Token{l.CreateOperatorToken(l.LEFT_PAREN)}
-
-				for _, aElm := range a.GetValue() {
-					combined = append(combined, aElm)
-				}
-
+				combined = append(combined, a.GetValue()...)
 				combined = append(combined, elem)
-
-				for _, bElm := range b.GetValue() {
-					combined = append(combined, bElm)
-				}
-
+				combined = append(combined, b.GetValue()...)
 				combined = append(combined, l.CreateOperatorToken(l.RIGHT_PAREN))
+
 				stack.Push(combined)
 
 			case l.ZERO_OR_MANY, l.ONE_OR_MANY, l.OPTIONAL:
 				a := stack.Pop()
 
 				combined := []l.RX_Token{l.CreateOperatorToken(l.LEFT_PAREN)}
-				for _, aElm := range a.GetValue() {
-					combined = append(combined, aElm)
-				}
+				combined = append(combined, a.GetValue()...)
 				combined = append(combined, l.CreateOperatorToken(l.RIGHT_PAREN))
 
 				combined = append(combined, elem)
@@ -104,7 +95,7 @@ func fromPostfixToInfix(postfix *[]l.RX_Token) []l.RX_Token {
 		}
 	}
 
-	return []l.RX_Token{}
+	return stack.Pop().GetValue()
 }
 
 func FuzzInfixToPostfix(f *testing.F) {
@@ -114,10 +105,10 @@ func FuzzInfixToPostfix(f *testing.F) {
 		random := rand.New(source)
 
 		expected := generateExpectedPostfix(random)
-		infixExpr := fromPostfixToInfix(&expected)
-		result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
+		infixExpr := fromPostfixToInfix(expected)
+		infixStr := fromTokenStreamToInfixString(infixExpr)
 
-		infixStr := fromTokenStreamToInfixString(&infixExpr)
+		result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
 		compareTokensStreams(t, infixStr, expected, result)
 	})
 }

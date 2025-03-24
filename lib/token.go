@@ -9,16 +9,13 @@ import (
 type Operator int
 
 const (
-	OR            Operator = iota // |
-	AND                           // Concatenation operator
-	ZERO_OR_MANY                  // *
-	ONE_OR_MANY                   // +
-	OPTIONAL                      // ?
-	LEFT_PAREN                    // (
-	RIGHT_PAREN                   // )
-	LEFT_BRACKET                  // [
-	RIGHT_BRACKET                 // ]
-	SET_NEGATION                  // [^
+	OR           Operator = iota // |
+	AND                          // Concatenation operator
+	ZERO_OR_MANY                 // *
+	ONE_OR_MANY                  // +
+	OPTIONAL                     // ?
+	LEFT_PAREN                   // (
+	RIGHT_PAREN                  // )
 )
 
 func (self *Operator) ToString() string {
@@ -39,12 +36,6 @@ func (self *Operator) ToString() string {
 		displayOp = "("
 	case RIGHT_PAREN:
 		displayOp = ")"
-	case LEFT_BRACKET:
-		displayOp = "["
-	case RIGHT_BRACKET:
-		displayOp = "]"
-	case SET_NEGATION:
-		displayOp = "[^"
 	}
 
 	return displayOp
