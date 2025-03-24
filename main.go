@@ -18,7 +18,7 @@ func main() {
 	// TODO: Parse lex file
 	var lexFileData LexFileData
 
-	// TODO: Combine all regexes into a single regex
+	// Combine all regexes into a single regex
 	infix := []lib.RX_Token{}
 	i := 0
 	keysCount := len(lexFileData.Rule)
