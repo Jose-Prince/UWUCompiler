@@ -6,20 +6,20 @@ import (
 	l "github.com/Jose-Prince/UWULexer/lib"
 )
 
-type regexState int
+type infixConverterState int
 
 const (
-	NORMAL               regexState = iota // We just started parsing the Regexp
-	IN_BRACKETS                            // We are inside [ ]
-	IN_NEGATIVE_BRACKETS                   // We are inside [^ ]
-	IN_PARENTHESIS                         // We are inside ( )
+	NORMAL               infixConverterState = iota // We just started parsing the Regexp
+	IN_BRACKETS                                     // We are inside [ ]
+	IN_NEGATIVE_BRACKETS                            // We are inside [^ ]
+	IN_PARENTHESIS                                  // We are inside ( )
 )
 
 // Converts an infix expression into an array of tokens
 func InfixToTokens(infix string) []l.RX_Token {
 	previousCanBeANDedTo := false
 	tokens := []l.RX_Token{}
-	stateStack := l.Stack[regexState]{}
+	stateStack := l.Stack[infixConverterState]{}
 	stateStack.Push(NORMAL)
 
 	// Contains all the characters that should NOT be added when a `l.SET_NEGATION` operator is closed
