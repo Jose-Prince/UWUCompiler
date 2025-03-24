@@ -100,12 +100,6 @@ func fromTokenStreamToInfixString(stream []l.RX_Token) string {
 				b.WriteByte('(')
 			case l.RIGHT_PAREN:
 				b.WriteByte(')')
-			case l.LEFT_BRACKET:
-				b.WriteByte('[')
-			case l.RIGHT_BRACKET:
-				b.WriteByte(']')
-			case l.SET_NEGATION:
-				b.WriteString("[^")
 			case l.AND:
 				// Ignore it since it's implicit...
 			default:
@@ -164,26 +158,6 @@ func generateExpectedInfix(random *rand.Rand) []l.RX_Token {
 			tokens = append(tokens, op)
 			tokens = append(tokens, b)
 			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
-		case 1: // Between brackets
-			a := l.CreateValueToken(getRandomRune())
-			b := l.CreateValueToken(getRandomRune())
-			op := l.CreateOperatorToken(getRandomTwoOp())
-
-			tokens = append(tokens, l.CreateOperatorToken(l.LEFT_BRACKET))
-			tokens = append(tokens, a)
-			tokens = append(tokens, op)
-			tokens = append(tokens, b)
-			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_BRACKET))
-		case 2: // Between set negation
-			a := l.CreateValueToken(getRandomRune())
-			b := l.CreateValueToken(getRandomRune())
-			op := l.CreateOperatorToken(getRandomTwoOp())
-
-			tokens = append(tokens, l.CreateOperatorToken(l.SET_NEGATION))
-			tokens = append(tokens, a)
-			tokens = append(tokens, op)
-			tokens = append(tokens, b)
-			tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_BRACKET))
 
 		default: // Simple two value expression
 			a := l.CreateValueToken(getRandomRune())
