@@ -22,14 +22,6 @@ func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
 			return l.AND
 		}
 	}
-	getRandomOneOp := func() l.Operator {
-		switch r.Intn(2) {
-		case 0:
-			return l.ZERO_OR_MANY
-		default:
-			return l.ONE_OR_MANY
-		}
-	}
 
 	for i := range expressionCount {
 		switch r.Intn(5) {
@@ -45,7 +37,7 @@ func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
 
 		addOneOp := r.Intn(2) == 0
 		if addOneOp {
-			postfixExpr = append(postfixExpr, l.CreateOperatorToken(getRandomOneOp()))
+			postfixExpr = append(postfixExpr, l.CreateOperatorToken(l.ZERO_OR_MANY))
 		}
 
 		if i > 0 {
