@@ -5,9 +5,9 @@ import "testing"
 func TestConvertFromTableToAFD(t *testing.T) {
 	// Definir tabla de ejemplo
 	table := []*TableRow{
-		{false, []int{0}, []int{0}, []int{1}, "a"},
-		{false, []int{1}, []int{1}, []int{}, "b"},
-		{false, []int{0}, []int{1}, []int{}, ""},
+		{false, []int{0}, []int{0}, []int{1}, 'a'},
+		{false, []int{1}, []int{1}, []int{}, 'b'},
+		{false, []int{0}, []int{1}, []int{}, '\x00'},
 	}
 
 	afd := ConvertFromTableToAFD(table)
@@ -58,257 +58,22 @@ func TestDerivation(t *testing.T) {
 	}
 }
 
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestAFD_MarkIfDistinguishable(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for receiver constructor.
-		ctable []*TableRow
-		// Named input parameters for target function.
-		aState *AFDState
-		bState *AFDState
-		table  *AFDStateTable[AFDPairType]
-		want   AFDPairType
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			self := ConvertFromTableToAFD(tt.ctable)
-			got := self.MarkIfDistinguishable(tt.aState, tt.bState, tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("MarkIfDistinguishable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestAFD_MarkIfDistinguishable(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for receiver constructor.
-		ctable []*TableRow
-		// Named input parameters for target function.
-		aState *AFDState
-		bState *AFDState
-		table  *AFDStateTable[AFDPairType]
-		want   AFDPairType
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			self := ConvertFromTableToAFD(tt.ctable)
-			got := self.MarkIfDistinguishable(tt.aState, tt.bState, tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("MarkIfDistinguishable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestAFD_MarkIfDistinguishable(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for receiver constructor.
-		ctable []*TableRow
-		// Named input parameters for target function.
-		aState *AFDState
-		bState *AFDState
-		table  *AFDStateTable[AFDPairType]
-		want   AFDPairType
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			self := ConvertFromTableToAFD(tt.ctable)
-			got := self.MarkIfDistinguishable(tt.aState, tt.bState, tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("MarkIfDistinguishable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertFromTableToAFD(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		table []*TableRow
-		want  *AFD
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertFromTableToAFD(tt.table)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// func TestConvertFromTableToAFD(t *testing.T) {
+// 	tests := []struct {
+// 		name string // description of this test case
+// 		// Named input parameters for target function.
+// 		table []*TableRow
+// 		want  *AFD
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			got := ConvertFromTableToAFD(tt.table)
+// 			// TODO: update the condition below to compare got with tt.want.
+// 			if true {
+// 				t.Errorf("ConvertFromTableToAFD() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }

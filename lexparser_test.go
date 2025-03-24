@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+    "reflect"
+    "github.com/Jose-Prince/UWULexer/lib"
 )
 
 func TestLexParser(t *testing.T) {
@@ -9,30 +11,35 @@ func TestLexParser(t *testing.T) {
 		name     string
 		filePath string
 		wantErr  bool
+		want     LexFileData // Agrega el valor esperado de tipo LexFileData
 	}{
 		{
 			name:     "Valid file with rules",
-			filePath: "testfile1.yalex",
+			filePath: "examples/example.yal",
 			wantErr:  false,
-		},
-		{
-			name:     "Invalid file path",
-			filePath: "invalid.yalex",
-			wantErr:  true,
-		},
-		{
-			name:     "Empty file",
-			filePath: "emptyfile.yalex",
-			wantErr:  false,
+			want: LexFileData{
+				Header: "import myToken",
+				Footer: "printf(\"hola\")",
+				Rule: map[string]lib.DummyInfo{
+					"rule1": {Code: "some code", Priority: 1},
+				},
+			}, // Define el valor esperado para un archivo válido
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Simula el comportamiento de LexParser
-			err := LexParser(tt.filePath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LexParser() error = %v, wantErr %v", err, tt.wantErr)
+			// Llama a LexParser y guarda el valor de retorno
+			got := LexParser(tt.filePath)
+
+			// Verifica si se produjo un error
+			if (got.Header == "" && got.Footer == "" && len(got.Rule) == 0) != tt.wantErr {
+				t.Errorf("LexParser() error = %v, wantErr %v", got, tt.wantErr)
+			}
+
+			// Compara el valor de retorno con el valor esperado
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LexParser() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

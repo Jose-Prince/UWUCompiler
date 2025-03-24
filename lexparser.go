@@ -3,10 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/Jose-Prince/UWULexer/lib"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/Jose-Prince/UWULexer/lib"
 )
 
 type LexFileData struct {
@@ -85,6 +86,8 @@ func LexParser(yalexFile string) LexFileData {
 	ruleDeclaration := regexp.MustCompile(`(?i)\b(rule)\b`) // Ignores line "rule gettoken ="
 	ruleRegex := regexp.MustCompile(`^\s*let\s+([^\s=]+)\s*=\s*(.*)`)
 	regexBrackets := regexp.MustCompile(`\{([^}]*)\}`) // Identifies what is inside {}
+	regexQuotes := regexp.MustCompile(`'([^']+)'`)     // Identifies what is inside ''
+	regexEof := regexp.MustCompile(`\b(eof)\b`)        // Identifies eof string
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -114,6 +117,8 @@ func LexParser(yalexFile string) LexFileData {
 		}
 
 		bracketsMatches := regexBrackets.FindAllStringSubmatch(line, -1)
+		quoteMatches := regexQuotes.FindStringSubmatch(line)
+		eofMatches := regexEof.FindStringSubmatch(line)
 
 		if len(bracketsMatches) > 1 {
 			firstBracketContent := bracketsMatches[0][1]
@@ -125,12 +130,40 @@ func LexParser(yalexFile string) LexFileData {
 				secondBracketContent := bracketsMatches[1][1]
 				info.Code = secondBracketContent
 				info.Priority = index
-				info.Regex = regexValue
 
 				rules[regexValue] = info
 
 				index++
+				continue
 			}
+		} else if len(quoteMatches) != 0 {
+			regexValue := quoteMatches[0]
+
+			if len(bracketsMatches) != 0 {
+				bracketContent := bracketsMatches[0][1]
+				info.Code = bracketContent
+				info.Priority = index
+
+				rules[regexValue] = info
+
+				index++
+				continue
+			}
+
+		} else {
+			regexValue := eofMatches[0]
+
+			if len(bracketsMatches) > 1 {
+				bracketContent := bracketsMatches[1][1]
+				info.Code = bracketContent
+				info.Priority = index
+
+				rules[regexValue] = info
+
+				index++
+				continue
+			}
+
 		}
 
 		// Footer identification
