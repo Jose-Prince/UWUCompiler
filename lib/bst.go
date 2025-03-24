@@ -91,7 +91,7 @@ func (b *BST) Insertion(postfix []RX_Token) {
 	}
 }
 
-func ConvertTreeToTable(tree *BST, nodes []*BSTNode) []*TableRow {
+func ConvertTreeToTable(tree *BST) []*TableRow {
 	table := []*TableRow{}
 	andToken := CreateOperatorToken(AND)
 	zeroToken := CreateOperatorToken(ZERO_OR_MANY)

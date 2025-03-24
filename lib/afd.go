@@ -2,12 +2,13 @@ package lib
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 type AFDState = string
-type AlphabetInput = string
+type AlphabetInput = RX_Token
 
 type TransitionInput struct {
 	State AFDState
@@ -187,12 +188,12 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 		AcceptanceStates: NewSet[string](),
 	}
 
-	alphabet := NewSet[string]()
+	alphabet := NewSet[rune]()
 
 	// Identificar el alfabeto del AFD
 	for _, row := range table {
-		if row.simbol != 0 && row.simbol != '#' {
-			alphabet.Add(string(row.simbol))
+		if row.simbol != '\x00' && row.simbol != '#' {
+			alphabet.Add(row.simbol)
 		}
 	}
 
@@ -200,7 +201,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	trapState := "TRAP"
 	afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
 	for value := range alphabet {
-		afd.Transitions[trapState][value] = trapState
+		afd.Transitions[trapState][CreateValueToken(value)] = trapState
 	}
 
 	// Estado inicial del AFD
@@ -213,41 +214,48 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	visited.Add(afd.InitialState)
 
 	// Calcular transiciones del AFD
-	// for !newStates.IsEmpty() {
-	//     currentStates := newStates.ToSlice()
-	//     newStates.Clear()
-	//
-	//     for _, n := range currentStates {
-	//         if _, exists := afd.Transitions[n]; !exists {
-	//             afd.Transitions[n] = make(map[AlphabetInput]AFDState)
-	//         }
-	//
-	//         indexList := stringToIntSlice(n)
-	//
-	//         for a := range alphabet {
-	//             newFollowpos := NewSet[int]()
-	//
-	//             for _, index := range indexList {
-	//                 if table[index].simbol == a {
-	//                     for _, follow := range table[index].followpos {
-	//                         newFollowpos.Add(follow)
-	//                     }
-	//                 }
-	//             }
-	//
-	//             newState := convertSliceIntToString(newFollowpos.ToSlice())
-	//             if newState == "" {
-	//                 newState = trapState
-	//             }
-	//
-	//             afd.Transitions[n][a] = newState
-	//
-	//             if newState != trapState && visited.Add(newState) {
-	//                 newStates.Add(newState)
-	//             }
-	//         }
-	//     }
-	// }
+	for !newStates.IsEmpty() {
+		currentStates := newStates.ToSlice()
+		newStates.Clear()
+
+		for _, n := range currentStates {
+			if _, exists := afd.Transitions[n]; !exists {
+				afd.Transitions[n] = make(map[AlphabetInput]AFDState)
+			}
+
+			indexList := strings.SplitAfter(n, ",")
+
+			for a := range alphabet {
+				newFollowpos := NewSet[int]()
+
+				for _, index := range indexList {
+					if index != "" {
+
+						num, err := strconv.Atoi(index[:len(index)-1])
+						if err == nil {
+							if table[num].simbol == a {
+								for _, follow := range table[num].followpos {
+									newFollowpos.Add(follow)
+								}
+							}
+						}
+					}
+				}
+
+				newState := convertSliceIntToString(newFollowpos.ToSlice())
+				newState = sortNumbers(newState)
+				if newState == "" {
+					newState = trapState
+				}
+
+				afd.Transitions[n][CreateValueToken(a)] = newState
+
+				if newState != trapState && visited.Add(newState) {
+					newStates.Add(newState)
+				}
+			}
+		}
+	}
 
 	// Determinar estados de aceptación
 	finalNode := len(table) - 2
@@ -264,7 +272,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 func (self *AFD) Derivation(w string) bool {
 	state := self.InitialState
 	for _, ch := range w {
-		state = self.Transitions[state][string(ch)]
+		state = self.Transitions[state][CreateValueToken(ch)]
 	}
 
 	return self.AcceptanceStates.Contains(state)
@@ -279,14 +287,25 @@ func convertSliceIntToString(slice []int) string {
 	return sb.String()
 }
 
-func stringToIntSlice(str string) []int {
-	var intSlice []int
-	for _, s := range str {
-		num, err := strconv.Atoi(string(s))
+func sortNumbers(input string) string {
+	numberStrings := strings.Split(strings.TrimSuffix(input, ","), ",")
+
+	numbers := make([]int, len(numberStrings))
+	for i, str := range numberStrings {
+		num, err := strconv.Atoi(str)
 		if err != nil {
-			return []int{}
+			fmt.Println("Error convirtiendo a entero:", err)
+			return ""
 		}
-		intSlice = append(intSlice, num)
+		numbers[i] = num
 	}
-	return intSlice
+
+	sort.Ints(numbers)
+
+	result := make([]string, len(numbers))
+	for i, num := range numbers {
+		result[i] = strconv.Itoa(num)
+	}
+
+	return strings.Join(result, ",") + ","
 }
