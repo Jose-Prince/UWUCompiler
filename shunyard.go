@@ -111,7 +111,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]l.RX_Token, stack *shunStack, 
 		if currentToken.IsOperator() {
 			op := currentToken.GetOperator()
 			switch op {
-			case l.OR:
+			case l.OR, l.AND:
 				if stack.Empty() {
 					log.Default().Printf("Adding `%s` to stack!", currentToken.ToString())
 					stack.Push(op)
