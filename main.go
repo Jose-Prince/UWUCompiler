@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 
 	"github.com/Jose-Prince/UWULexer/lib"
 )
 
 func main() {
+	// Disable loggin
+	log.SetOutput(io.Discard)
+
 	if len(os.Args) != 2 {
 		panic("Please ONLY supply a lex file!")
 	}
@@ -49,7 +54,7 @@ func main() {
 
 	// TODO: Regex to AFD
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
-	fmt.Println("The Postfix expression is:", postfix)
+	fmt.Println("The Postfix expression is:", lib.TokenStreamToString(postfix))
 
 	// TODO: Generate AFD simulator (lexer)
 }
