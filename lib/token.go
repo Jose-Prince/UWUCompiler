@@ -45,6 +45,10 @@ func (self *Operator) String() string {
 type DummyInfo struct {
 	// The code to execute once the Regex pattern is identified.
 	Code string
+	// Used to break ties when parsing tokens!
+	//
+	// The lower the number the higher the priority!
+	Priority uint
 }
 
 func (self *DummyInfo) Equals(other *DummyInfo) bool {

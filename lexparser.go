@@ -1,11 +1,13 @@
 package main
 
+import "github.com/Jose-Prince/UWULexer/lib"
+
 type LexFileData struct {
 	Header string
 	Footer string
 	// The key represents the regex expanded to only have valid regex items
 	// The value is the go code to execute when the regex matches
-	Rule map[string]string
+	Rule map[string]lib.DummyInfo
 }
 
 // Example Lex file:
@@ -46,8 +48,8 @@ type LexFileData struct {
 // 	Header: "package main"
 // 	Footer: "fmt.Println(\"Footer!\")"
 // 	Rule: {
-// 		"[\t\n ]+": "continue",
-// 		"[A-Za-z]([A-Za-z]|[0-9])*": "return ID"
+// 		"[\t\n ]+": {Code: "continue", Priority: 1},
+// 		"[A-Za-z]([A-Za-z]|[0-9])*": {Code: "return ID", Priority: 2},
 //		...etc etc que hueva escribir todos xD
 // 	}
 // }
