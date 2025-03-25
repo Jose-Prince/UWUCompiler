@@ -32,7 +32,8 @@ func InfixToTokens(infix string) []l.RX_Token {
 		switch currentState {
 		case IN_BRACKETS:
 			startRune := currentRune
-			if runes[i+1] == '-' { // If this is a range start...
+
+			if i+1 < len(runes) && i+2 < len(runes) && runes[i+1] == '-' { // If this is a range start...
 				endRune := runes[i+2]
 
 				if startRune > endRune { // It doesn't matter if the user writes A-Z or Z-A
@@ -63,13 +64,27 @@ func InfixToTokens(infix string) []l.RX_Token {
 			} else { // If not a range...
 				switch currentRune {
 				case '\\':
-					nextRune := runes[i+1]
-					i++
+					nextRune := currentRune
+					if i+1 < len(runes) {
+						nextRune = runes[i+1]
+						i++
+					}
+
+					switch nextRune {
+					case 'n':
+						nextRune = '\n'
+					case 't':
+						nextRune = '\t'
+					case '\r':
+						nextRune = '\r'
+					default:
+					}
 
 					if previousCanBeANDedTo {
 						tokens = append(tokens, l.CreateOperatorToken(l.OR))
 					}
 					tokens = append(tokens, l.CreateValueToken(nextRune))
+					previousCanBeANDedTo = true
 
 				case ']':
 					stateStack.Pop()
@@ -81,12 +96,13 @@ func InfixToTokens(infix string) []l.RX_Token {
 						tokens = append(tokens, l.CreateOperatorToken(l.OR))
 					}
 					tokens = append(tokens, l.CreateValueToken(currentRune))
+					previousCanBeANDedTo = true
 				}
 			}
 
 		case IN_NEGATIVE_BRACKETS:
 			startRune := currentRune
-			if runes[i+1] == '-' { // If this is a range start...
+			if i+1 < len(runes) && i+2 < len(runes) && runes[i+1] == '-' { // If this is a range start...
 				endRune := runes[i+2]
 
 				if startRune > endRune { // It doesn't matter if the user writes A-Z or Z-A

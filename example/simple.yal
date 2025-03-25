@@ -1,29 +1,17 @@
 {
-    package main
+const (
+	TOKENA int = iota
+	TOKENB
+)
 }
 
 (* Definición de patrones *)
 
-let delim = [' ''\t''\n']
-let ws = {delim}+
-let letra = ['A'-'Z''a'-'z']
-let digito = ['0'-'9']
-let id = {letra}({letra}|{digito})*
-let numero = {digito}+(\.{digito}+)?
-let literal = \"({letra}|{digito})*\"
-let operator = '+'|'-'|'*'|'/'
-let oprel = '=='|'<='|'>='|'<'|'>'
+let ws = [ \t\n]
+let tokenA = abc
+let tokenB = {tokenA}|c
 
 rule gettoken = 
-	  {ws}	        { continue }
-	| {id}          { return ID }
-	| {numero}      { return NUM }
-    | {literal}     { return LIT }
-    | {operator}    { return OP }
-    | {oprel}       { return OPREL }
-    | '='           { return ASSIGN }
-    | '\('          { return LPAREN }
-    | '\)'           { return RPAREN }
-    | '{'           { return LBRACE }
-    | '}'           { return RBRACE }
-    | eof           { return nil }
+	  {ws}	        { }
+    | {tokenA}           { return TOKENA }
+    | {tokenB}           { return TOKENB }
