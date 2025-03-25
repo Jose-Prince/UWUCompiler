@@ -2,7 +2,7 @@
 import myToken
 }
 rule gettoken =
-      ['0'-'9']+   { return int(lxm) }
+      [0-9]+   { return int(lxm) }
     | '+'  { return PLUS }
     | '-'  { return MINUS }
     | '*'  { return TIMES }
