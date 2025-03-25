@@ -24,7 +24,7 @@ func main() {
 	log.SetOutput(io.Discard)
 
 	if len(os.Args) != 2 || len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "Please ONLY supply a lex file!")
+		fmt.Fprintf(os.Stderr, "Please ONLY supply a lex file!\n")
 		panic(CMD_HELP)
 	}
 
