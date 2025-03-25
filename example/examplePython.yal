@@ -9,4 +9,3 @@ rule gettoken =
     | '/'  { return DIV }
     | '\('  { return LPAREN }
     | '\)'  { return RPAREN }
-    | eof  { raise( 'Fin de buffer' )}
