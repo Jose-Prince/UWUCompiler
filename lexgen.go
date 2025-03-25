@@ -231,15 +231,20 @@ func gettoken(state *string, input rune) int {
 }
 
 func (s *afdSwitch) WriteTo(writer *bufio.Writer) {
+	alreadyWrittenStates := lib.Set[lib.AFDState]{}
 	writer.WriteString("switch *state {\n")
-	_writeTo(s, writer, s.InitialState)
+	_writeTo(s, writer, s.InitialState, &alreadyWrittenStates)
 	writer.WriteString(`
 }
 return UNRECOGNIZABLE
 `)
 }
 
-func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState) {
+func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState, alreadyWrittenStates *lib.Set[lib.AFDState]) {
+	if !alreadyWrittenStates.Add(state) {
+		return
+	}
+
 	w.WriteString("case \"")
 	w.WriteString(state)
 	w.WriteString(`":
@@ -268,6 +273,6 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState) {
 	w.WriteString("}\n")
 
 	for _, caseInfo := range s.Transitions[state] {
-		_writeTo(s, w, caseInfo.NewState)
+		_writeTo(s, w, caseInfo.NewState, alreadyWrittenStates)
 	}
 }
