@@ -139,12 +139,6 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 
 			index++
 			continue
-
-		} else if len(bracketsMatches) > 1 {
-			line = strings.Replace(line, bracketsMatches[1][0], "", 1)
-			line = strings.TrimSpace(line)
-			line = strings.Trim(line, "|")
-			line = strings.TrimSpace(line)
 		} else if len(bracketsMatches) > 2 {
 			line = strings.Replace(line, bracketsMatches[len(bracketsMatches)-1][0], "", 1)
 			line = strings.TrimSpace(line)
