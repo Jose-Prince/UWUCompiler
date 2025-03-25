@@ -75,7 +75,7 @@ func InfixToTokens(infix string) []l.RX_Token {
 						nextRune = '\n'
 					case 't':
 						nextRune = '\t'
-					case '\r':
+					case 'r':
 						nextRune = '\r'
 					default:
 					}
@@ -125,8 +125,21 @@ func InfixToTokens(infix string) []l.RX_Token {
 			} else { // If not a range...
 				switch currentRune {
 				case '\\':
-					nextRune := runes[i+1]
-					i++
+					nextRune := currentRune
+					if i+1 < len(runes) {
+						nextRune = runes[i+1]
+						i++
+					}
+
+					switch nextRune {
+					case 'n':
+						nextRune = '\n'
+					case 't':
+						nextRune = '\t'
+					case 'r':
+						nextRune = '\r'
+					default:
+					}
 					negativeBuffer[nextRune] = struct{}{}
 
 				case ']':
@@ -217,8 +230,23 @@ func InfixToTokens(infix string) []l.RX_Token {
 					tokens = append(tokens, l.CreateOperatorToken(l.AND))
 				}
 
-				token = l.CreateValueToken(rune(runes[i+1]))
-				i++
+				nextRune := currentRune
+				if i+1 < len(runes) {
+					nextRune = runes[i+1]
+					i++
+				}
+
+				switch nextRune {
+				case 'n':
+					nextRune = '\n'
+				case 't':
+					nextRune = '\t'
+				case 'r':
+					nextRune = '\r'
+				default:
+				}
+
+				token = l.CreateValueToken(rune(nextRune))
 				previousCanBeANDedTo = true
 			default:
 				if previousCanBeANDedTo {
