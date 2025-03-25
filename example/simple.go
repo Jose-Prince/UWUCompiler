@@ -11,49 +11,8 @@ const (
 	TOKENB
 )
 
-// AFD completo con la combinación de las regexes de la rule: [ \t\r] y \n
-// const AFD = AFD{}
 const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
-
-func gettoken(state *string, input rune) int {
-	// Usa el AFD para identificar los patrones de los tokens.
-	// En caso hace match ejecuta el código dentro de {} en cada definición de token
-
-	switch *state {
-	case "0":
-		switch input {
-		case 'a':
-			*state = "1"
-			return GIVE_NEXT
-		case 'c':
-			*state = "4"
-			return TOKENB
-		default:
-			return UNRECOGNIZABLE
-		}
-
-	case "1":
-		switch input {
-		case 'b':
-			*state = "2"
-			return GIVE_NEXT
-		default:
-			return UNRECOGNIZABLE
-		}
-
-	case "2":
-		switch input {
-		case 'c':
-			*state = "3"
-			return TOKENA
-		default:
-			return UNRECOGNIZABLE
-		}
-	default:
-		return UNRECOGNIZABLE
-	}
-}
 
 const CMD_HELP = `
 Tokenizes a specified source file
@@ -163,6 +122,45 @@ func main() {
 				previousParsingResult = parsingResult
 			}
 		}
+	}
+}
+
+func gettoken(state *string, input rune) int {
+	// Usa el AFD para identificar los patrones de los tokens.
+	// En caso hace match ejecuta el código dentro de {} en cada definición de token
+
+	switch *state {
+	case "0":
+		switch input {
+		case 'a':
+			*state = "1"
+			return GIVE_NEXT
+		case 'c':
+			*state = "4"
+			return TOKENB
+		default:
+			return UNRECOGNIZABLE
+		}
+
+	case "1":
+		switch input {
+		case 'b':
+			*state = "2"
+			return GIVE_NEXT
+		default:
+			return UNRECOGNIZABLE
+		}
+
+	case "2":
+		switch input {
+		case 'c':
+			*state = "3"
+			return TOKENA
+		default:
+			return UNRECOGNIZABLE
+		}
+	default:
+		return UNRECOGNIZABLE
 	}
 }
 

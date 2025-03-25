@@ -23,7 +23,7 @@ func main() {
 	// Disable loggin
 	log.SetOutput(io.Discard)
 
-	if len(os.Args) != 2 || len(os.Args) != 3 {
+	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Please ONLY supply a lex file!\n")
 		panic(CMD_HELP)
 	}
@@ -99,5 +99,9 @@ func main() {
 
 	// TODO: Generate AFD simulator (lexer)
 
-	WriteLexFile(outputLexerFile, lexFileData, afd)
+	err := WriteLexFile(outputLexerFile, lexFileData, afd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
+		panic(err)
+	}
 }
