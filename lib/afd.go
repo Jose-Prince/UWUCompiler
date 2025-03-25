@@ -208,7 +208,7 @@ func (self *AFDStateTable[T]) Get(a *AFDState, b *AFDState) (T, bool) {
 	return defaultPairType, false
 }
 
-func ConvertFromTableToAFD(table []*TableRow) *AFD {
+func ConvertFromTableToAFD(table []*TableRow, bst BST) *AFD {
 	afd := &AFD{
 		Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
 		AcceptanceStates: NewSet[string](),
@@ -251,36 +251,38 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 
 			indexList := strings.SplitAfter(n, ",")
 
-			for a := range alphabet {
-				newFollowpos := NewSet[int]()
+			for _, node := range bst.nodes {
+				if !node.Val.IsOperator() {
+					newFollowpos := NewSet[int]()
 
-				for _, index := range indexList {
-					if index != "" {
+					for _, index := range indexList {
+						if index != "" {
 
-						num, err := strconv.Atoi(index[:len(index)-1])
-						if err == nil {
-							if table[num].simbol == a {
-								for _, follow := range table[num].followpos {
-									newFollowpos.Add(follow)
+							num, err := strconv.Atoi(index[:len(index)-1])
+							if err == nil {
+								if (node.Val.IsValue() && table[num].simbol == node.Val.GetValue().value) || (node.Val.IsDummy() && table[num].simbol == '\x00') {
+									for _, follow := range table[num].followpos {
+										newFollowpos.Add(follow)
+									}
 								}
 							}
 						}
 					}
-				}
 
-				newState := convertSliceIntToString(newFollowpos.ToSlice())
-				newState = sortNumbers(newState)
-				if newState == "" {
-					//newState = trapState
-				}
+					newState := convertSliceIntToString(newFollowpos.ToSlice())
+					newState = sortNumbers(newState)
+					if newState == "" {
+						//newState = trapState
+					}
 
-				afd.Transitions[n][CreateValueToken(a)] = newState
-				if newState != "" && visited.Add(newState) {
-					newStates.Add(newState)
+					afd.Transitions[n][node.Val] = newState
+					if newState != "" && visited.Add(newState) {
+						newStates.Add(newState)
+					}
+					//if newState != trapState && visited.Add(newState) {
+					//	newStates.Add(newState)
+					//}
 				}
-				//if newState != trapState && visited.Add(newState) {
-				//	newStates.Add(newState)
-				//}
 			}
 		}
 	}

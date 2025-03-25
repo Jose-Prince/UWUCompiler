@@ -91,9 +91,9 @@ func main() {
 	table := lib.ConvertTreeToTable(bst)
 
 	afd := new(lib.AFD)
-	afd = lib.ConvertFromTableToAFD(table)
+	afd = lib.ConvertFromTableToAFD(table, *bst)
 
-    //afd = MinimizeAFD(afd)
+	//afd = MinimizeAFD(afd)
 	// afd := &lib.AFD{InitialState: "0",
 	// 	AcceptanceStates: lib.Set[lib.AFDState]{"f": struct{}{}},
 	// 	Transitions: map[lib.AFDState]map[lib.AlphabetInput]lib.AFDState{
