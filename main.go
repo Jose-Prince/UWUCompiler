@@ -92,6 +92,8 @@ func main() {
 
 	afd := new(lib.AFD)
 	afd = lib.ConvertFromTableToAFD(table)
+
+    //afd = MinimizeAFD(afd)
 	// afd := &lib.AFD{InitialState: "0",
 	// 	AcceptanceStates: lib.Set[lib.AFDState]{"f": struct{}{}},
 	// 	Transitions: map[lib.AFDState]map[lib.AlphabetInput]lib.AFDState{

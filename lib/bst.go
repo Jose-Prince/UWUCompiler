@@ -117,6 +117,10 @@ func ConvertTreeToTable(tree *BST) []*TableRow {
 			}
 
 			var simbol rune
+			// if node.Val.IsDummy() {
+			// 	simbol = ''
+			// }
+
 			if !nullable && !node.Val.IsDummy() {
 				simbol = node.Val.GetValue().GetValue()
 			}

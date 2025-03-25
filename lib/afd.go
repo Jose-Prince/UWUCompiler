@@ -224,11 +224,11 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	}
 
 	// Crear estado trampa
-	trapState := "TRAP"
-	afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
-	for value := range alphabet {
-		afd.Transitions[trapState][CreateValueToken(value)] = trapState
-	}
+	//trapState := "TRAP"
+	//afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
+	//for value := range alphabet {
+	//afd.Transitions[trapState][CreateValueToken(value)] = trapState
+	//}
 
 	// Estado inicial del AFD
 	afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
@@ -271,16 +271,27 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 				newState := convertSliceIntToString(newFollowpos.ToSlice())
 				newState = sortNumbers(newState)
 				if newState == "" {
-					newState = trapState
+					//newState = trapState
 				}
 
 				afd.Transitions[n][CreateValueToken(a)] = newState
-
-				if newState != trapState && visited.Add(newState) {
+				if newState != "" && visited.Add(newState) {
 					newStates.Add(newState)
 				}
+				//if newState != trapState && visited.Add(newState) {
+				//	newStates.Add(newState)
+				//}
 			}
 		}
+	}
+
+	for state, transitions := range afd.Transitions {
+		for key, newState := range transitions {
+			if newState == "" {
+				delete(afd.Transitions[state], key)
+			}
+		}
+
 	}
 
 	// Determinar estados de aceptación
