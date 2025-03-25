@@ -7,6 +7,6 @@ rule gettoken =
     | '-'  { return MINUS }
     | '*'  { return TIMES }
     | '/'  { return DIV }
-    | '('  { return LPAREN }
-    | ')'  { return RPAREN }
+    | '\('  { return LPAREN }
+    | '\)'  { return RPAREN }
     | eof  { raise( 'Fin de buffer' )}
