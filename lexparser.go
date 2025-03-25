@@ -114,54 +114,54 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 			continue
 		}
 
-        if line == "" {
-            continue
-        }
+		if line == "" {
+			continue
+		}
 
 		bracketsMatches := regexBrackets.FindAllStringSubmatch(line, -1)
-        
-        if len(bracketsMatches) == 1 {
-            line = strings.Replace(line, bracketsMatches[0][0], "", 1)
-            line = strings.TrimSpace(line)
-            line = strings.Trim(line, "|")
-            line = strings.TrimSpace(line)
-            if line[0] == '\'' && line[len(line)-1] == '\'' {
-                line = line[1:len(line)-1]
-            }
 
-            code := strings.TrimSpace(bracketsMatches[0][1])
+		if len(bracketsMatches) == 1 {
+			line = strings.Replace(line, bracketsMatches[0][0], "", 1)
+			line = strings.TrimSpace(line)
+			line = strings.Trim(line, "|")
+			line = strings.TrimSpace(line)
+			if line[0] == '\'' && line[len(line)-1] == '\'' {
+				line = line[1 : len(line)-1]
+			}
 
-            info.Code = code
-            info.Priority = index
-            info.Regex = line
+			code := strings.TrimSpace(bracketsMatches[0][1])
 
-            rules[line] = info
+			info.Code = code
+			info.Priority = index
+			info.Regex = line
 
-            index++
-            continue
+			rules[line] = info
 
-        } else if len(bracketsMatches) > 1 {
-            line = strings.Replace(line, bracketsMatches[1][0], "", 1)
-            line = strings.TrimSpace(line)
-            line = strings.Trim(line, "|")
-            line = strings.TrimSpace(line)
+			index++
+			continue
 
-            line = line[1:len(line)-1]
+		} else if len(bracketsMatches) > 1 {
+			line = strings.Replace(line, bracketsMatches[1][0], "", 1)
+			line = strings.TrimSpace(line)
+			line = strings.Trim(line, "|")
+			line = strings.TrimSpace(line)
 
-            regexValue := dummyRules[line]
-            if regexValue == "" {
-                regexValue = line
-            }
-            code := strings.TrimSpace(bracketsMatches[1][1])
-            info.Code = code
-            info.Priority = index
-            info.Regex = line
+			line = line[1 : len(line)-1]
 
-            rules[regexValue] = info
+			regexValue := dummyRules[line]
+			if regexValue == "" {
+				regexValue = line
+			}
+			code := strings.TrimSpace(bracketsMatches[1][1])
+			info.Code = code
+			info.Priority = index
+			info.Regex = regexValue
 
-            index++
-            continue
-        }
+			rules[regexValue] = info
+
+			index++
+			continue
+		}
 
 		// Footer identification
 		if line == "{" && state == 1 {

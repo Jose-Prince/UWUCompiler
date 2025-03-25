@@ -66,7 +66,6 @@ func main() {
 	// TODO: Regex to AFD
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
 	fmt.Println("The Postfix expression is:", lib.TokenStreamToString(postfix))
-	// ...do other conversions
 
 	// Generates BST
 	bst := new(lib.BST)
