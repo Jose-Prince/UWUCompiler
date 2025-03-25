@@ -28,7 +28,7 @@ func gettoken(state *string, input rune) int {
 			return GIVE_NEXT
 		case 'c':
 			*state = "4"
-			return GIVE_NEXT
+			return TOKENB
 		default:
 			return UNRECOGNIZABLE
 		}
@@ -46,16 +46,12 @@ func gettoken(state *string, input rune) int {
 		switch input {
 		case 'c':
 			*state = "3"
-			return GIVE_NEXT
+			return TOKENA
 		default:
 			return UNRECOGNIZABLE
 		}
-	case "3":
-		return TOKENA
-	case "4":
-		return TOKENB
 	default:
-		panic(fmt.Sprintf("Programming error! Couldn't found the state: %s", *state))
+		return UNRECOGNIZABLE
 	}
 }
 
@@ -150,12 +146,19 @@ func main() {
 
 		afdState := "0" // INITIAL AFD STATE!
 		previousParsingResult := -1000
-		for j := i; j < len(sourceFileContent); j++ {
-			parsingResult := gettoken(&afdState, rune(sourceFileContent[i]))
+		j := 0
+		for j = i; j < len(sourceFileContent); j++ {
+			parsingResult := gettoken(&afdState, rune(sourceFileContent[j]))
 			if parsingResult == UNRECOGNIZABLE {
-				fmt.Println(Token{Start: j, Type: previousParsingResult})
-				i = j
-				break
+				foundSomething := previousParsingResult != -1000
+				if foundSomething {
+					fmt.Println(Token{Start: i, Type: previousParsingResult})
+					i = j - 1
+					break
+				} else {
+					i = j
+					break
+				}
 			} else if parsingResult != GIVE_NEXT {
 				previousParsingResult = parsingResult
 			}
