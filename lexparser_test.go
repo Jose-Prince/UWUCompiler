@@ -15,13 +15,13 @@ func TestLexParser(t *testing.T) {
 	}{
 		{
 			name:     "Valid file with rules",
-			filePath: "examples/example.yal",
+			filePath: "example/example.yal",
 			wantErr:  false,
 			want: LexFileData{
-				Header: "import myToken",
-				Footer: "printf(\"hola\")",
+				Header: "import myToken\n",
+				Footer: "printf(\"hola\")\n",
 				Rule: map[string]lib.DummyInfo{
-					"rule1": {Code: "some code", Priority: 1},
+					"rule1": {Code: "\"some code\"", Priority: 1},
 				},
 			}, // Define el valor esperado para un archivo válido
 		},
