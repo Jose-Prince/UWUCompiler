@@ -20,22 +20,31 @@ type afdSwitch struct {
 	Transitions map[lib.AFDState]map[rune]afdLeafInfo
 
 	InitialState     lib.AFDState
-	AcceptanceStates []lib.AFDState
+	AcceptanceStates lib.Set[lib.AFDState]
 }
 
 func simplifyIntoSwitch(afd *lib.AFD) afdSwitch {
-	sw := afdSwitch{}
+	sw := afdSwitch{
+		InitialState:     afd.InitialState,
+		AcceptanceStates: afd.AcceptanceStates,
+		Transitions:      make(map[lib.AFDState]map[rune]afdLeafInfo),
+	}
 	_simplifyIntoSwitch(afd, afd.InitialState, &sw)
 	return sw
 }
 
-func getChildrenWithDummyTransitions(afd *lib.AFD, state lib.AFDState) []lib.AFDState {
-	children := []lib.AFDState{}
+type tranInput struct {
+	Input lib.AlphabetInput
+	State lib.AFDState
+}
 
-	for _, childState := range afd.Transitions[state] {
+func getChildrenWithDummyTransitions(afd *lib.AFD, state lib.AFDState) []tranInput {
+	children := []tranInput{}
+
+	for in, childState := range afd.Transitions[state] {
 		for input := range afd.Transitions[childState] {
 			if input.IsDummy() {
-				children = append(children, childState)
+				children = append(children, tranInput{Input: in, State: childState})
 			}
 		}
 	}
@@ -62,19 +71,29 @@ func getLowestPriorityDummy(afd *lib.AFD, state lib.AFDState) lib.AlphabetInput 
 }
 
 func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch) {
+	if afd.AcceptanceStates.Contains(state) {
+		return
+	}
+
 	for input, newState := range afd.Transitions[state] {
-		dummyChildren := getChildrenWithDummyTransitions(afd, newState)
-		inputRune := input.GetValue().GetValue()
-		if len(dummyChildren) == 0 {
+		if input.IsValue() {
+			inputRune := input.GetValue().GetValue()
+			_, found := sw.Transitions[state]
+			if !found {
+				sw.Transitions[state] = make(map[rune]afdLeafInfo)
+			}
+
 			sw.Transitions[state][inputRune] = afdLeafInfo{NewState: newState, Code: "return GIVE_NEXT"}
 			_simplifyIntoSwitch(afd, newState, sw)
-		} else {
-			for _, child := range dummyChildren {
-				lowestPriorityDummy := getLowestPriorityDummy(afd, child)
-				code := lowestPriorityDummy.GetDummy().Code
-				sw.Transitions[state][inputRune] = afdLeafInfo{NewState: newState, Code: code}
-			}
 		}
+	}
+
+	dummyChildren := getChildrenWithDummyTransitions(afd, state)
+	for _, tranInput := range dummyChildren {
+		lowestPriorityDummy := getLowestPriorityDummy(afd, tranInput.State)
+		code := lowestPriorityDummy.GetDummy().Code
+		tranRune := tranInput.Input.GetValue().GetValue()
+		sw.Transitions[state][tranRune] = afdLeafInfo{NewState: tranInput.State, Code: code}
 	}
 }
 
