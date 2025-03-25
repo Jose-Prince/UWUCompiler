@@ -76,6 +76,27 @@ func main() {
 
 	afd := new(lib.AFD)
 	afd = lib.ConvertFromTableToAFD(table)
+	// afd := lib.AFD{InitialState: "0",
+	// 	AcceptanceStates: lib.Set[lib.AFDState]{"f": struct{}{}},
+	// 	Transitions: map[lib.AFDState]map[lib.AlphabetInput]lib.AFDState{
+	// 		"0": {
+	// 			lib.CreateValueToken('a'): "1",
+	// 			lib.CreateValueToken('c'): "4",
+	// 		},
+	// 		"1": {
+	// 			lib.CreateValueToken('b'): "2",
+	// 		},
+	// 		"2": {
+	// 			lib.CreateValueToken('c'): "3",
+	// 		},
+	// 		"3": {
+	// 			lib.CreateDummyToken(lexFileData.Rule["abc"]):     "f",
+	// 			lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
+	// 		},
+	// 		"4": {
+	// 			lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
+	// 		},
+	// 	}}
 
 	fmt.Println("The AFD is:", afd.String())
 
