@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -87,6 +89,17 @@ type Token struct {
 	Type int
 }
 
+func (self *Token) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+	b.WriteString("Start = ")
+	b.WriteString(strconv.Itoa(self.Start))
+	b.WriteString(" Type = ")
+	b.WriteString(strconv.Itoa(self.Type))
+	b.WriteString(" }")
+	return b.String()
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Please supply only a source file as argument!\n")
@@ -111,7 +124,8 @@ func main() {
 			if parsingResult == UNRECOGNIZABLE {
 				foundSomething := previousParsingResult != -1000
 				if foundSomething {
-					fmt.Println(Token{Start: i, Type: previousParsingResult})
+					token := Token{Start: i, Type: previousParsingResult}
+					fmt.Println(token.String())
 					i = j - 1
 					break
 				} else {
