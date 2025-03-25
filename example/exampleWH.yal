@@ -1,0 +1,12 @@
+{
+}
+
+rule gettoken = 
+    {rule1} {"some code"}
+    | 'rule2' {return ID}
+    | eof {return ID}
+
+{
+printf("hello")
+printf("world")
+}

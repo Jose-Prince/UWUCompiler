@@ -86,8 +86,6 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 	ruleDeclaration := regexp.MustCompile(`(?i)\b(rule)\b`) // Ignores line "rule gettoken ="
 	ruleRegex := regexp.MustCompile(`^\s*let\s+([^\s=]+)\s*=\s*(.*)`)
 	regexBrackets := regexp.MustCompile(`\{([^}]*)\}`) // Identifies what is inside {}
-	regexQuotes := regexp.MustCompile(`'([^']+)'`)     // Identifies what is inside ''
-	regexEof := regexp.MustCompile(`\b(eof)\b`)        // Identifies eof string
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -116,60 +114,54 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 			continue
 		}
 
+        if line == "" {
+            continue
+        }
+
 		bracketsMatches := regexBrackets.FindAllStringSubmatch(line, -1)
-		quoteMatches := regexQuotes.FindStringSubmatch(line)
-		eofMatches := regexEof.FindStringSubmatch(line)
-
-		if len(bracketsMatches) > 1 {
-			firstBracketContent := bracketsMatches[0][1]
-
-			// Regex saved in DummyRules
-			regexValue := dummyRules[firstBracketContent]
-            if regexValue == "" {
-                regexValue = bracketsMatches[0][1] // Defines regex in case is not define in rules
+        
+        if len(bracketsMatches) == 1 {
+            line = strings.Replace(line, bracketsMatches[0][0], "", 1)
+            line = strings.TrimSpace(line)
+            line = strings.Trim(line, "|")
+            line = strings.TrimSpace(line)
+            if line[0] == '\'' && line[len(line)-1] == '\'' {
+                line = line[1:len(line)-1]
             }
-			if len(bracketsMatches) > 1 {
-				secondBracketContent := bracketsMatches[1][1]
-				info.Code = secondBracketContent
-				info.Priority = index
-                info.Regex = regexValue
 
-				rules[regexValue] = info
+            code := strings.TrimSpace(bracketsMatches[0][1])
 
-				index++
-				continue
-			}
-		} else if len(quoteMatches) != 0 {
-			regexValue := quoteMatches[1]
+            info.Code = code
+            info.Priority = index
+            info.Regex = line
 
-			if len(bracketsMatches) != 0 {
-				bracketContent := bracketsMatches[0][1]
-				info.Code = bracketContent
-				info.Priority = index
-                info.Regex = regexValue
+            rules[line] = info
 
-				rules[regexValue] = info
+            index++
+            continue
 
-				index++
-				continue
-			}
+        } else if len(bracketsMatches) > 1 {
+            line = strings.Replace(line, bracketsMatches[1][0], "", 1)
+            line = strings.TrimSpace(line)
+            line = strings.Trim(line, "|")
+            line = strings.TrimSpace(line)
 
-		} else if len(eofMatches) != 0 {
-			regexValue := eofMatches[0]
+            line = line[1:len(line)-1]
 
-			if len(bracketsMatches) != 0 {
-				bracketContent := bracketsMatches[0][1]
-				info.Code = bracketContent
-				info.Priority = index
-                info.Regex = regexValue
+            regexValue := dummyRules[line]
+            if regexValue == "" {
+                regexValue = line
+            }
+            code := strings.TrimSpace(bracketsMatches[1][1])
+            info.Code = code
+            info.Priority = index
+            info.Regex = line
 
-				rules[regexValue] = info
+            rules[regexValue] = info
 
-				index++
-				continue
-			}
-
-		} 
+            index++
+            continue
+        }
 
 		// Footer identification
 		if line == "{" && state == 1 {
