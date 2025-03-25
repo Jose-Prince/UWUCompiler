@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"strconv"
@@ -45,41 +44,6 @@ func (self Optional[T]) GetValue() T {
 	} else {
 		return self.value
 	}
-}
-
-type FileReader struct {
-	peekedRune Optional[rune]
-	reader     *bufio.Reader
-}
-
-func NewFileReader(reader *bufio.Reader) FileReader {
-	return FileReader{
-		reader:     reader,
-		peekedRune: CreateNull[rune](),
-	}
-}
-
-func (self *FileReader) ReadRune() (rune, error) {
-	if self.peekedRune.HasValue() {
-		val := self.peekedRune.GetValue()
-		self.peekedRune = CreateNull[rune]()
-		return val, nil
-	}
-
-	rune, _, err := self.reader.ReadRune()
-	return rune, err
-}
-
-func (self *FileReader) PeekRune() (Optional[rune], error) {
-	if self.peekedRune.HasValue() {
-		return self.peekedRune, nil
-	}
-
-	rune, _, err := self.reader.ReadRune()
-	if err != nil {
-		self.peekedRune = CreateValue(rune)
-	}
-	return self.peekedRune, err
 }
 
 type Token struct {

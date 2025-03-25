@@ -21,9 +21,10 @@ package lexer
 
 // Lexer imports
 import (
-	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 	`)
 	writer.WriteString(info.Header)
@@ -65,46 +66,22 @@ func (self Optional[T]) GetValue() T {
 	}
 }
 
-type FileReader struct {
-	peekedRune Optional[rune]
-	reader     *bufio.Reader
-}
-
-func NewFileReader(reader *bufio.Reader) FileReader {
-	return FileReader{
-		reader:     reader,
-		peekedRune: CreateNull[rune](),
-	}
-}
-
-func (self *FileReader) ReadRune() (rune, error) {
-	if self.peekedRune.HasValue() {
-		val := self.peekedRune.GetValue()
-		self.peekedRune = CreateNull[rune]()
-		return val, nil
-	}
-
-	rune, _, err := self.reader.ReadRune()
-	return rune, err
-}
-
-func (self *FileReader) PeekRune() (Optional[rune], error) {
-	if self.peekedRune.HasValue() {
-		return self.peekedRune, nil
-	}
-
-	rune, _, err := self.reader.ReadRune()
-	if err != nil {
-		self.peekedRune = CreateValue(rune)
-	}
-	return self.peekedRune, err
-}
-
 type Token struct {
 	// When does this token start in the contents of the source file
 	Start int
 	// The type of the token that it found
 	Type int
+}
+
+func (self *Token) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+	b.WriteString("Start = ")
+	b.WriteString(strconv.Itoa(self.Start))
+	b.WriteString(", Type = ")
+	b.WriteString(strconv.Itoa(self.Type))
+	b.WriteString(" }")
+	return b.String()
 }
 
 func main() {
@@ -131,7 +108,8 @@ func main() {
 			if parsingResult == UNRECOGNIZABLE {
 				foundSomething := previousParsingResult != -1000
 				if foundSomething {
-					fmt.Println(Token{Start: i, Type: previousParsingResult})
+					token := Token{Start: i, Type: previousParsingResult}
+					fmt.Println(token.String())
 					i = j - 1
 					break
 				} else {
