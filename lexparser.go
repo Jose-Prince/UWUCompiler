@@ -150,7 +150,7 @@ func LexParser(yalexFile string) LexFileData {
 				continue
 			}
 
-		} else {
+		} else if len(eofMatches) != 0 {
 			regexValue := eofMatches[0]
 
 			if len(bracketsMatches) > 1 {
@@ -164,7 +164,7 @@ func LexParser(yalexFile string) LexFileData {
 				continue
 			}
 
-		}
+		} 
 
 		// Footer identification
 		if line == "{" && state == 1 {
