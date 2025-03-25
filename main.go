@@ -39,12 +39,7 @@ func main() {
 
 	// TODO: Parse lex file instead of using a default values
 	var lexFileData LexFileData
-	lexFileData = LexFileData{
-		Rule: map[string]lib.DummyInfo{
-			"abc":     lib.DummyInfo{Code: "fmt.Println(\"Hello!\")", Priority: 1, Regex: "abc"},
-			"(abc)|c": lib.DummyInfo{Code: "fmt.Println(\"Goodbye!\")", Priority: 2, Regex: "(abc)|c"},
-		},
-	}
+    lexFileData = LexParser(lexFilePath)
 
 	// Combine all regexes into a single regex
 	infix := []lib.RX_Token{}
@@ -73,33 +68,19 @@ func main() {
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
 	fmt.Println("The Postfix expression is:", lib.TokenStreamToString(postfix))
 	// ...do other conversions
-	afd := lib.AFD{InitialState: "0",
-		AcceptanceStates: lib.Set[lib.AFDState]{"f": struct{}{}},
-		Transitions: map[lib.AFDState]map[lib.AlphabetInput]lib.AFDState{
-			"0": {
-				lib.CreateValueToken('a'): "1",
-				lib.CreateValueToken('c'): "4",
-			},
-			"1": {
-				lib.CreateValueToken('b'): "2",
-			},
-			"2": {
-				lib.CreateValueToken('c'): "3",
-			},
-			"3": {
-				lib.CreateDummyToken(lexFileData.Rule["abc"]):     "f",
-				lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
-			},
-			"4": {
-				lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
-			},
-		}}
+    bst := new(lib.BST)
+    bst.Insertion(postfix)
+
+    table := lib.ConvertTreeToTable(bst)
+    
+    afd := new(lib.AFD)
+    afd = lib.ConvertFromTableToAFD(table)
 
 	fmt.Println("The AFD is:", afd.String())
 
 	// TODO: Generate AFD simulator (lexer)
 
-	err := WriteLexFile(outputLexerFile, lexFileData, afd)
+	err := WriteLexFile(outputLexerFile, lexFileData, *afd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
 		panic(err)
