@@ -1,11 +1,10 @@
 package lib
 
-// import (
-//     "fmt"
-//     "os"
-//     "math"
-//     "strings"
-// )
+import (
+	"fmt"
+	"math"
+	"os"
+)
 
 // func generatePositions(afd *AFD) map[string][2]float64 {
 //     pi_value := 0.0
@@ -163,5 +162,115 @@ package lib
 // 	</body>
 // 	</html>`, svgContent)
 
-// 	return os.WriteFile(outputHTML, []byte(htmlContent), 0644)
-// }
+//		return os.WriteFile(outputHTML, []byte(htmlContent), 0644)
+//	}
+
+func treeHeight(bst *BST, index int) int {
+	if index == -1 {
+		return 0
+	}
+	leftHeight := treeHeight(bst, bst.nodes[index].left)
+	rightHeight := treeHeight(bst, bst.nodes[index].right)
+	return 1 + int(math.Max(float64(leftHeight), float64(rightHeight)))
+}
+
+// Mapea cada nodo a su nivel en el árbol
+func assignLevels(bst *BST, index int, depth int, levelMap map[int][]int) {
+	if index == -1 {
+		return
+	}
+	levelMap[depth] = append(levelMap[depth], index)
+	assignLevels(bst, bst.nodes[index].left, depth+1, levelMap)
+	assignLevels(bst, bst.nodes[index].right, depth+1, levelMap)
+}
+
+// Calcula posiciones centradas para los nodos
+func calculatePositions(bst *BST, width, height float64) map[int][2]float64 {
+	if len(bst.nodes) == 0 {
+		return nil
+	}
+
+	positions := make(map[int][2]float64)
+	treeDepth := treeHeight(bst, len(bst.nodes)-1)
+	levelMap := make(map[int][]int)
+	assignLevels(bst, len(bst.nodes)-1, 0, levelMap)
+
+	levelSpacing := height / float64(treeDepth+1)
+	for depth, nodes := range levelMap {
+		numNodes := len(nodes)
+		baseX := width / float64(numNodes+1)
+
+		for i, index := range nodes {
+			x := baseX * float64(i+1)
+			y := float64(depth+1) * levelSpacing
+			positions[index] = [2]float64{x, y}
+		}
+	}
+	return positions
+}
+
+// Genera el SVG con los nodos centrados
+func GenerateBSTSVG(bst *BST) string {
+	width := 800.0
+	height := 400.0
+	positions := calculatePositions(bst, width, height)
+
+	svg := fmt.Sprintf(`<svg width="%f" height="%f" xmlns="http://www.w3.org/2000/svg">`, width, height)
+	svg += `<rect width="100%" height="100%" fill="white"/>`
+
+	// Dibujar conexiones entre nodos
+	for i, node := range bst.nodes {
+		if node.left != -1 {
+			x1, y1 := positions[i][0], positions[i][1]
+			x2, y2 := positions[node.left][0], positions[node.left][1]
+			svg += fmt.Sprintf(`<line x1="%f" y1="%f" x2="%f" y2="%f" stroke="black"/>`, x1, y1, x2, y2)
+		}
+		if node.right != -1 {
+			x1, y1 := positions[i][0], positions[i][1]
+			x2, y2 := positions[node.right][0], positions[node.right][1]
+			svg += fmt.Sprintf(`<line x1="%f" y1="%f" x2="%f" y2="%f" stroke="black"/>`, x1, y1, x2, y2)
+		}
+	}
+
+	// Dibujar nodos
+	for i, node := range bst.nodes {
+
+		value := ""
+		if node.Val.IsValue() {
+			opt := node.Val.GetValue()
+			if opt.HasValue() {
+				value = string(opt.GetValue())
+			}
+		} else if node.Val.IsOperator() {
+			opt := node.Val.GetOperator()
+			value = opt.String()
+		} else {
+			value = node.Val.GetDummy().Regex
+		}
+
+		x, y := positions[i][0], positions[i][1]
+		svg += fmt.Sprintf(`<circle cx="%f" cy="%f" r="20" stroke="black" fill="white"/>`, x, y)
+		svg += fmt.Sprintf(`<text x="%f" y="%f" font-size="14" text-anchor="middle" fill="black">%s</text>`, x, y+5, value)
+	}
+
+	svg += `</svg>`
+	return svg
+}
+
+// Genera un archivo HTML con el SVG
+func GenerateHTMLBST(svgContent, filename string) error {
+	html := fmt.Sprintf(`
+	<!DOCTYPE html>
+	<html lang="es">
+	<head>
+		<meta charset="UTF-8">
+		<title>Visualización BST</title>
+	</head>
+	<body>
+		<h2>Árbol Binario de Búsqueda</h2>
+		%s
+	</body>
+	</html>`, svgContent)
+
+	return os.WriteFile(filename, []byte(html), 0644)
+}

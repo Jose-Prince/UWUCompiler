@@ -81,16 +81,16 @@ func (b *BST) Insertion(postfix []RX_Token) {
 			case ZERO_OR_MANY:
 				left := stack.Pop().GetValue()
 
-				node.left = i
+				node.left = left
 				nodes[left].father = i
 			}
 		}
 
 		stack.Push(i)
-        nodes = append(nodes, node)
+		nodes = append(nodes, node)
 	}
 
-    b.nodes = nodes
+	b.nodes = nodes
 }
 
 func ConvertTreeToTable(tree *BST) []*TableRow {

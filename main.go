@@ -69,7 +69,23 @@ func main() {
 
 	// Generates BST
 	bst := new(lib.BST)
+
+	//bst.Insertion([]lib.RX_Token{
+	//	lib.CreateValueToken('a'),
+	//	lib.CreateValueToken('b'),
+	//	lib.CreateOperatorToken(lib.AND),
+	//})
+
 	bst.Insertion(postfix)
+
+	svgBST := lib.GenerateBSTSVG(bst)
+
+	htmlFileBST := "bst.html"
+	if err := lib.GenerateHTMLBST(svgBST, htmlFileBST); err != nil {
+		fmt.Println("Error generating HTML for BST:", err)
+	} else {
+		fmt.Println("HTML for BST generated:", htmlFileBST)
+	}
 
 	// Creates tables with nodes from tree
 	table := lib.ConvertTreeToTable(bst)
