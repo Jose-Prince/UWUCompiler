@@ -34,17 +34,16 @@ func simplifyIntoSwitch(afd *lib.AFD) afdSwitch {
 }
 
 type tranInput struct {
-	Input lib.AlphabetInput
 	State lib.AFDState
 }
 
-func getChildrenWithDummyTransitions(afd *lib.AFD, state lib.AFDState) []tranInput {
-	children := []tranInput{}
+func getChildrenWithDummyTransitions(afd *lib.AFD, state lib.AFDState) lib.Set[lib.AFDState] {
+	children := lib.Set[lib.AFDState]{}
 
-	for in, childState := range afd.Transitions[state] {
+	for _, childState := range afd.Transitions[state] {
 		for input := range afd.Transitions[childState] {
 			if input.IsDummy() {
-				children = append(children, tranInput{Input: in, State: childState})
+				children.Add(childState)
 			}
 		}
 	}
@@ -89,11 +88,17 @@ func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch) {
 	}
 
 	dummyChildren := getChildrenWithDummyTransitions(afd, state)
-	for _, tranInput := range dummyChildren {
-		lowestPriorityDummy := getLowestPriorityDummy(afd, tranInput.State)
+	for tranInput := range dummyChildren {
+		lowestPriorityDummy := getLowestPriorityDummy(afd, tranInput)
 		code := lowestPriorityDummy.GetDummy().Code
-		tranRune := tranInput.Input.GetValue().GetValue()
-		sw.Transitions[state][tranRune] = afdLeafInfo{NewState: tranInput.State, Code: code}
+		tranRune := rune(0)
+		for input, childreState := range afd.Transitions[state] {
+			if childreState == tranInput {
+				tranRune = input.GetValue().GetValue()
+				break
+			}
+		}
+		sw.Transitions[state][tranRune] = afdLeafInfo{NewState: tranInput, Code: code}
 	}
 }
 
