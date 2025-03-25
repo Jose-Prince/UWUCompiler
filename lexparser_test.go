@@ -15,7 +15,7 @@ func TestLexParser(t *testing.T) {
 	}{
 		{
 			name:     "Valid file with rules",
-			filePath: "example/example.yal",
+			filePath: "example/simple.yal",
 			wantErr:  false,
 			want: LexFileData{
 				Header: "import myToken\n",

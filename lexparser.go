@@ -85,7 +85,7 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 	// Regex to identify
 	ruleDeclaration := regexp.MustCompile(`(?i)\b(rule)\b`) // Ignores line "rule gettoken ="
 	ruleRegex := regexp.MustCompile(`^\s*let\s+([^\s=]+)\s*=\s*(.*)`)
-	regexBrackets := regexp.MustCompile(`'[^']*'|{([^}]*)}`) // Identifies what is inside {}
+	regexBrackets := regexp.MustCompile(`'(?:[^']*)'|{([^}]*)}`) // Identifies what is inside {}
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -130,6 +130,25 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 			}
 
 			code := strings.TrimSpace(bracketsMatches[0][1])
+
+			info.Code = code
+			info.Priority = index
+			info.Regex = line
+
+			rules[line] = info
+
+			index++
+			continue
+		} else if len(bracketsMatches) > 2 {
+			line = strings.Replace(line, bracketsMatches[len(bracketsMatches)-1][0], "", 1)
+			line = strings.TrimSpace(line)
+			line = strings.Trim(line, "|")
+			line = strings.TrimSpace(line)
+			if line[0] == '\'' && line[len(line)-1] == '\'' {
+				line = line[1 : len(line)-1]
+			}
+
+			code := strings.TrimSpace(bracketsMatches[len(bracketsMatches)-1][1])
 
 			info.Code = code
 			info.Priority = index
