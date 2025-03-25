@@ -63,8 +63,7 @@ func (b *BST) Insertion(postfix []RX_Token) {
 
 	for _, v := range postfix {
 		node := CreateBSTNode(v)
-		nodes = append(nodes, node)
-		i := len(nodes) - 1
+		i := len(nodes)
 
 		if v.IsOperator() {
 			op := v.GetOperator()
@@ -105,7 +104,7 @@ func ConvertTreeToTable(tree *BST) []*TableRow {
 			firstPos := []int{}
 			lastPos := []int{}
 
-			if node.Val.GetValue().HasValue() {
+			if node.Val.IsDummy() || node.Val.GetValue().HasValue() {
 				firstPos = append(firstPos, i)
 				lastPos = append(lastPos, i)
 			} else {
@@ -118,7 +117,7 @@ func ConvertTreeToTable(tree *BST) []*TableRow {
 			}
 
 			var simbol rune
-			if !nullable {
+			if !nullable && !node.Val.IsDummy() {
 				simbol = node.Val.GetValue().GetValue()
 			}
 
