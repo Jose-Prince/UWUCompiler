@@ -106,7 +106,7 @@ func WriteLexFile(filePath string, info LexFileData, afd lib.AFD) error {
 
 	writer := bufio.NewWriter(f)
 	writer.WriteString(`
-package lexer
+package main
 
 
 // Lexer imports
@@ -228,7 +228,10 @@ func gettoken(state *string, input rune) int {
 func (s *afdSwitch) WriteTo(writer *bufio.Writer) {
 	writer.WriteString("switch *state {\n")
 	_writeTo(s, writer, s.InitialState)
-	writer.WriteString("\n}")
+	writer.WriteString(`
+}
+return UNRECOGNIZABLE
+`)
 }
 
 func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState) {
@@ -248,7 +251,7 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState) {
 		w.WriteString(caseInfo.Code)
 		w.WriteRune('\n')
 	}
-	w.WriteString("}")
+	w.WriteString("}\n")
 
 	for _, caseInfo := range s.Transitions[state] {
 		_writeTo(s, w, caseInfo.NewState)

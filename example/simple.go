@@ -116,8 +116,6 @@ func gettoken(state *string, input rune) int {
 		case 'c':
 			*state = "4"
 			return TOKENB
-		default:
-			return UNRECOGNIZABLE
 		}
 
 	case "1":
@@ -125,8 +123,6 @@ func gettoken(state *string, input rune) int {
 		case 'b':
 			*state = "2"
 			return GIVE_NEXT
-		default:
-			return UNRECOGNIZABLE
 		}
 
 	case "2":
@@ -134,12 +130,9 @@ func gettoken(state *string, input rune) int {
 		case 'c':
 			*state = "3"
 			return TOKENA
-		default:
-			return UNRECOGNIZABLE
 		}
-	default:
-		return UNRECOGNIZABLE
 	}
+	return UNRECOGNIZABLE
 }
 
 // Comentario extra!
