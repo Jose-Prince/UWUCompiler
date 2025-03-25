@@ -91,7 +91,7 @@ func main() {
 	table := lib.ConvertTreeToTable(bst)
 
 	afd := new(lib.AFD)
-	afd = lib.ConvertFromTableToAFD(table, *bst)
+	afd = lib.ConvertFromTableToAFD(table)
 
 	//afd = MinimizeAFD(afd)
 	// afd := &lib.AFD{InitialState: "0",
