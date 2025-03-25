@@ -38,8 +38,7 @@ func main() {
 	fmt.Println("Output file will be:", outputLexerFile)
 
 	// TODO: Parse lex file instead of using a default values
-	var lexFileData LexFileData
-    lexFileData = LexParser(lexFilePath)
+	lexFileData := LexParser(lexFilePath)
 
 	// Combine all regexes into a single regex
 	infix := []lib.RX_Token{}
@@ -68,13 +67,13 @@ func main() {
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
 	fmt.Println("The Postfix expression is:", lib.TokenStreamToString(postfix))
 	// ...do other conversions
-    bst := new(lib.BST)
-    bst.Insertion(postfix)
+	bst := new(lib.BST)
+	bst.Insertion(postfix)
 
-    table := lib.ConvertTreeToTable(bst)
-    
-    afd := new(lib.AFD)
-    afd = lib.ConvertFromTableToAFD(table)
+	table := lib.ConvertTreeToTable(bst)
+
+	afd := new(lib.AFD)
+	afd = lib.ConvertFromTableToAFD(table)
 
 	fmt.Println("The AFD is:", afd.String())
 
