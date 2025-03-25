@@ -243,7 +243,16 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState) {
 
 	for input, caseInfo := range s.Transitions[state] {
 		w.WriteString("case '")
-		w.WriteRune(input)
+		switch input {
+		case '\t':
+			w.WriteString("\\t")
+		case '\n':
+			w.WriteString("\\n")
+		case '\r':
+			w.WriteString("\\r")
+		default:
+			w.WriteRune(input)
+		}
 		w.WriteString(`':
 		*state = "`)
 		w.WriteString(caseInfo.NewState)
