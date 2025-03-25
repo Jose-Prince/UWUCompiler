@@ -9,7 +9,7 @@ const (
 
 let ws = [ \t\n]
 let tokenA = abc
-let tokenB = {tokenA}|c
+let tokenB = ({tokenA})|c
 
 rule gettoken = 
 	  {ws}	        { }
