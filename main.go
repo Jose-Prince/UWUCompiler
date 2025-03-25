@@ -68,9 +68,12 @@ func main() {
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
 	fmt.Println("The Postfix expression is:", lib.TokenStreamToString(postfix))
 	// ...do other conversions
+
+    // Generates BST
     bst := new(lib.BST)
     bst.Insertion(postfix)
 
+    // Creates tables with nodes from tree
     table := lib.ConvertTreeToTable(bst)
     
     afd := new(lib.AFD)
