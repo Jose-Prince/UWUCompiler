@@ -21,7 +21,7 @@ func TestLexParser(t *testing.T) {
 				Header: "import myToken\n",
 				Footer: "printf(\"hola\")\n",
 				Rule: map[string]lib.DummyInfo{
-					"rule1": {Code: "\"some code\"", Priority: 1},
+                    "rule1": {Regex: "rule1", Code: "\"some code\"", Priority: 1},
 				},
 			}, // Define el valor esperado para un archivo válido
 		},

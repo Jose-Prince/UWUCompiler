@@ -130,6 +130,7 @@ func LexParser(yalexFile string) LexFileData {
 				secondBracketContent := bracketsMatches[1][1]
 				info.Code = secondBracketContent
 				info.Priority = index
+                info.Regex = regexValue
 
 				rules[regexValue] = info
 
@@ -143,6 +144,7 @@ func LexParser(yalexFile string) LexFileData {
 				bracketContent := bracketsMatches[0][1]
 				info.Code = bracketContent
 				info.Priority = index
+                info.Regex = regexValue
 
 				rules[regexValue] = info
 
@@ -157,6 +159,7 @@ func LexParser(yalexFile string) LexFileData {
 				bracketContent := bracketsMatches[1][1]
 				info.Code = bracketContent
 				info.Priority = index
+                info.Regex = regexValue
 
 				rules[regexValue] = info
 
