@@ -62,7 +62,7 @@ type LexFileData struct {
 // 	}
 // }
 
-func LexParser(yalexFile string) LexFileData {
+func LexParser(yalexFile string) LexFileData { // string represents the error
 	file, err := os.Open(yalexFile)
 	if err != nil {
 		fmt.Println("Error opening the file:", err)
@@ -125,7 +125,9 @@ func LexParser(yalexFile string) LexFileData {
 
 			// Regex saved in DummyRules
 			regexValue := dummyRules[firstBracketContent]
-
+            if regexValue == "" {
+                regexValue = bracketsMatches[0][1] // Defines regex in case is not define in rules
+            }
 			if len(bracketsMatches) > 1 {
 				secondBracketContent := bracketsMatches[1][1]
 				info.Code = secondBracketContent
@@ -155,7 +157,7 @@ func LexParser(yalexFile string) LexFileData {
 		} else if len(eofMatches) != 0 {
 			regexValue := eofMatches[0]
 
-			if len(bracketsMatches) > 1 {
+			if len(bracketsMatches) != 0 {
 				bracketContent := bracketsMatches[1][1]
 				info.Code = bracketContent
 				info.Priority = index
