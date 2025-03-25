@@ -15,15 +15,15 @@ let operator = '+'|'-'|'*'|'/'
 let oprel = '=='|'<='|'>='|'<'|'>'
 
 rule gettoken = 
-	  {ws}	        { continue } (* Ignora white spaces, tabs y nueva línea)
+	  {ws}	        { continue }
 	| {id}          { return ID }
 	| {numero}      { return NUM }
     | {literal}     { return LIT }
     | {operator}    { return OP }
     | {oprel}       { return OPREL }
     | '='           { return ASSIGN }
-    | '('           { return LPAREN }
-    | ')'           { return RPAREN }
+    | '\('          { return LPAREN }
+    | '\)'           { return RPAREN }
     | '{'           { return LBRACE }
     | '}'           { return RBRACE }
     | eof           { return nil }
