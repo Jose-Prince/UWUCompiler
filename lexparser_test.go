@@ -25,6 +25,20 @@ func TestLexParser(t *testing.T) {
 				},
 			}, // Define el valor esperado para un archivo válido
 		},
+        {
+			name:     "Valid file without header",
+			filePath: "example/exampleWH.yal",
+			wantErr:  false,
+			want: LexFileData{
+				Header: "",
+				Footer: "printf(\"hello\")\nprintf(\"world\")\n",
+				Rule: map[string]lib.DummyInfo{
+                    "rule1": {Regex: "rule1", Code: "\"some code\"", Priority: 1},
+                    "rule2": {Regex: "rule2", Code: "return ID", Priority: 2},
+                    "eof": {Regex: "eof", Code: "return ID", Priority: 3},
+				},
+			}, // Define el valor esperado para un archivo válido
+		},
 	}
 
 	for _, tt := range tests {

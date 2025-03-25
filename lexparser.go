@@ -140,7 +140,7 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 				continue
 			}
 		} else if len(quoteMatches) != 0 {
-			regexValue := quoteMatches[0]
+			regexValue := quoteMatches[1]
 
 			if len(bracketsMatches) != 0 {
 				bracketContent := bracketsMatches[0][1]
@@ -158,7 +158,7 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 			regexValue := eofMatches[0]
 
 			if len(bracketsMatches) != 0 {
-				bracketContent := bracketsMatches[1][1]
+				bracketContent := bracketsMatches[0][1]
 				info.Code = bracketContent
 				info.Priority = index
                 info.Regex = regexValue
