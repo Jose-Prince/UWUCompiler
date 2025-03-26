@@ -1,8 +1,16 @@
 {
-import myToken
+const (
+	NUMBER int = iota
+	PLUS
+	MINUS
+	TIMES
+	DIV
+	LPAREN
+	RPAREN
+)
 }
 rule gettoken =
-      [0-9]+   { return int(lxm) }
+      [0-9]+   { return NUMBER }
     | '\+'  { return PLUS }
     | '-'  { return MINUS }
     | '\*'  { return TIMES }

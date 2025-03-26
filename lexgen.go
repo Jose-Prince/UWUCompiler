@@ -24,12 +24,13 @@ type afdSwitch struct {
 }
 
 func simplifyIntoSwitch(afd *lib.AFD) afdSwitch {
+	visitedSet := lib.Set[lib.AFDState]{}
 	sw := afdSwitch{
 		InitialState:     afd.InitialState,
 		AcceptanceStates: afd.AcceptanceStates,
 		Transitions:      make(map[lib.AFDState]map[rune]afdLeafInfo),
 	}
-	_simplifyIntoSwitch(afd, afd.InitialState, &sw)
+	_simplifyIntoSwitch(afd, afd.InitialState, &sw, &visitedSet)
 	return sw
 }
 
@@ -69,8 +70,8 @@ func getLowestPriorityDummy(afd *lib.AFD, state lib.AFDState) lib.AlphabetInput 
 	return lowestDummy
 }
 
-func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch) {
-	if afd.AcceptanceStates.Contains(state) {
+func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch, visitedSet *lib.Set[lib.AFDState]) {
+	if afd.AcceptanceStates.Contains(state) || !visitedSet.Add(state) {
 		return
 	}
 
@@ -83,7 +84,7 @@ func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch) {
 			}
 
 			sw.Transitions[state][inputRune] = afdLeafInfo{NewState: newState, Code: "return GIVE_NEXT"}
-			_simplifyIntoSwitch(afd, newState, sw)
+			_simplifyIntoSwitch(afd, newState, sw, visitedSet)
 		}
 	}
 
@@ -195,7 +196,10 @@ func main() {
 	// afdState := "0" // INITIAL AFD STATE!
 	for i := 0; i < len(sourceFileContent); i++ {
 
-		afdState := "0" // INITIAL AFD STATE!
+		afdState := "`)
+	writer.WriteString(afd.InitialState)
+	writer.WriteString(`" // INITIAL AFD STATE!
+
 		previousParsingResult := -1000
 		j := 0
 		for j = i; j < len(sourceFileContent); j++ {
