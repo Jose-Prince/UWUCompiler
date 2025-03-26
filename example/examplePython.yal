@@ -3,9 +3,9 @@ import myToken
 }
 rule gettoken =
       [0-9]+   { return int(lxm) }
-    | '+'  { return PLUS }
+    | '\+'  { return PLUS }
     | '-'  { return MINUS }
-    | '*'  { return TIMES }
+    | '\*'  { return TIMES }
     | '/'  { return DIV }
     | '\('  { return LPAREN }
     | '\)'  { return RPAREN }
