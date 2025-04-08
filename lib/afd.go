@@ -331,7 +331,8 @@ func sortNumbers(input string) string {
 	for i, str := range numberStrings {
 		num, err := strconv.Atoi(str)
 		if err != nil {
-			fmt.Println("Error convirtiendo a entero:", err)
+			// FIXME: !!!!!
+			// fmt.Println("Error convirtiendo a entero:", err)
 			return ""
 		}
 		numbers[i] = num
