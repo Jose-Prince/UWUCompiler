@@ -102,28 +102,40 @@ func getFirsts(grammar *Grammar, table *FirstFollowTable) {
 	alreadyEvaluatedFirsts := NewSet[GrammarToken]()
 	table.AppendFirst(grammar.InitialSimbol, NewEndToken())
 
-	evaluationStack := Stack[GrammarToken]{}
 	for nonTerminal := range grammar.NonTerminals {
-		evaluationStack.Push(nonTerminal)
+		getFirstFor(grammar, table, &nonTerminal, &alreadyEvaluatedFirsts)
+	}
+}
 
-		for evaluationStack.Peek().HasValue() {
-			current := evaluationStack.Pop().GetValue()
-
-			rulesWhereHead := getAllRulesWhereTokenIsHead(grammar, current)
-			nonTerminalsFirsts := []GrammarToken{}
-
-			for _, rule := range rulesWhereHead {
-				firstFromProduction := rule.Production[0]
-
-				if firstFromProduction.IsTerminal() {
-					table.AppendFirst(nonTerminal, firstFromProduction)
-				} else if !firstFromProduction.Equal(&nonTerminal) {
-					nonTerminalsFirsts = append(nonTerminalsFirsts, firstFromProduction)
-				}
-			}
-
+func getAllRulesWhereTokenIsHead(grammar *Grammar, token *GrammarToken) []GrammarRule {
+	rules := []GrammarRule{}
+	for _, rule := range grammar.Rules {
+		if rule.Head.Equal(token) {
+			rules = append(rules, rule)
 		}
+	}
+	return rules
+}
 
+func getFirstFor(grammar *Grammar, table *FirstFollowTable, current *GrammarToken, alreadyEvaluated *Set[GrammarToken]) {
+	if !alreadyEvaluated.Add(*current) {
+		return
+	}
+
+	rulesWhereHead := getAllRulesWhereTokenIsHead(grammar, current)
+	for _, rule := range rulesWhereHead {
+		firstFromProduction := rule.Production[0]
+
+		if firstFromProduction.IsTerminal() {
+			table.AppendFirst(*current, firstFromProduction)
+
+		} else if !firstFromProduction.Equal(current) {
+			getFirstFor(grammar, table, &firstFromProduction, alreadyEvaluated)
+
+			for evl := range table.table[firstFromProduction].First {
+				table.AppendFirst(*current, evl)
+			}
+		}
 	}
 }
 
