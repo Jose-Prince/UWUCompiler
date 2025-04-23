@@ -25,6 +25,15 @@ func NewNonTerminalToken(val string) GrammarToken {
 	}
 }
 
+func createEpsilonToken() GrammarToken {
+	e := "ε"
+	return NewTerminalToken(e)
+}
+
+func isEpsilon(terminalToken GrammarToken) bool {
+	return terminalToken.IsTerminal() && *terminalToken.Terminal == "ε"
+}
+
 type FirstFollowRow struct {
 	First  Set[GrammarToken]
 	Follow Set[GrammarToken]
@@ -98,6 +107,30 @@ type Grammar struct {
 	NonTerminals  Set[GrammarToken]
 }
 
+func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) Set[GrammarToken] {
+	result := NewSet[GrammarToken]()
+
+	for _, symbol := range seq {
+		firstSet := table.table[symbol].First
+		hasEpsilon := false
+
+		for terminal := range firstSet {
+			if isEpsilon(terminal) {
+				hasEpsilon = true
+			} else {
+				result.Add(terminal)
+			}
+		}
+
+		if !hasEpsilon {
+			return result
+		}
+	}
+
+	result.Add(createEpsilonToken())
+	return result
+}
+
 func getFirsts(grammar *Grammar, table *FirstFollowTable) {
 	alreadyEvaluatedFirsts := NewSet[GrammarToken]()
 	table.AppendFirst(grammar.InitialSimbol, NewEndToken())
@@ -140,16 +173,52 @@ func getFirstFor(grammar *Grammar, table *FirstFollowTable, current *GrammarToke
 }
 
 func getFollows(grammar *Grammar, table *FirstFollowTable) {
-	for _, i := range grammar.Rules {
-		head := i.Head
-		production := i.Production
+	changed := true
 
-		if head.Equal(&grammar.InitialSimbol) {
-			table(head).follow := add(table(head).follow, "$")
-		}
+	table.AppendFollow(grammar.InitialSimbol, NewEndToken())
 
-		if len(production) == 1 {
+	for changed {
+		changed = false
 
+		for _, rule := range grammar.Rules {
+			head := rule.Head
+			production := rule.Production
+
+			for i := 0; i < len(production); i++ {
+				B := production[i]
+
+				if !B.IsNonTerminal() {
+					continue
+				}
+
+				if i+1 < len(production) {
+					beta := production[i+1:]
+					firstOfBeta := getFirstOfSequence(beta, table)
+
+					for terminal := range firstOfBeta {
+						if !terminal.IsEnd && !(terminal.IsNonTerminal() && isEpsilon(terminal)) {
+
+							if table.table[B].Follow.Add_(terminal) {
+								changed = true
+							}
+						}
+					}
+
+					if firstOfBeta.Contains(createEpsilonToken()) {
+						for terminal := range table.table[head].Follow {
+							if table.table[B].Follow.Add_(terminal) {
+								changed = true
+							}
+						}
+					}
+				} else {
+					for terminal := range table.table[head].Follow {
+						if table.table[B].Follow.Add_(terminal) {
+							changed = true
+						}
+					}
+				}
+			}
 		}
 	}
 }

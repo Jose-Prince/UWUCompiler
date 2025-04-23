@@ -26,6 +26,17 @@ func (self *Set[T]) Add(val T) bool {
 	return !alreadyAdded
 }
 
+func (self Set[T]) Add_(val T) bool {
+	ref := self
+	_, alreadyAdded := ref[val]
+
+	if !alreadyAdded {
+		ref[val] = struct{}{}
+	}
+
+	return !alreadyAdded
+}
+
 func NewSet[T comparable]() Set[T] {
 	return make(Set[T])
 }
