@@ -131,7 +131,7 @@ func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) Set[Grammar
 	return result
 }
 
-func getFirsts(grammar *Grammar, table *FirstFollowTable) {
+func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
 	alreadyEvaluatedFirsts := NewSet[GrammarToken]()
 	table.AppendFirst(grammar.InitialSimbol, NewEndToken())
 
@@ -172,7 +172,7 @@ func getFirstFor(grammar *Grammar, table *FirstFollowTable, current *GrammarToke
 	}
 }
 
-func getFollows(grammar *Grammar, table *FirstFollowTable) {
+func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 	changed := true
 
 	table.AppendFollow(grammar.InitialSimbol, NewEndToken())
