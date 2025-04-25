@@ -70,9 +70,39 @@ func createExampleGrammar() Grammar {
 	}
 }
 
+func compareTables(t *testing.T, expected *FirstFollowTable, actual *FirstFollowTable) {
+	panic("TODO")
+}
+
 func TestGetFollows(t *testing.T) {
 	grammar := createExampleGrammar()
 	table := FirstFollowTable{}
+	expectedTable := FirstFollowTable{
+		table: map[GrammarToken]FirstFollowRow{
+			NewNonTerminalToken("S"): FirstFollowRow{
+				First: Set[GrammarToken]{
+					NewTerminalToken("sentence"): struct{}{},
+					NewTerminalToken("|"):        struct{}{},
+				},
+			},
+
+			NewNonTerminalToken("P"): FirstFollowRow{
+				First: Set[GrammarToken]{
+					NewTerminalToken("sentence"): struct{}{},
+					NewTerminalToken("|"):        struct{}{},
+				},
+			},
+
+			NewNonTerminalToken("Q"): FirstFollowRow{
+				First: Set[GrammarToken]{
+					NewTerminalToken("sentence"): struct{}{},
+					NewTerminalToken("|"):        struct{}{},
+				},
+			},
+		},
+	}
 
 	GetFirsts(&grammar, &table)
+
+	compareTables(t, &expectedTable, &table)
 }
