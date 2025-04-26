@@ -18,7 +18,7 @@ func createExampleGrammar() Grammar {
 			NewTerminalToken("∨"):        struct{}{},
 			NewTerminalToken("∧"):        struct{}{},
 			NewTerminalToken("["):        struct{}{},
-            NewTerminalToken("]"):        struct{}{},
+			NewTerminalToken("]"):        struct{}{},
 			NewTerminalToken("sentence"): struct{}{},
 		},
 		Rules: []GrammarRule{
@@ -123,9 +123,9 @@ func compareTables(t *testing.T, expected *FirstFollowTable, actual *FirstFollow
 	}
 }
 
-func TestGetFollows(t *testing.T) {
+func TestGetFirsts(t *testing.T) {
 	grammar := createExampleGrammar()
-	table := FirstFollowTable{}
+	table := NewFirstFollowTable()
 	expectedTable := FirstFollowTable{
 		table: map[GrammarToken]FirstFollowRow{
 			NewNonTerminalToken("S"): FirstFollowRow{

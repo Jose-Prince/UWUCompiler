@@ -74,6 +74,13 @@ type FirstFollowTable struct {
 	table map[GrammarToken]FirstFollowRow
 }
 
+func NewFirstFollowTable() FirstFollowTable {
+	table := make(map[GrammarToken]FirstFollowRow)
+	return FirstFollowTable{
+		table: table,
+	}
+}
+
 func (self *FirstFollowTable) AppendFirst(key GrammarToken, val GrammarToken) {
 	if _, found := self.table[key]; !found {
 		self.table[key] = FirstFollowRow{
