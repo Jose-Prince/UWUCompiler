@@ -1,11 +1,31 @@
 package lib
 
+import "strings"
+
 type GrammarToken struct {
 	Terminal    *string
 	NonTerminal *string
 
 	// Determines if this token is the '$' token at the end of a grammar.
 	IsEnd bool
+}
+
+func (self GrammarToken) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+	if self.IsTerminal() {
+		b.WriteString("TERM: ")
+		b.WriteString(*self.Terminal)
+	} else if self.IsNonTerminal() {
+		b.WriteString("NONT: ")
+		b.WriteString(*self.NonTerminal)
+	} else if self.IsEnd {
+		b.WriteString("END: $")
+	} else {
+		b.WriteString("INVALID")
+	}
+	b.WriteString(" }")
+	return b.String()
 }
 
 func NewEndToken() GrammarToken {
@@ -37,6 +57,17 @@ func isEpsilon(terminalToken GrammarToken) bool {
 type FirstFollowRow struct {
 	First  Set[GrammarToken]
 	Follow Set[GrammarToken]
+}
+
+func (self FirstFollowRow) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+	b.WriteString("\tFirsts: ")
+	b.WriteString(self.First.String())
+	b.WriteString("\tFollows: ")
+	b.WriteString(self.Follow.String())
+	b.WriteString(" }")
+	return b.String()
 }
 
 type FirstFollowTable struct {

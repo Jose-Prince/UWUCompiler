@@ -80,6 +80,7 @@ func TestExpressionStack(t *testing.T) {
 	expectedA := []RX_Token{}
 	expectedA = append(expectedA, CreateValueToken('a'))
 	expectedA = append(expectedA, CreateValueToken('b'))
+	expectedA = append(expectedA, CreateValueToken('c'))
 	expectedA = append(expectedA, CreateValueToken('0'))
 
 	expectedB := []RX_Token{}

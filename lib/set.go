@@ -1,6 +1,23 @@
 package lib
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Set[T comparable] map[T]struct{}
+
+func (self Set[T]) String() string {
+	b := strings.Builder{}
+	b.WriteString("[ ")
+
+	for k := range self {
+		b.WriteString(fmt.Sprint(k))
+	}
+
+	b.WriteString("]")
+	return b.String()
+}
 
 // Checks if an element exists on the set.
 //

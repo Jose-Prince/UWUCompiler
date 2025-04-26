@@ -22,14 +22,6 @@ func ExprStackItem_ToString(self *ExprStackItem) string {
 
 type ExprStack []ExprStackItem
 
-// func (self *ExprStackItem) ToString() string {
-// 	s := strings.Builder{}
-// 	for t := range self {
-// 		// TODO: Implement!
-// 	}
-// 	return s.String()
-// }
-
 func (self *ExprStack) Push(tokens ExprStackItem) {
 	if !self.IsEmpty() {
 		for _, token := range tokens {
@@ -61,15 +53,14 @@ func (self *ExprStack) Peek() Optional[ExprStackItem] {
 }
 
 func (self *ExprStack) Pop() Optional[ExprStackItem] {
-	ref := *self
-	length := len(ref)
+	length := len(*self)
 
 	if length == 0 {
 		return CreateNull[ExprStackItem]()
 	}
 
-	val := ref[length-1]
-	*self = ref[:length-1]
+	val := (*self)[length-1]
+	(*self) = (*self)[:length-1]
 
 	return CreateValue(val)
 }
