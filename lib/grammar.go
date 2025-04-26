@@ -3,8 +3,8 @@ package lib
 import "strings"
 
 type GrammarToken struct {
-	Terminal    *string
-	NonTerminal *string
+	Terminal    Optional[string]
+	NonTerminal Optional[string]
 
 	// Determines if this token is the '$' token at the end of a grammar.
 	IsEnd bool
@@ -15,10 +15,10 @@ func (self GrammarToken) String() string {
 	b.WriteString("{ ")
 	if self.IsTerminal() {
 		b.WriteString("TERM: ")
-		b.WriteString(*self.Terminal)
+		b.WriteString(self.Terminal.GetValue())
 	} else if self.IsNonTerminal() {
 		b.WriteString("NONT: ")
-		b.WriteString(*self.NonTerminal)
+		b.WriteString(self.NonTerminal.GetValue())
 	} else if self.IsEnd {
 		b.WriteString("END: $")
 	} else {
@@ -35,13 +35,15 @@ func NewEndToken() GrammarToken {
 }
 func NewTerminalToken(val string) GrammarToken {
 	return GrammarToken{
-		Terminal: &val,
+		NonTerminal: CreateNull[string](),
+		Terminal:    CreateValue(val),
 	}
 }
 
 func NewNonTerminalToken(val string) GrammarToken {
 	return GrammarToken{
-		NonTerminal: &val,
+		NonTerminal: CreateValue(val),
+		Terminal:    CreateNull[string](),
 	}
 }
 
@@ -50,8 +52,8 @@ func createEpsilonToken() GrammarToken {
 	return NewTerminalToken(e)
 }
 
-func isEpsilon(terminalToken GrammarToken) bool {
-	return terminalToken.IsTerminal() && *terminalToken.Terminal == "ε"
+func IsEpsilon(terminalToken GrammarToken) bool {
+	return terminalToken.IsTerminal() && terminalToken.Terminal.GetValue() == "ε"
 }
 
 type FirstFollowRow struct {
@@ -114,20 +116,20 @@ func (self *FirstFollowTable) AppendFollow(key GrammarToken, val GrammarToken) {
 }
 
 func (self *GrammarToken) IsTerminal() bool {
-	return self.Terminal != nil
+	return self.Terminal.HasValue()
 }
 
 func (self *GrammarToken) IsNonTerminal() bool {
-	return self.NonTerminal != nil
+	return self.NonTerminal.HasValue()
 }
 
 func (self *GrammarToken) Equal(other *GrammarToken) bool {
 	if self.IsTerminal() && other.IsTerminal() {
-		return *self.Terminal == *other.Terminal
+		return self.Terminal.Equals(&other.Terminal)
 	}
 
 	if self.IsNonTerminal() && other.IsNonTerminal() {
-		return *self.NonTerminal == *other.NonTerminal
+		return self.NonTerminal.Equals(&other.NonTerminal)
 	}
 
 	return false
@@ -153,7 +155,7 @@ func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) Set[Grammar
 		hasEpsilon := false
 
 		for terminal := range firstSet {
-			if isEpsilon(terminal) {
+			if IsEpsilon(terminal) {
 				hasEpsilon = true
 			} else {
 				result.Add(terminal)
@@ -171,7 +173,7 @@ func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) Set[Grammar
 
 func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
 	alreadyEvaluatedFirsts := NewSet[GrammarToken]()
-	table.AppendFirst(grammar.InitialSimbol, NewEndToken())
+	// table.AppendFirst(grammar.InitialSimbol, NewEndToken())
 
 	for nonTerminal := range grammar.NonTerminals {
 		getFirstFor(grammar, table, &nonTerminal, &alreadyEvaluatedFirsts)
@@ -234,7 +236,7 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 					firstOfBeta := getFirstOfSequence(beta, table)
 
 					for terminal := range firstOfBeta {
-						if !terminal.IsEnd && !(terminal.IsNonTerminal() && isEpsilon(terminal)) {
+						if !terminal.IsEnd && !(terminal.IsNonTerminal() && IsEpsilon(terminal)) {
 
 							if table.table[B].Follow.Add_(terminal) {
 								changed = true

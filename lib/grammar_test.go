@@ -131,21 +131,22 @@ func TestGetFirsts(t *testing.T) {
 			NewNonTerminalToken("S"): FirstFollowRow{
 				First: Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
-					NewTerminalToken("|"):        struct{}{},
+					NewTerminalToken("["):        struct{}{},
+					// NewEndToken():                struct{}{},
 				},
 			},
 
 			NewNonTerminalToken("P"): FirstFollowRow{
 				First: Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
-					NewTerminalToken("|"):        struct{}{},
+					NewTerminalToken("["):        struct{}{},
 				},
 			},
 
 			NewNonTerminalToken("Q"): FirstFollowRow{
 				First: Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
-					NewTerminalToken("|"):        struct{}{},
+					NewTerminalToken("["):        struct{}{},
 				},
 			},
 		},
