@@ -58,7 +58,7 @@ func NewNonTerminalToken(val string) GrammarToken {
 	}
 }
 
-func createEpsilonToken() GrammarToken {
+func CreateEpsilonToken() GrammarToken {
 	return GrammarToken{
 		NonTerminal: lib.CreateNull[string](),
 		Terminal:    lib.CreateValue(lib.CreateNull[string]()),
@@ -180,7 +180,7 @@ func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) lib.Set[Gra
 		}
 	}
 
-	result.Add(createEpsilonToken())
+	result.Add(CreateEpsilonToken())
 	return result
 }
 
@@ -256,7 +256,7 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 						}
 					}
 
-					if firstOfBeta.Contains(createEpsilonToken()) {
+					if firstOfBeta.Contains(CreateEpsilonToken()) {
 						for terminal := range table.table[head].Follow {
 							if table.table[B].Follow.Add_(terminal) {
 								changed = true
