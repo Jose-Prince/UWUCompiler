@@ -1,10 +1,12 @@
-package lib
+package regex
 
 import (
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/Jose-Prince/UWULexer/lib"
 )
 
 type AFDState = string
@@ -22,7 +24,7 @@ type AFD struct {
 	// Each key on this second dictionary represents an input from the alphabet,
 	// and the value is the new State the automata should transition.
 	Transitions      map[AFDState]map[AlphabetInput]AFDState
-	AcceptanceStates Set[AFDState]
+	AcceptanceStates lib.Set[AFDState]
 }
 
 func (self *AFD) String() string {
@@ -211,10 +213,10 @@ func (self *AFDStateTable[T]) Get(a *AFDState, b *AFDState) (T, bool) {
 func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	afd := &AFD{
 		Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
-		AcceptanceStates: NewSet[string](),
+		AcceptanceStates: lib.NewSet[string](),
 	}
 
-	alphabet := NewSet[RX_Token]()
+	alphabet := lib.NewSet[RX_Token]()
 
 	// Identificar el alfabeto del AFD
 	for _, row := range table {
@@ -233,10 +235,10 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	// Estado inicial del AFD
 	afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
 
-	newStates := NewSet[string]()
+	newStates := lib.NewSet[string]()
 	newStates.Add(afd.InitialState)
 
-	visited := NewSet[string]()
+	visited := lib.NewSet[string]()
 	visited.Add(afd.InitialState)
 
 	// Calcular transiciones del AFD
@@ -252,7 +254,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 			indexList := strings.SplitAfter(n, ",")
 
 			for a := range alphabet {
-				newFollowpos := NewSet[int]()
+				newFollowpos := lib.NewSet[int]()
 
 				for _, index := range indexList {
 					if index != "" {

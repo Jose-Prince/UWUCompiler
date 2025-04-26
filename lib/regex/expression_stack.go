@@ -1,6 +1,9 @@
-package lib
+package regex
 
-import "strings"
+import (
+	"github.com/Jose-Prince/UWULexer/lib"
+	"strings"
+)
 
 type ExprStackItem = []RX_Token
 
@@ -39,30 +42,30 @@ func (self *ExprStack) IsEmpty() bool {
 	return length == 0
 }
 
-func (self *ExprStack) Peek() Optional[ExprStackItem] {
+func (self *ExprStack) Peek() lib.Optional[ExprStackItem] {
 	ref := *self
 	length := len(ref)
 
 	if length == 0 {
-		return CreateNull[ExprStackItem]()
+		return lib.CreateNull[ExprStackItem]()
 	}
 
 	val := ref[length-1]
-	return CreateValue(val)
+	return lib.CreateValue(val)
 
 }
 
-func (self *ExprStack) Pop() Optional[ExprStackItem] {
+func (self *ExprStack) Pop() lib.Optional[ExprStackItem] {
 	length := len(*self)
 
 	if length == 0 {
-		return CreateNull[ExprStackItem]()
+		return lib.CreateNull[ExprStackItem]()
 	}
 
 	val := (*self)[length-1]
 	(*self) = (*self)[:length-1]
 
-	return CreateValue(val)
+	return lib.CreateValue(val)
 }
 
 func (self *ExprStack) AppendTop(token RX_Token) {

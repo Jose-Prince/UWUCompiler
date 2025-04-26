@@ -1,8 +1,10 @@
-package lib
+package regex
 
 import (
 	"fmt"
 	"strings"
+
+	"github.com/Jose-Prince/UWULexer/lib"
 )
 
 // Represents a Regular Expression operator
@@ -57,32 +59,35 @@ func (self *DummyInfo) Equals(other *DummyInfo) bool {
 	return self.Regex == other.Regex
 }
 
+// Represents a rune that may be an epsilon
+type EpsilonRune = lib.Optional[rune]
+
 // Represents a token.
 // It can either be a value, an operator or a dummy token.
 // If value is null then it should have an operator value, otherwise a value should be provided!
 type RX_Token struct {
 	// If the token is an operator this will be not nil.
-	operator *Operator
-	// If the value is nil then this token is not a value.
+	operator lib.Optional[Operator]
+	// If value is nil then this token is not a value.
 	// If the optional doesn't have a value then the value is epsilon.
 	// If the optional has a value then this token has the value of the rune.
-	value *Optional[rune]
+	value lib.Optional[EpsilonRune]
 	// If the token is a dummy token this will be not nil.
-	dummy *DummyInfo
+	dummy lib.Optional[DummyInfo]
 }
 
-func (self *RX_Token) GetValue() Optional[rune] {
+func (self *RX_Token) GetValue() EpsilonRune {
 	if !self.IsValue() {
 		panic(fmt.Sprintf("The token `%s` is not a value!", self.String()))
 	}
-	return *self.value
+	return self.value.GetValue()
 }
 
 func (self *RX_Token) GetOperator() Operator {
 	if !self.IsOperator() {
 		panic(fmt.Sprintf("The token `%s` is not an operator!", self.String()))
 	}
-	return *self.operator
+	return self.operator.GetValue()
 }
 
 func (self *RX_Token) GetDummy() DummyInfo {
@@ -90,55 +95,60 @@ func (self *RX_Token) GetDummy() DummyInfo {
 		panic(fmt.Sprintf("The token `%s` is not a dummy token!", self.String()))
 	}
 
-	return *self.dummy
+	return self.dummy.GetValue()
 }
 
 func (self *RX_Token) IsValue() bool {
-	return self.value != nil
+	return self.value.HasValue()
 }
 
 func (self *RX_Token) IsOperator() bool {
-	return self.operator != nil
+	return self.operator.HasValue()
 }
 
 func (self *RX_Token) IsDummy() bool {
-	return self.dummy != nil
+	return self.dummy.HasValue()
 }
 
 func CreateOperatorToken(t Operator) RX_Token {
 	return RX_Token{
-		operator: &t,
+		operator: lib.CreateValue(t),
 	}
 }
 
-func CreateValueToken(value rune) RX_Token {
-	val := CreateValue(value)
+func CreateValueToken(r rune) RX_Token {
 	return RX_Token{
-		value: &val,
+		value: lib.CreateValue(lib.CreateValue(r)),
 	}
 }
 
 func CreateEpsilonToken() RX_Token {
-	val := CreateNull[rune]()
 	return RX_Token{
-		value: &val,
+		value: lib.CreateValue(lib.CreateNull[rune]()),
 	}
 }
 
 func CreateDummyToken(info DummyInfo) RX_Token {
 	return RX_Token{
-		dummy: &info,
+		dummy: lib.CreateValue(info),
 	}
 }
 
 func (self *RX_Token) Equals(other *RX_Token) bool {
 	if self.IsOperator() && other.IsOperator() {
-		return *self.operator == *other.operator
+		selfOp := self.GetOperator()
+		otherOp := other.GetOperator()
+		return selfOp == otherOp
 
 	} else if self.IsValue() && other.IsValue() {
 		val := self.GetValue()
 		otherVal := other.GetValue()
-		return (&val).Equals(&otherVal)
+
+		if val.HasValue() && otherVal.HasValue() {
+			return val.GetValue() == otherVal.GetValue()
+		} else {
+			return val.HasValue() == otherVal.HasValue()
+		}
 
 	} else if self.IsDummy() && other.IsDummy() {
 		dum := self.GetDummy()
@@ -156,7 +166,7 @@ func (self *RX_Token) Equals(other *RX_Token) bool {
 }
 
 func (self *RX_Token) IsUninitialized() bool {
-	return self.dummy == nil && self.operator == nil && self.value == nil
+	return !self.dummy.HasValue() && !self.operator.HasValue() && !self.value.HasValue()
 }
 
 func TokenStreamToString(stream []RX_Token) string {

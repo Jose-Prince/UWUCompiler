@@ -1,10 +1,16 @@
-package lib
+package grammar
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/Jose-Prince/UWULexer/lib"
+)
+
+type EpsilonString = lib.Optional[string]
 
 type GrammarToken struct {
-	Terminal    Optional[string]
-	NonTerminal Optional[string]
+	Terminal    lib.Optional[EpsilonString]
+	NonTerminal lib.Optional[string]
 
 	// Determines if this token is the '$' token at the end of a grammar.
 	IsEnd bool
@@ -12,10 +18,15 @@ type GrammarToken struct {
 
 func (self GrammarToken) String() string {
 	b := strings.Builder{}
-	b.WriteString("{ ")
+	b.WriteString("{")
 	if self.IsTerminal() {
 		b.WriteString("TERM: ")
-		b.WriteString(self.Terminal.GetValue())
+		val := self.Terminal.GetValue()
+		if val.HasValue() {
+			b.WriteString(val.GetValue())
+		} else {
+			b.WriteRune('ε')
+		}
 	} else if self.IsNonTerminal() {
 		b.WriteString("NONT: ")
 		b.WriteString(self.NonTerminal.GetValue())
@@ -24,7 +35,7 @@ func (self GrammarToken) String() string {
 	} else {
 		b.WriteString("INVALID")
 	}
-	b.WriteString(" }")
+	b.WriteString("}")
 	return b.String()
 }
 
@@ -35,30 +46,32 @@ func NewEndToken() GrammarToken {
 }
 func NewTerminalToken(val string) GrammarToken {
 	return GrammarToken{
-		NonTerminal: CreateNull[string](),
-		Terminal:    CreateValue(val),
+		NonTerminal: lib.CreateNull[string](),
+		Terminal:    lib.CreateValue(lib.CreateValue(val)),
 	}
 }
 
 func NewNonTerminalToken(val string) GrammarToken {
 	return GrammarToken{
-		NonTerminal: CreateValue(val),
-		Terminal:    CreateNull[string](),
+		NonTerminal: lib.CreateValue(val),
+		Terminal:    lib.CreateNull[EpsilonString](),
 	}
 }
 
 func createEpsilonToken() GrammarToken {
-	e := "ε"
-	return NewTerminalToken(e)
+	return GrammarToken{
+		NonTerminal: lib.CreateNull[string](),
+		Terminal:    lib.CreateValue(lib.CreateNull[string]()),
+	}
 }
 
 func IsEpsilon(terminalToken GrammarToken) bool {
-	return terminalToken.IsTerminal() && terminalToken.Terminal.GetValue() == "ε"
+	return terminalToken.IsTerminal() && !terminalToken.Terminal.GetValue().HasValue()
 }
 
 type FirstFollowRow struct {
-	First  Set[GrammarToken]
-	Follow Set[GrammarToken]
+	First  lib.Set[GrammarToken]
+	Follow lib.Set[GrammarToken]
 }
 
 func (self FirstFollowRow) String() string {
@@ -86,8 +99,8 @@ func NewFirstFollowTable() FirstFollowTable {
 func (self *FirstFollowTable) AppendFirst(key GrammarToken, val GrammarToken) {
 	if _, found := self.table[key]; !found {
 		self.table[key] = FirstFollowRow{
-			First:  NewSet[GrammarToken](),
-			Follow: NewSet[GrammarToken](),
+			First:  lib.NewSet[GrammarToken](),
+			Follow: lib.NewSet[GrammarToken](),
 		}
 	}
 
@@ -102,8 +115,8 @@ func (self *FirstFollowTable) AppendFirst(key GrammarToken, val GrammarToken) {
 func (self *FirstFollowTable) AppendFollow(key GrammarToken, val GrammarToken) {
 	if _, found := self.table[key]; !found {
 		self.table[key] = FirstFollowRow{
-			First:  NewSet[GrammarToken](),
-			Follow: NewSet[GrammarToken](),
+			First:  lib.NewSet[GrammarToken](),
+			Follow: lib.NewSet[GrammarToken](),
 		}
 	}
 
@@ -143,12 +156,12 @@ type GrammarRule struct {
 type Grammar struct {
 	InitialSimbol GrammarToken
 	Rules         []GrammarRule
-	Terminals     Set[GrammarToken]
-	NonTerminals  Set[GrammarToken]
+	Terminals     lib.Set[GrammarToken]
+	NonTerminals  lib.Set[GrammarToken]
 }
 
-func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) Set[GrammarToken] {
-	result := NewSet[GrammarToken]()
+func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) lib.Set[GrammarToken] {
+	result := lib.NewSet[GrammarToken]()
 
 	for _, symbol := range seq {
 		firstSet := table.table[symbol].First
@@ -172,7 +185,7 @@ func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) Set[Grammar
 }
 
 func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
-	alreadyEvaluatedFirsts := NewSet[GrammarToken]()
+	alreadyEvaluatedFirsts := lib.NewSet[GrammarToken]()
 
 	for nonTerminal := range grammar.NonTerminals {
 		getFirstFor(grammar, table, &nonTerminal, &alreadyEvaluatedFirsts)
@@ -189,7 +202,7 @@ func getAllRulesWhereTokenIsHead(grammar *Grammar, token *GrammarToken) []Gramma
 	return rules
 }
 
-func getFirstFor(grammar *Grammar, table *FirstFollowTable, current *GrammarToken, alreadyEvaluated *Set[GrammarToken]) {
+func getFirstFor(grammar *Grammar, table *FirstFollowTable, current *GrammarToken, alreadyEvaluated *lib.Set[GrammarToken]) {
 	if !alreadyEvaluated.Add(*current) {
 		return
 	}

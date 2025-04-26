@@ -1,20 +1,22 @@
-package lib
+package grammar
 
 import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/Jose-Prince/UWULexer/lib"
 )
 
 func createExampleGrammar() Grammar {
 	return Grammar{
 		InitialSimbol: NewNonTerminalToken("S"),
-		NonTerminals: Set[GrammarToken]{
+		NonTerminals: lib.Set[GrammarToken]{
 			NewNonTerminalToken("S"): struct{}{},
 			NewNonTerminalToken("P"): struct{}{},
 			NewNonTerminalToken("Q"): struct{}{},
 		},
-		Terminals: Set[GrammarToken]{
+		Terminals: lib.Set[GrammarToken]{
 			NewTerminalToken("∨"):        struct{}{},
 			NewTerminalToken("∧"):        struct{}{},
 			NewTerminalToken("["):        struct{}{},
@@ -83,7 +85,7 @@ func prettyPrintTable[K StringerKey, V fmt.Stringer](table *map[K]V) string {
 	return b.String()
 }
 
-func compareSets[T StringerKey](t *testing.T, expected Set[T], actual Set[T]) {
+func compareSets[T StringerKey](t *testing.T, expected lib.Set[T], actual lib.Set[T]) {
 	if len(expected) != len(actual) {
 		t.Logf("Expected:\n%s", expected)
 		t.Logf("Actual:\n%s", actual)
@@ -129,21 +131,21 @@ func TestGetFirsts(t *testing.T) {
 	expectedTable := FirstFollowTable{
 		table: map[GrammarToken]FirstFollowRow{
 			NewNonTerminalToken("S"): FirstFollowRow{
-				First: Set[GrammarToken]{
+				First: lib.Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
 					NewTerminalToken("["):        struct{}{},
 				},
 			},
 
 			NewNonTerminalToken("P"): FirstFollowRow{
-				First: Set[GrammarToken]{
+				First: lib.Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
 					NewTerminalToken("["):        struct{}{},
 				},
 			},
 
 			NewNonTerminalToken("Q"): FirstFollowRow{
-				First: Set[GrammarToken]{
+				First: lib.Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
 					NewTerminalToken("["):        struct{}{},
 				},

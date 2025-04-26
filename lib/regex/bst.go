@@ -1,4 +1,6 @@
-package lib
+package regex
+
+import "github.com/Jose-Prince/UWULexer/lib"
 
 type BSTNode struct {
 	Key int
@@ -59,7 +61,7 @@ func (b *BST) Insertion(postfix []RX_Token) {
 	postfix = append(postfix, CreateValueToken('#'))
 	postfix = append(postfix, CreateOperatorToken(AND))
 
-	var stack Stack[int]
+	var stack lib.Stack[int]
 	var nodes []BSTNode
 
 	for _, v := range postfix {
