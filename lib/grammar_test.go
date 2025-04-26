@@ -132,7 +132,6 @@ func TestGetFirsts(t *testing.T) {
 				First: Set[GrammarToken]{
 					NewTerminalToken("sentence"): struct{}{},
 					NewTerminalToken("["):        struct{}{},
-					// NewEndToken():                struct{}{},
 				},
 			},
 
