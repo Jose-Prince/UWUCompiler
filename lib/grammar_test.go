@@ -15,7 +15,8 @@ func createExampleGrammar() Grammar {
 		Terminals: Set[GrammarToken]{
 			NewTerminalToken("∨"):        struct{}{},
 			NewTerminalToken("∧"):        struct{}{},
-			NewTerminalToken("|"):        struct{}{},
+			NewTerminalToken("["):        struct{}{},
+            NewTerminalToken("]"):        struct{}{},
 			NewTerminalToken("sentence"): struct{}{},
 		},
 		Rules: []GrammarRule{
@@ -54,14 +55,14 @@ func createExampleGrammar() Grammar {
 			GrammarRule{
 				Head: NewNonTerminalToken("Q"),
 				Production: []GrammarToken{
-					NewTerminalToken("|"),
+					NewTerminalToken("["),
 					NewNonTerminalToken("S"),
-					NewTerminalToken("|"),
+					NewTerminalToken("]"),
 				},
 			},
 
 			GrammarRule{
-				Head: NewNonTerminalToken("P"),
+				Head: NewNonTerminalToken("Q"),
 				Production: []GrammarToken{
 					NewTerminalToken("sentence"),
 				},
