@@ -5,30 +5,31 @@ import (
 	"testing"
 
 	l "github.com/Jose-Prince/UWULexer/lib"
+	reg "github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
-func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
+func generateExpectedPostfix(r *rand.Rand) []reg.RX_Token {
 	expressionCount := r.Intn(2) + 1 // Minimum of 1 expressions
-	postfixExpr := []l.RX_Token{}
+	postfixExpr := []reg.RX_Token{}
 	possibleChars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.-;:_¿?¡!'{}+*|\"#$%&/()=[]<>°¬")
 	getRandomRune := func() rune {
 		return possibleChars[r.Intn(len(possibleChars))]
 	}
-	getRandomTwoOp := func() l.Operator {
+	getRandomTwoOp := func() reg.Operator {
 		switch r.Intn(2) {
 		case 0:
-			return l.OR
+			return reg.OR
 		default:
-			return l.AND
+			return reg.AND
 		}
 	}
 
 	for i := range expressionCount {
 		switch r.Intn(5) {
 		default: // Simple two value expression
-			a := l.CreateValueToken(getRandomRune())
-			b := l.CreateValueToken(getRandomRune())
-			op := l.CreateOperatorToken(getRandomTwoOp())
+			a := reg.CreateValueToken(getRandomRune())
+			b := reg.CreateValueToken(getRandomRune())
+			op := reg.CreateOperatorToken(getRandomTwoOp())
 
 			postfixExpr = append(postfixExpr, a)
 			postfixExpr = append(postfixExpr, b)
@@ -37,42 +38,42 @@ func generateExpectedPostfix(r *rand.Rand) []l.RX_Token {
 
 		addOneOp := r.Intn(2) == 0
 		if addOneOp {
-			postfixExpr = append(postfixExpr, l.CreateOperatorToken(l.ZERO_OR_MANY))
+			postfixExpr = append(postfixExpr, reg.CreateOperatorToken(reg.ZERO_OR_MANY))
 		}
 
 		if i > 0 {
-			postfixExpr = append(postfixExpr, l.CreateOperatorToken(getRandomTwoOp()))
+			postfixExpr = append(postfixExpr, reg.CreateOperatorToken(getRandomTwoOp()))
 		}
 	}
 
 	return postfixExpr
 }
 
-func fromPostfixToInfix(postfix []l.RX_Token) []l.RX_Token {
-	stack := l.Stack[[]l.RX_Token]{}
+func fromPostfixToInfix(postfix []reg.RX_Token) []reg.RX_Token {
+	stack := l.Stack[[]reg.RX_Token]{}
 
 	for _, elem := range postfix {
 		if elem.IsOperator() {
 			op := elem.GetOperator()
 			switch op {
-			case l.OR, l.AND:
+			case reg.OR, reg.AND:
 				b := stack.Pop()
 				a := stack.Pop()
 
-				combined := []l.RX_Token{l.CreateOperatorToken(l.LEFT_PAREN)}
+				combined := []reg.RX_Token{reg.CreateOperatorToken(reg.LEFT_PAREN)}
 				combined = append(combined, a.GetValue()...)
 				combined = append(combined, elem)
 				combined = append(combined, b.GetValue()...)
-				combined = append(combined, l.CreateOperatorToken(l.RIGHT_PAREN))
+				combined = append(combined, reg.CreateOperatorToken(reg.RIGHT_PAREN))
 
 				stack.Push(combined)
 
-			case l.ZERO_OR_MANY, l.ONE_OR_MANY, l.OPTIONAL:
+			case reg.ZERO_OR_MANY, reg.ONE_OR_MANY, reg.OPTIONAL:
 				a := stack.Pop()
 
-				combined := []l.RX_Token{l.CreateOperatorToken(l.LEFT_PAREN)}
+				combined := []reg.RX_Token{reg.CreateOperatorToken(reg.LEFT_PAREN)}
 				combined = append(combined, a.GetValue()...)
-				combined = append(combined, l.CreateOperatorToken(l.RIGHT_PAREN))
+				combined = append(combined, reg.CreateOperatorToken(reg.RIGHT_PAREN))
 
 				combined = append(combined, elem)
 				stack.Push(combined)
@@ -81,7 +82,7 @@ func fromPostfixToInfix(postfix []l.RX_Token) []l.RX_Token {
 			}
 
 		} else {
-			stack.Push([]l.RX_Token{elem})
+			stack.Push([]reg.RX_Token{elem})
 		}
 	}
 
@@ -105,62 +106,62 @@ func FuzzInfixToPostfix(f *testing.F) {
 
 func TestDummyTokens(t *testing.T) {
 	dummyCode := "Hello"
-	expected := []l.RX_Token{
-		l.CreateValueToken('a'),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.OR),
-		l.CreateDummyToken(l.DummyInfo{Code: dummyCode}),
-		l.CreateOperatorToken(l.AND),
+	expected := []reg.RX_Token{
+		reg.CreateValueToken('a'),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateDummyToken(reg.DummyInfo{Code: dummyCode}),
+		reg.CreateOperatorToken(reg.AND),
 	}
-	infix := []l.RX_Token{
-		l.CreateValueToken('a'),
-		l.CreateOperatorToken(l.OR),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.AND),
-		l.CreateDummyToken(l.DummyInfo{Code: dummyCode}),
+	infix := []reg.RX_Token{
+		reg.CreateValueToken('a'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateDummyToken(reg.DummyInfo{Code: dummyCode}),
 	}
 	result := DEFAULT_ALPHABET.ToPostfix(&infix)
 	compareTokensStreams(t, "a|b (Dummy token)", expected, result)
 }
 
 func TestZeroOrManyOperator(t *testing.T) {
-	expected := []l.RX_Token{
-		l.CreateValueToken('a'),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.OR),
-		l.CreateValueToken('a'),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.OR),
-		l.CreateOperatorToken(l.ZERO_OR_MANY),
-		l.CreateOperatorToken(l.AND),
+	expected := []reg.RX_Token{
+		reg.CreateValueToken('a'),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('a'),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateOperatorToken(reg.ZERO_OR_MANY),
+		reg.CreateOperatorToken(reg.AND),
 	}
-	infix := []l.RX_Token{
-		l.CreateOperatorToken(l.LEFT_PAREN),
-		l.CreateValueToken('a'),
-		l.CreateOperatorToken(l.OR),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.RIGHT_PAREN),
-		l.CreateOperatorToken(l.ONE_OR_MANY),
+	infix := []reg.RX_Token{
+		reg.CreateOperatorToken(reg.LEFT_PAREN),
+		reg.CreateValueToken('a'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.RIGHT_PAREN),
+		reg.CreateOperatorToken(reg.ONE_OR_MANY),
 	}
 	result := DEFAULT_ALPHABET.ToPostfix(&infix)
 	compareTokensStreams(t, "(a|b)+", expected, result)
 }
 
 func TestOptionalOperator(t *testing.T) {
-	expected := []l.RX_Token{
-		l.CreateValueToken('a'),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.AND),
-		l.CreateEpsilonToken(),
-		l.CreateOperatorToken(l.OR),
+	expected := []reg.RX_Token{
+		reg.CreateValueToken('a'),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateEpsilonToken(),
+		reg.CreateOperatorToken(reg.OR),
 	}
-	infix := []l.RX_Token{
-		l.CreateOperatorToken(l.LEFT_PAREN),
-		l.CreateValueToken('a'),
-		l.CreateOperatorToken(l.AND),
-		l.CreateValueToken('b'),
-		l.CreateOperatorToken(l.RIGHT_PAREN),
-		l.CreateOperatorToken(l.OPTIONAL),
+	infix := []reg.RX_Token{
+		reg.CreateOperatorToken(reg.LEFT_PAREN),
+		reg.CreateValueToken('a'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.RIGHT_PAREN),
+		reg.CreateOperatorToken(reg.OPTIONAL),
 	}
 	result := DEFAULT_ALPHABET.ToPostfix(&infix)
 	compareTokensStreams(t, "(ab)?", expected, result)

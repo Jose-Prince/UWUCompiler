@@ -5,41 +5,42 @@ import (
 	"math"
 	"os"
 
-	"github.com/Jose-Prince/UWULexer/lib"
+	l "github.com/Jose-Prince/UWULexer/lib"
+	reg "github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
 type afdLeafInfo struct {
 	Code     string
-	NewState lib.AFDState
+	NewState reg.AFDState
 }
 
 type afdSwitch struct {
 	// The first key is the state
 	// The second key is the input
 	// The third key is the nextState and the code to write
-	Transitions map[lib.AFDState]map[rune]afdLeafInfo
+	Transitions map[reg.AFDState]map[rune]afdLeafInfo
 
-	InitialState     lib.AFDState
-	AcceptanceStates lib.Set[lib.AFDState]
+	InitialState     reg.AFDState
+	AcceptanceStates l.Set[reg.AFDState]
 }
 
-func simplifyIntoSwitch(afd *lib.AFD) afdSwitch {
-	visitedSet := lib.Set[lib.AFDState]{}
+func simplifyIntoSwitch(afd *reg.AFD) afdSwitch {
+	visitedSet := l.Set[reg.AFDState]{}
 	sw := afdSwitch{
 		InitialState:     afd.InitialState,
 		AcceptanceStates: afd.AcceptanceStates,
-		Transitions:      make(map[lib.AFDState]map[rune]afdLeafInfo),
+		Transitions:      make(map[reg.AFDState]map[rune]afdLeafInfo),
 	}
 	_simplifyIntoSwitch(afd, afd.InitialState, &sw, &visitedSet)
 	return sw
 }
 
 type tranInput struct {
-	State lib.AFDState
+	State reg.AFDState
 }
 
-func getChildrenWithDummyTransitions(afd *lib.AFD, state lib.AFDState) lib.Set[lib.AFDState] {
-	children := lib.Set[lib.AFDState]{}
+func getChildrenWithDummyTransitions(afd *reg.AFD, state reg.AFDState) l.Set[reg.AFDState] {
+	children := l.Set[reg.AFDState]{}
 
 	for _, childState := range afd.Transitions[state] {
 		for input := range afd.Transitions[childState] {
@@ -52,9 +53,9 @@ func getChildrenWithDummyTransitions(afd *lib.AFD, state lib.AFDState) lib.Set[l
 	return children
 }
 
-func getLowestPriorityDummy(afd *lib.AFD, state lib.AFDState) lib.AlphabetInput {
+func getLowestPriorityDummy(afd *reg.AFD, state reg.AFDState) reg.AlphabetInput {
 	var lowestPriority uint = math.MaxUint
-	lowestDummy := lib.AlphabetInput{}
+	lowestDummy := reg.AlphabetInput{}
 	for input := range afd.Transitions[state] {
 		if input.IsDummy() {
 			if input.GetDummy().Priority < lowestPriority {
@@ -70,7 +71,7 @@ func getLowestPriorityDummy(afd *lib.AFD, state lib.AFDState) lib.AlphabetInput 
 	return lowestDummy
 }
 
-func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch, visitedSet *lib.Set[lib.AFDState]) {
+func _simplifyIntoSwitch(afd *reg.AFD, state reg.AFDState, sw *afdSwitch, visitedSet *l.Set[reg.AFDState]) {
 	if afd.AcceptanceStates.Contains(state) || !visitedSet.Add(state) {
 		return
 	}
@@ -103,7 +104,7 @@ func _simplifyIntoSwitch(afd *lib.AFD, state lib.AFDState, sw *afdSwitch, visite
 	}
 }
 
-func WriteLexFile(filePath string, info LexFileData, afd lib.AFD) error {
+func WriteLexFile(filePath string, info LexFileData, afd reg.AFD) error {
 	f, err := os.Create(filePath)
 	if err != nil {
 		panic("Error creating output file!")
@@ -235,7 +236,7 @@ func gettoken(state *string, input rune) int {
 }
 
 func (s *afdSwitch) WriteTo(writer *bufio.Writer) {
-	alreadyWrittenStates := lib.Set[lib.AFDState]{}
+	alreadyWrittenStates := l.Set[reg.AFDState]{}
 	writer.WriteString("switch *state {\n")
 	_writeTo(s, writer, s.InitialState, &alreadyWrittenStates)
 	writer.WriteString(`
@@ -244,7 +245,7 @@ return UNRECOGNIZABLE
 `)
 }
 
-func _writeTo(s *afdSwitch, w *bufio.Writer, state lib.AFDState, alreadyWrittenStates *lib.Set[lib.AFDState]) {
+func _writeTo(s *afdSwitch, w *bufio.Writer, state reg.AFDState, alreadyWrittenStates *l.Set[reg.AFDState]) {
 	if !alreadyWrittenStates.Add(state) {
 		return
 	}

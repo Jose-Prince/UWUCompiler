@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
 type LexFileData struct {
@@ -15,7 +15,7 @@ type LexFileData struct {
 	Footer string
 	// The key represents the regex expanded to only have valid regex items
 	// The value is the go code to execute when the regex matches
-	Rule map[string]lib.DummyInfo
+	Rule map[string]regex.DummyInfo
 }
 
 // Example Lex file:
@@ -74,12 +74,12 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 	var index uint
 	index = 1
 
-	var info lib.DummyInfo
+	var info regex.DummyInfo
 
 	scanner := bufio.NewScanner(file)
 	var header, footer strings.Builder
 	dummyRules := make(map[string]string)
-	rules := make(map[string]lib.DummyInfo)
+	rules := make(map[string]regex.DummyInfo)
 	state := 0 // 0: Reading header, 1: Reading rules, 2: Reading footer
 
 	// Regex to identify

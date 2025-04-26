@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/Jose-Prince/UWULexer/lib"
+	regx "github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
 const CMD_HELP string = `
@@ -41,40 +42,40 @@ func main() {
 	lexFileData := LexParser(lexFilePath)
 
 	// Combine all regexes into a single regex
-	infix := []lib.RX_Token{}
+	infix := []regx.RX_Token{}
 	i := 0
 	keysCount := len(lexFileData.Rule)
 	for regex, info := range lexFileData.Rule {
 		// What we want is to have something like: ((<REGEX>).(DUMMY))
-		infix = append(infix, lib.CreateOperatorToken(lib.LEFT_PAREN))
+		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
 
-		infix = append(infix, lib.CreateOperatorToken(lib.LEFT_PAREN))
-		regexToTokens := InfixToTokens(regex)
-		infix = append(infix, regexToTokens...)
-		infix = append(infix, lib.CreateOperatorToken(lib.RIGHT_PAREN))
-		infix = append(infix, lib.CreateOperatorToken(lib.AND))
-		infix = append(infix, lib.CreateDummyToken(info))
+		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
+		regxToTokens := InfixToTokens(regex)
+		infix = append(infix, regxToTokens...)
+		infix = append(infix, regx.CreateOperatorToken(regx.RIGHT_PAREN))
+		infix = append(infix, regx.CreateOperatorToken(regx.AND))
+		infix = append(infix, regx.CreateDummyToken(info))
 
-		infix = append(infix, lib.CreateOperatorToken(lib.RIGHT_PAREN))
+		infix = append(infix, regx.CreateOperatorToken(regx.RIGHT_PAREN))
 
 		if i+1 < keysCount {
-			infix = append(infix, lib.CreateOperatorToken(lib.OR))
+			infix = append(infix, regx.CreateOperatorToken(regx.OR))
 		}
 		i++
 	}
 
 	// TODO: Regex to AFD
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
-	fmt.Println("The Infix expression is:", lib.TokenStreamToString(infix))
-	fmt.Println("The Postfix expression is:", lib.TokenStreamToString(postfix))
+	fmt.Println("The Infix expression is:", regx.TokenStreamToString(infix))
+	fmt.Println("The Postfix expression is:", regx.TokenStreamToString(postfix))
 
 	// Generates BST
-	bst := new(lib.BST)
+	bst := new(regx.BST)
 
-	//bst.Insertion([]lib.RX_Token{
-	//	lib.CreateValueToken('a'),
-	//	lib.CreateValueToken('b'),
-	//	lib.CreateOperatorToken(lib.AND),
+	//bst.Insertion([]regx.RX_Token{
+	//	regx.CreateValueToken('a'),
+	//	regx.CreateValueToken('b'),
+	//	regx.CreateOperatorToken(regx.AND),
 	//})
 
 	bst.Insertion(postfix)
@@ -89,31 +90,31 @@ func main() {
 	}
 
 	// Creates tables with nodes from tree
-	table := lib.ConvertTreeToTable(bst)
+	table := regx.ConvertTreeToTable(bst)
 
-	afd := new(lib.AFD)
-	afd = lib.ConvertFromTableToAFD(table)
+	afd := new(regx.AFD)
+	afd = regx.ConvertFromTableToAFD(table)
 
 	//afd = MinimizeAFD(afd)
-	// afd := &lib.AFD{InitialState: "0",
-	// 	AcceptanceStates: lib.Set[lib.AFDState]{"f": struct{}{}},
-	// 	Transitions: map[lib.AFDState]map[lib.AlphabetInput]lib.AFDState{
+	// afd := &regx.AFD{InitialState: "0",
+	// 	AcceptanceStates: regx.Set[regx.AFDState]{"f": struct{}{}},
+	// 	Transitions: map[regx.AFDState]map[regx.AlphabetInput]regx.AFDState{
 	// 		"0": {
-	// 			lib.CreateValueToken('a'): "1",
-	// 			lib.CreateValueToken('c'): "4",
+	// 			regx.CreateValueToken('a'): "1",
+	// 			regx.CreateValueToken('c'): "4",
 	// 		},
 	// 		"1": {
-	// 			lib.CreateValueToken('b'): "2",
+	// 			regx.CreateValueToken('b'): "2",
 	// 		},
 	// 		"2": {
-	// 			lib.CreateValueToken('c'): "3",
+	// 			regx.CreateValueToken('c'): "3",
 	// 		},
 	// 		"3": {
-	// 			lib.CreateDummyToken(lexFileData.Rule["abc"]):     "f",
-	// 			lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
+	// 			regx.CreateDummyToken(lexFileData.Rule["abc"]):     "f",
+	// 			regx.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
 	// 		},
 	// 		"4": {
-	// 			lib.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
+	// 			regx.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
 	// 		},
 	// 	}}
 
