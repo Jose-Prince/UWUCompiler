@@ -160,30 +160,6 @@ type Grammar struct {
 	NonTerminals  lib.Set[GrammarToken]
 }
 
-func getFirstOfSequence(seq []GrammarToken, table *FirstFollowTable) lib.Set[GrammarToken] {
-	result := lib.NewSet[GrammarToken]()
-
-	for _, symbol := range seq {
-		firstSet := table.table[symbol].First
-		hasEpsilon := false
-
-		for terminal := range firstSet {
-			if IsEpsilon(terminal) {
-				hasEpsilon = true
-			} else {
-				result.Add(terminal)
-			}
-		}
-
-		if !hasEpsilon {
-			return result
-		}
-	}
-
-	result.Add(CreateEpsilonToken())
-	return result
-}
-
 func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
 	alreadyEvaluatedFirsts := lib.NewSet[GrammarToken]()
 
@@ -227,13 +203,22 @@ func getFirstFor(grammar *Grammar, table *FirstFollowTable, current *GrammarToke
 func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 	changed := true
 
-	table.AppendFollow(grammar.InitialSimbol, NewEndToken())
+	table.AppendFollow(grammar.InitialSimbol, NewTerminalToken("$"))
+
+	for val := range grammar.NonTerminals {
+		if _, exists := table.table[val]; !exists {
+			table.table[val] = FirstFollowRow{
+				First:  lib.NewSet[GrammarToken](),
+				Follow: lib.NewSet[GrammarToken](),
+			}
+		}
+	}
 
 	for changed {
 		changed = false
 
 		for _, rule := range grammar.Rules {
-			head := rule.Head
+			A := rule.Head
 			production := rule.Production
 
 			for i := 0; i < len(production); i++ {
@@ -245,26 +230,25 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 
 				if i+1 < len(production) {
 					beta := production[i+1:]
-					firstOfBeta := getFirstOfSequence(beta, table)
 
-					for terminal := range firstOfBeta {
-						if !terminal.IsEnd && !(terminal.IsNonTerminal() && IsEpsilon(terminal)) {
+					for _, terminal := range beta {
+						if terminal.IsTerminal() {
 
 							if table.table[B].Follow.Add_(terminal) {
+								changed = true
+							}
+						} else {
+							newTerminal := derivateNonTerminal(terminal, grammar)
+
+							if table.table[B].Follow.Add_(newTerminal) {
 								changed = true
 							}
 						}
 					}
 
-					if firstOfBeta.Contains(CreateEpsilonToken()) {
-						for terminal := range table.table[head].Follow {
-							if table.table[B].Follow.Add_(terminal) {
-								changed = true
-							}
-						}
-					}
+					break
 				} else {
-					for terminal := range table.table[head].Follow {
+					for terminal := range table.table[A].Follow {
 						if table.table[B].Follow.Add_(terminal) {
 							changed = true
 						}
@@ -273,4 +257,28 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 			}
 		}
 	}
+}
+
+func derivateNonTerminal(token GrammarToken, grammar *Grammar) GrammarToken {
+
+	if token.IsTerminal() {
+		return token
+	}
+
+	for _, rule := range grammar.Rules {
+		recursive := false
+
+		// Check if rule isnt recursive
+		for _, producction := range rule.Production {
+			if producction.Equal(&token) {
+				recursive = true
+			}
+		}
+
+		if rule.Head.Equal(&token) && len(rule.Production) == 1 && !recursive {
+			return derivateNonTerminal(rule.Production[0], grammar)
+		}
+	}
+
+	return CreateEpsilonToken()
 }

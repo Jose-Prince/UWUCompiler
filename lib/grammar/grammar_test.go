@@ -17,8 +17,8 @@ func createExampleGrammar() Grammar {
 			NewNonTerminalToken("Q"): struct{}{},
 		},
 		Terminals: lib.Set[GrammarToken]{
-			NewTerminalToken("∨"):        struct{}{},
-			NewTerminalToken("∧"):        struct{}{},
+			NewTerminalToken("v"):        struct{}{},
+			NewTerminalToken("^"):        struct{}{},
 			NewTerminalToken("["):        struct{}{},
 			NewTerminalToken("]"):        struct{}{},
 			NewTerminalToken("sentence"): struct{}{},
@@ -28,7 +28,7 @@ func createExampleGrammar() Grammar {
 				Head: NewNonTerminalToken("S"),
 				Production: []GrammarToken{
 					NewNonTerminalToken("S"),
-					NewTerminalToken("∧"),
+					NewTerminalToken("^"),
 					NewNonTerminalToken("P"),
 				},
 			},
@@ -43,9 +43,9 @@ func createExampleGrammar() Grammar {
 			GrammarRule{
 				Head: NewNonTerminalToken("P"),
 				Production: []GrammarToken{
-					NewNonTerminalToken("S"),
-					NewTerminalToken("∨"),
 					NewNonTerminalToken("P"),
+					NewTerminalToken("v"),
+					NewNonTerminalToken("Q"),
 				},
 			},
 
@@ -154,6 +154,46 @@ func TestGetFirsts(t *testing.T) {
 	}
 
 	GetFirsts(&grammar, &table)
+
+	compareTables(t, &expectedTable, &table)
+}
+
+func TestGetFollows(t *testing.T) {
+	grammar := createExampleGrammar()
+	table := NewFirstFollowTable()
+
+	expectedTable := FirstFollowTable{
+		table: map[GrammarToken]FirstFollowRow{
+			NewNonTerminalToken("S"): FirstFollowRow{
+				Follow: lib.Set[GrammarToken]{
+					NewTerminalToken("$"):        struct{}{},
+					NewTerminalToken("^"):        struct{}{},
+					NewTerminalToken("sentence"): struct{}{},
+					NewTerminalToken("]"):        struct{}{},
+				},
+			},
+			NewNonTerminalToken("P"): FirstFollowRow{
+				Follow: lib.Set[GrammarToken]{
+					NewTerminalToken("$"):        struct{}{},
+					NewTerminalToken("^"):        struct{}{},
+					NewTerminalToken("sentence"): struct{}{},
+					NewTerminalToken("]"):        struct{}{},
+					NewTerminalToken("v"):        struct{}{},
+				},
+			},
+			NewNonTerminalToken("Q"): FirstFollowRow{
+				Follow: lib.Set[GrammarToken]{
+					NewTerminalToken("$"):        struct{}{},
+					NewTerminalToken("^"):        struct{}{},
+					NewTerminalToken("sentence"): struct{}{},
+					NewTerminalToken("]"):        struct{}{},
+					NewTerminalToken("v"):        struct{}{},
+				},
+			},
+		},
+	}
+
+	GetFollows(&grammar, &table)
 
 	compareTables(t, &expectedTable, &table)
 }
