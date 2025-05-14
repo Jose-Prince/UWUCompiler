@@ -104,8 +104,6 @@ func main() {
 
 	fmt.Println("The AFD is:", afd.String())
 
-	// TODO: Generate AFD simulator (lexer)
-
 	err := WriteLexFile(outputLexerFile, lexFileData, *afd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
