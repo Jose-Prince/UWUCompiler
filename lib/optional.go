@@ -10,6 +10,14 @@ type Optional[T any] struct {
 	value   T
 }
 
+func OptionalEquals[T comparable](a Optional[T], b Optional[T]) bool {
+	if a.HasValue() && b.HasValue() {
+		return a.GetValue() == b.GetValue()
+	}
+
+	return !a.HasValue() && !b.HasValue()
+}
+
 func CreateValue[T any](val T) Optional[T] {
 	return Optional[T]{value: val, isValid: true}
 }
