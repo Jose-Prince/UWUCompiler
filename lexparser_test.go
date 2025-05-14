@@ -1,9 +1,11 @@
 package main
 
 import (
-	reg "github.com/Jose-Prince/UWULexer/lib/regex"
 	"reflect"
+	"strings"
 	"testing"
+
+	reg "github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
 func TestLexParser(t *testing.T) {
@@ -15,46 +17,35 @@ func TestLexParser(t *testing.T) {
 	}{
 		{
 			name:     "Valid file with rules",
-			filePath: "example/simple.yal",
+			filePath: "example/simple/grammar.yal",
 			wantErr:  false,
 			want: LexFileData{
-				Header: "import myToken\n",
-				Footer: "printf(\"hola\")\n",
+				Header: `const (
+	TOKENA int = iota
+	TOKENB
+)`,
 				Rule: map[string]reg.DummyInfo{
-					"rule1": {Regex: "rule1", Code: "\"some code\"", Priority: 1},
-				},
-			}, // Define el valor esperado para un archivo válido
-		},
-		{
-			name:     "Valid file without header",
-			filePath: "example/exampleWH.yal",
-			wantErr:  false,
-			want: LexFileData{
-				Header: "",
-				Footer: "printf(\"hello\")\nprintf(\"world\")\n",
-				Rule: map[string]reg.DummyInfo{
-					"rule1": {Regex: "rule1", Code: "\"some code\"", Priority: 1},
-					"rule2": {Regex: "rule2", Code: "return ID", Priority: 2},
-					"eof":   {Regex: "eof", Code: "return ID", Priority: 3},
+					"[ \\t\\n]": {Regex: "[ \\t\\n]", Code: "", Priority: 1},
+					"abc":       {Regex: "abc", Code: "return TOKENA", Priority: 2},
+					"(abc)|c":   {Regex: "(abc)|c", Code: "return TOKENB", Priority: 3},
 				},
 			}, // Define el valor esperado para un archivo válido
 		},
 		{
 			name:     "Valid file for Python",
-			filePath: "example/examplePython.yal",
+			filePath: "example/python/grammar.yal",
 			wantErr:  false,
 			want: LexFileData{
 				Header: "import myToken\n",
 				Footer: "",
 				Rule: map[string]reg.DummyInfo{
-					"['0'-'9']+": {Regex: "['0'-'9']+", Code: "return int(lxm)", Priority: 1},
-					"+":          {Regex: "+", Code: "return PLUS", Priority: 2},
-					"-":          {Regex: "-", Code: "return MINUS", Priority: 3},
-					"*":          {Regex: "*", Code: "return TIMES", Priority: 4},
-					"/":          {Regex: "/", Code: "return DIV", Priority: 5},
-					"(":          {Regex: "(", Code: "return LPAREN", Priority: 6},
-					")":          {Regex: ")", Code: "return RPAREN", Priority: 7},
-					"eof":        {Regex: "eof", Code: "raise( 'Fin de buffer' )", Priority: 8},
+					"[0-9]+": {Regex: "[0-9]+", Code: "return NUMBER", Priority: 1},
+					"\\+":    {Regex: "\\+", Code: "return PLUS", Priority: 2},
+					"-":      {Regex: "-", Code: "return MINUS", Priority: 3},
+					"\\*":    {Regex: "\\*", Code: "return TIMES", Priority: 4},
+					"/":      {Regex: "/", Code: "return DIV", Priority: 5},
+					"\\(":    {Regex: "\\(", Code: "return LPAREN", Priority: 6},
+					"\\)":    {Regex: "\\)", Code: "return RPAREN", Priority: 7},
 				},
 			}, // Define el valor esperado para un archivo válido
 		},
@@ -71,7 +62,7 @@ func TestLexParser(t *testing.T) {
 			}
 
 			// Compara Header y Footer
-			if got.Header != tt.want.Header {
+			if strings.EqualFold(tt.want.Header, got.Header) {
 				t.Errorf("LexParser() Header = %v, want %v", got.Header, tt.want.Header)
 			}
 

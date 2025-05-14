@@ -63,7 +63,6 @@ func main() {
 		i++
 	}
 
-	// TODO: Regex to AFD
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
 	fmt.Println("The Infix expression is:", regx.TokenStreamToString(infix))
 	fmt.Println("The Postfix expression is:", regx.TokenStreamToString(postfix))

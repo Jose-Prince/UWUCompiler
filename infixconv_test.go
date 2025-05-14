@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	l "github.com/Jose-Prince/UWULexer/lib"
+	l "github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
 func PrintSideBySide(t *testing.T, markedIdx int, expected []l.RX_Token, result []l.RX_Token) {
