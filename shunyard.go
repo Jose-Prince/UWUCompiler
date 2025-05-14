@@ -4,7 +4,6 @@ package main
 // Here the "l" alias is being used!
 import (
 	"fmt"
-	"log"
 	"slices"
 	"strings"
 
@@ -51,7 +50,6 @@ func isLetter(t *reg.RX_Token) bool {
 
 func tryToAppendWithPrecedence(stack *shunStack, operator reg.Operator, output *[]reg.RX_Token) {
 	if stack.Empty() {
-		log.Default().Printf("Adding %c to stack!", operator)
 		stack.Push(operator)
 		return
 	}
@@ -60,15 +58,12 @@ func tryToAppendWithPrecedence(stack *shunStack, operator reg.Operator, output *
 	currentPrecedence := precedence[operator]
 	stackPrecedence, found := precedence[top.GetValue()]
 
-	log.Default().Printf("Checking if it can add operator directly %d > %d...", stackPrecedence, currentPrecedence)
 	if !found || stackPrecedence > currentPrecedence {
-		log.Default().Printf("Adding %c to stack!", operator)
 		stack.Push(operator)
 	} else {
 		for stackPrecedence <= currentPrecedence {
 			op := stack.Pop().GetValue()
 
-			log.Default().Printf("Adding %s to output...", op.String())
 			*output = append(*output, reg.CreateOperatorToken(op))
 
 			if stack.Empty() {
@@ -82,7 +77,6 @@ func tryToAppendWithPrecedence(stack *shunStack, operator reg.Operator, output *
 			}
 		}
 
-		log.Default().Printf("Adding %c to stack!", operator)
 		stack.Push(operator)
 	}
 }
@@ -92,7 +86,6 @@ func appendValueToOutput(
 	previousCanBeANDedTo *bool,
 	output *shunOutput,
 ) {
-	log.Default().Printf("Adding %s to output...", currentToken.String())
 	*output = append(*output, *currentToken)
 	*previousCanBeANDedTo = true
 }
@@ -107,14 +100,12 @@ func toPostFix(alph *Alphabet, infixExpression *[]reg.RX_Token, stack *shunStack
 	previousExprStack := reg.ExprStack{}
 	for i := 0; i < len(infixExpr); i++ {
 		currentToken := infixExpr[i]
-		log.Default().Printf("Currently checking: `%s`", currentToken.String())
 
 		if currentToken.IsOperator() {
 			op := currentToken.GetOperator()
 			switch op {
 			case reg.OR, reg.AND:
 				if stack.Empty() {
-					log.Default().Printf("Adding `%s` to stack!", currentToken.String())
 					stack.Push(op)
 				} else {
 					tryToAppendWithPrecedence(stack, op, output)
@@ -128,7 +119,6 @@ func toPostFix(alph *Alphabet, infixExpression *[]reg.RX_Token, stack *shunStack
 				previousExprStack.AppendTop(currentToken)
 
 			case reg.OPTIONAL:
-				log.Default().Printf("'?' found! Concatenating with epsilon...")
 
 				// Concatenate previous expression with epsilon
 				// And add * operator at the end
@@ -146,19 +136,17 @@ func toPostFix(alph *Alphabet, infixExpression *[]reg.RX_Token, stack *shunStack
 				stack.Push(reg.LEFT_PAREN)
 				previousCanBeANDedTo = false
 
-				var expr reg.ExprStackItem
-				if !previousExprStack.IsEmpty() {
-					expr = previousExprStack.Peek().GetValue()
-				}
+				// var expr reg.ExprStackItem
+				// if !previousExprStack.IsEmpty() {
+				// 	expr = previousExprStack.Peek().GetValue()
+				// }
 
-				log.Default().Printf("The previous expression before deleting is: %s", reg.ExprStackItem_ToString(&expr))
 				previousExprStack.Pop() // Deletes previous expression
 				var parenCtx reg.ExprStackItem = []reg.RX_Token{currentToken}
 				previousExprStack.Push(parenCtx)         // Adds ( context
 				previousExprStack.Push([]reg.RX_Token{}) // Adds inner ( ) context
 
 			case reg.RIGHT_PAREN:
-				log.Default().Printf("Popping until it finds: '('")
 				for peeked := stack.Peek(); peeked.GetValue() != reg.LEFT_PAREN; peeked = stack.Peek() {
 					val := stack.Pop()
 					op := val.GetValue()
@@ -174,7 +162,6 @@ func toPostFix(alph *Alphabet, infixExpression *[]reg.RX_Token, stack *shunStack
 
 			case reg.ONE_OR_MANY:
 				previousExpr := previousExprStack.Pop().GetValue()
-				log.Default().Printf("'+' found! Getting previous expression... `%s`", reg.ExprStackItem_ToString(&previousExpr))
 
 				// Concatenate previous expression with itself
 				// And add * operator at the end
@@ -205,7 +192,6 @@ func toPostFix(alph *Alphabet, infixExpression *[]reg.RX_Token, stack *shunStack
 		}
 		op := val
 
-		log.Default().Printf("Adding %c to output...", val)
 		*output = append(*output, reg.CreateOperatorToken(op))
 	}
 }
