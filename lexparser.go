@@ -218,12 +218,10 @@ func resolveRule(rule string, rules map[string]string) string {
 
 	for _, match := range matches {
 		ruleName := match[1]
-		if value, exists := rules[ruleName]; exists {
-			rule = strings.ReplaceAll(rule, match[0], value)
-		} else {
-			rule = strings.ReplaceAll(rule, match[0], ruleName)
+		if ruleExpansion, exists := rules[ruleName]; exists {
+			rule = strings.ReplaceAll(rule, match[0], ruleExpansion)
 		}
 	}
 
-	return resolveRule(rule, rules)
+	return rule
 }
