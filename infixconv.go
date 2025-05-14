@@ -3,7 +3,8 @@ package main
 import (
 	"math"
 
-	l "github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
 type infixConverterState int
@@ -16,10 +17,10 @@ const (
 )
 
 // Converts an infix expression into an array of tokens
-func InfixToTokens(infix string) []l.RX_Token {
+func InfixToTokens(infix string) []regex.RX_Token {
 	previousCanBeANDedTo := false
-	tokens := []l.RX_Token{}
-	stateStack := l.Stack[infixConverterState]{}
+	tokens := []regex.RX_Token{}
+	stateStack := lib.Stack[infixConverterState]{}
 	stateStack.Push(NORMAL)
 
 	// Contains all the characters that should NOT be added when a `l.SET_NEGATION` operator is closed
@@ -41,16 +42,16 @@ func InfixToTokens(infix string) []l.RX_Token {
 				}
 
 				if previousCanBeANDedTo { // Concatenate with previous value on the bracket
-					tokens = append(tokens, l.CreateOperatorToken(l.OR))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.OR))
 				}
 
 				for j := rune(0); j <= (endRune - startRune); j++ {
 					if j >= 1 {
-						tokens = append(tokens, l.CreateOperatorToken(l.OR))
+						tokens = append(tokens, regex.CreateOperatorToken(regex.OR))
 					}
 
 					val := startRune + j
-					tokens = append(tokens, l.CreateValueToken(val))
+					tokens = append(tokens, regex.CreateValueToken(val))
 				}
 
 				// When we started parsing we where:
@@ -81,21 +82,21 @@ func InfixToTokens(infix string) []l.RX_Token {
 					}
 
 					if previousCanBeANDedTo {
-						tokens = append(tokens, l.CreateOperatorToken(l.OR))
+						tokens = append(tokens, regex.CreateOperatorToken(regex.OR))
 					}
-					tokens = append(tokens, l.CreateValueToken(nextRune))
+					tokens = append(tokens, regex.CreateValueToken(nextRune))
 					previousCanBeANDedTo = true
 
 				case ']':
 					stateStack.Pop()
-					tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.RIGHT_PAREN))
 					previousCanBeANDedTo = true
 
 				default:
 					if previousCanBeANDedTo {
-						tokens = append(tokens, l.CreateOperatorToken(l.OR))
+						tokens = append(tokens, regex.CreateOperatorToken(regex.OR))
 					}
-					tokens = append(tokens, l.CreateValueToken(currentRune))
+					tokens = append(tokens, regex.CreateValueToken(currentRune))
 					previousCanBeANDedTo = true
 				}
 			}
@@ -154,15 +155,15 @@ func InfixToTokens(infix string) []l.RX_Token {
 						}
 
 						if addedCount > 0 {
-							tokens = append(tokens, l.CreateOperatorToken(l.OR))
+							tokens = append(tokens, regex.CreateOperatorToken(regex.OR))
 						}
-						tokens = append(tokens, l.CreateValueToken(j))
+						tokens = append(tokens, regex.CreateValueToken(j))
 
 						addedCount++
 					}
 
 					// In the end we create a right parenthesis to close the one we opened when reading [
-					tokens = append(tokens, l.CreateOperatorToken(l.RIGHT_PAREN))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.RIGHT_PAREN))
 					stateStack.Pop()
 					previousCanBeANDedTo = true
 
@@ -172,28 +173,28 @@ func InfixToTokens(infix string) []l.RX_Token {
 			}
 
 		default:
-			var token l.RX_Token
+			var token regex.RX_Token
 			switch currentRune {
 			case '|':
-				token = l.CreateOperatorToken(l.OR)
+				token = regex.CreateOperatorToken(regex.OR)
 				previousCanBeANDedTo = false
 
 			case '*':
-				token = l.CreateOperatorToken(l.ZERO_OR_MANY)
+				token = regex.CreateOperatorToken(regex.ZERO_OR_MANY)
 				previousCanBeANDedTo = true
 
 			case '(':
 				if previousCanBeANDedTo {
-					tokens = append(tokens, l.CreateOperatorToken(l.AND))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.AND))
 				}
 				stateStack.Push(IN_PARENTHESIS)
-				token = l.CreateOperatorToken(l.LEFT_PAREN)
+				token = regex.CreateOperatorToken(regex.LEFT_PAREN)
 				previousCanBeANDedTo = false
 
 			case ')':
 				if currentState == IN_PARENTHESIS {
 					stateStack.Pop()
-					token = l.CreateOperatorToken(l.RIGHT_PAREN)
+					token = regex.CreateOperatorToken(regex.RIGHT_PAREN)
 					previousCanBeANDedTo = true
 				} else {
 					panic("Unclosed parenthesis found! Please check your regexes...")
@@ -201,12 +202,12 @@ func InfixToTokens(infix string) []l.RX_Token {
 
 			case '[':
 				if previousCanBeANDedTo {
-					tokens = append(tokens, l.CreateOperatorToken(l.AND))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.AND))
 				}
 
 				// We add a parenthesis instead since []
 				// get's transformed into a lot of OR operations
-				token = l.CreateOperatorToken(l.LEFT_PAREN)
+				token = regex.CreateOperatorToken(regex.LEFT_PAREN)
 				state := IN_BRACKETS
 
 				nextRune := runes[i+1]
@@ -218,16 +219,16 @@ func InfixToTokens(infix string) []l.RX_Token {
 				previousCanBeANDedTo = false
 
 			case '+':
-				token = l.CreateOperatorToken(l.ONE_OR_MANY)
+				token = regex.CreateOperatorToken(regex.ONE_OR_MANY)
 				previousCanBeANDedTo = true
 
 			case '?':
-				token = l.CreateOperatorToken(l.OPTIONAL)
+				token = regex.CreateOperatorToken(regex.OPTIONAL)
 				previousCanBeANDedTo = true
 
 			case '\\':
 				if previousCanBeANDedTo {
-					tokens = append(tokens, l.CreateOperatorToken(l.AND))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.AND))
 				}
 
 				nextRune := currentRune
@@ -246,14 +247,14 @@ func InfixToTokens(infix string) []l.RX_Token {
 				default:
 				}
 
-				token = l.CreateValueToken(rune(nextRune))
+				token = regex.CreateValueToken(rune(nextRune))
 				previousCanBeANDedTo = true
 			default:
 				if previousCanBeANDedTo {
-					tokens = append(tokens, l.CreateOperatorToken(l.AND))
+					tokens = append(tokens, regex.CreateOperatorToken(regex.AND))
 				}
 
-				token = l.CreateValueToken(currentRune)
+				token = regex.CreateValueToken(currentRune)
 				previousCanBeANDedTo = true
 			}
 

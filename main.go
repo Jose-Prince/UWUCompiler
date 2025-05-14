@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/Jose-Prince/UWULexer/lib"
 	regx "github.com/Jose-Prince/UWULexer/lib/regex"
 )
 
@@ -72,22 +71,7 @@ func main() {
 	// Generates BST
 	bst := new(regx.BST)
 
-	//bst.Insertion([]regx.RX_Token{
-	//	regx.CreateValueToken('a'),
-	//	regx.CreateValueToken('b'),
-	//	regx.CreateOperatorToken(regx.AND),
-	//})
-
 	bst.Insertion(postfix)
-
-	svgBST := lib.GenerateBSTSVG(bst)
-
-	htmlFileBST := "bst.html"
-	if err := lib.GenerateHTMLBST(svgBST, htmlFileBST); err != nil {
-		fmt.Println("Error generating HTML for BST:", err)
-	} else {
-		fmt.Println("HTML for BST generated:", htmlFileBST)
-	}
 
 	// Creates tables with nodes from tree
 	table := regx.ConvertTreeToTable(bst)
