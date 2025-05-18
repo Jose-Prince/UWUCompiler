@@ -57,7 +57,7 @@ func (b *BSTNode) IsLeaf() bool {
 	return b.left == -1 && b.right == -1
 }
 
-func (b *BST) Insertion(postfix []RX_Token) {
+func (b *BST) FromRegexStream(postfix []RX_Token) {
 	postfix = append(postfix, CreateValueToken('#'))
 	postfix = append(postfix, CreateOperatorToken(AND))
 

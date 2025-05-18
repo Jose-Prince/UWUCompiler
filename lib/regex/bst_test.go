@@ -47,7 +47,7 @@ func TestBST(t *testing.T) {
 	// Creates tree
 	tree := new(BST)
 
-	tree.Insertion(nodes)
+	tree.FromRegexStream(nodes)
 
 	// Expected nodes
 	expectedKeys := []int{3, 2, 1}
@@ -67,7 +67,7 @@ func TestEpsilon(t *testing.T) {
 
 	tree := new(BST)
 
-	tree.Insertion(nodes)
+	tree.FromRegexStream(nodes)
 
 	expectedKeys := []int{3, 2, 1}
 	expectedVals := []RX_Token{CreateEpsilonToken(), CreateValueToken('a'), CreateOperatorToken(OR)}
@@ -118,7 +118,7 @@ func TestExampleBST(t *testing.T) {
 	// Creates tree
 	tree := new(BST)
 
-	tree.Insertion(nodes)
+	tree.FromRegexStream(nodes)
 
 	// Expected nodes
 	expectedKeys := []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
@@ -150,7 +150,7 @@ func TestTable(t *testing.T) {
 	// Creates tree
 	tree := new(BST)
 
-	tree.Insertion(nodes)
+	tree.FromRegexStream(nodes)
 
 	table := ConvertTreeToTable(tree)
 
@@ -197,7 +197,7 @@ func TestExampleTable(t *testing.T) {
 	// Creates tree
 	tree := new(BST)
 
-	tree.Insertion(nodes)
+	tree.FromRegexStream(nodes)
 
 	table := ConvertTreeToTable(tree)
 

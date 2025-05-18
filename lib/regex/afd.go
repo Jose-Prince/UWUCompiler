@@ -33,7 +33,7 @@ func (self *AFD) String() string {
 	b.WriteString("InitState = `")
 	b.WriteString(self.InitialState)
 	b.WriteString("`, AcceptanceStates = [ ")
-	for state, _ := range self.AcceptanceStates {
+	for state := range self.AcceptanceStates {
 		b.WriteString(state)
 		b.WriteString(" ")
 	}

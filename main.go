@@ -70,7 +70,7 @@ func main() {
 	// Generates BST
 	bst := new(regx.BST)
 
-	bst.Insertion(postfix)
+	bst.FromRegexStream(postfix)
 
 	// Creates tables with nodes from tree
 	table := regx.ConvertTreeToTable(bst)
