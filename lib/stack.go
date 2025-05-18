@@ -2,6 +2,10 @@ package lib
 
 type Stack[T any] []T
 
+func NewStack[T any]() Stack[T] {
+	return Stack[T]{}
+}
+
 func (self *Stack[T]) Empty() bool {
 	return len(*self) == 0
 }

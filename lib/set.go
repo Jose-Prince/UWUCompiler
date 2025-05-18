@@ -13,10 +13,28 @@ func (self Set[T]) String() string {
 
 	for k := range self {
 		b.WriteString(fmt.Sprint(k))
+		b.WriteString(", ")
 	}
 
 	b.WriteString("]")
 	return b.String()
+}
+
+// Checks if self is equal to other.
+//
+// Equal means that all items in self are contained in other and no more items are in other.
+func (self *Set[T]) Equals(other *Set[T]) bool {
+	if len(*self) != len(*other) {
+		return false
+	}
+
+	for k := range *self {
+		if !other.Contains(k) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Checks if an element exists on the set.
@@ -43,15 +61,11 @@ func (self *Set[T]) Add(val T) bool {
 	return !alreadyAdded
 }
 
-func (self Set[T]) Add_(val T) bool {
-	ref := self
-	_, alreadyAdded := ref[val]
-
-	if !alreadyAdded {
-		ref[val] = struct{}{}
+// Adds all values from other into self.
+func (self *Set[T]) Merge(other *Set[T]) {
+	for val := range *other {
+		self.Add(val)
 	}
-
-	return !alreadyAdded
 }
 
 func NewSet[T comparable]() Set[T] {

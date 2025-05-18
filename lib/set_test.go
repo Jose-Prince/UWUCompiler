@@ -1,9 +1,11 @@
 package lib
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSet(t *testing.T) {
-	set := Set[string]{}
+	set := NewSet[string]()
 
 	if !set.Add("Hello") {
 		t.Fatalf("Set returned false when adding `Hello` even though it isn't added!")
