@@ -167,6 +167,38 @@ func TestOptionalOperator(t *testing.T) {
 	compareTokensStreams(t, "(ab)?", expected, result)
 }
 
+func TestCanvasExample(t *testing.T) {
+	infix := []reg.RX_Token{
+		reg.CreateOperatorToken(reg.LEFT_PAREN),
+		reg.CreateValueToken('a'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.RIGHT_PAREN),
+		reg.CreateOperatorToken(reg.ZERO_OR_MANY),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateValueToken('a'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateValueToken('b'),
+	}
+	expected := []reg.RX_Token{
+		reg.CreateValueToken('a'),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateOperatorToken(reg.ZERO_OR_MANY),
+		reg.CreateValueToken('a'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.AND),
+		reg.CreateValueToken('b'),
+		reg.CreateOperatorToken(reg.AND),
+	}
+
+	result := DEFAULT_ALPHABET.ToPostfix(&infix)
+	compareTokensStreams(t, "(a|b)*abb", expected, result)
+}
+
 // func TestFuzzFail(t *testing.T) {
 // 	source := rand.NewSource(int64(69326))
 // 	random := rand.New(source)
