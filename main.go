@@ -68,9 +68,7 @@ func main() {
 	fmt.Println("The Postfix expression is:", regx.TokenStreamToString(postfix))
 
 	// Generates BST
-	bst := new(regx.BST)
-
-	bst.FromRegexStream(postfix)
+	bst := regx.BSTFromRegexStream(postfix)
 
 	// Creates tables with nodes from tree
 	table := regx.ConvertTreeToTable(bst)

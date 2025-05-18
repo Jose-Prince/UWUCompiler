@@ -125,7 +125,6 @@ func CreateCanvasExampleTree() *BST {
 }
 
 func TestCanvasExample(t *testing.T) {
-	// Node Creation
 	regexStream := []RX_Token{
 		CreateValueToken('a'),
 		CreateValueToken('b'),
