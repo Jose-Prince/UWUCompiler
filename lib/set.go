@@ -1,17 +1,43 @@
 package lib
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 )
 
 type Set[T comparable] map[T]struct{}
 
+// Prints a set as a string.
+//
+// Since a Set is internally represented as a map, the keys will be unordered!
 func (self Set[T]) String() string {
 	b := strings.Builder{}
 	b.WriteString("[ ")
 
 	for k := range self {
+		b.WriteString(fmt.Sprint(k))
+		b.WriteString(", ")
+	}
+
+	b.WriteString("]")
+	return b.String()
+}
+
+// Prints a set as a string with it's keys on the same order every time!
+func StableSetString[T cmp.Ordered](self Set[T]) string {
+	b := strings.Builder{}
+	b.WriteString("[ ")
+
+	values := make([]T, 0, len(self))
+	for k := range self {
+		values = append(values, k)
+	}
+
+	slices.Sort(values)
+
+	for _, k := range values {
 		b.WriteString(fmt.Sprint(k))
 		b.WriteString(", ")
 	}

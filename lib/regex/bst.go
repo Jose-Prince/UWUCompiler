@@ -101,7 +101,7 @@ func (s TableRow) Equals(other *TableRow) bool {
 		s.simbol == other.simbol &&
 		s.token.Equals(&other.token) &&
 		s.firstpos.Equals(&other.firstpos) &&
-		s.lastpos.Equals(&other.lastpos) &&
+		s.lastpos.Equals(&other.lastpos) && 
 		s.followpos.Equals(&other.followpos)
 }
 
@@ -120,11 +120,11 @@ func (s TableRow) String() string {
 	}
 
 	b.WriteString(", firstPos = ")
-	b.WriteString(s.firstpos.String())
+	b.WriteString(lib.StableSetString(s.firstpos))
 	b.WriteString(", lasPos = ")
-	b.WriteString(s.firstpos.String())
+	b.WriteString(lib.StableSetString(s.lastpos))
 	b.WriteString(", followPos = ")
-	b.WriteString(s.firstpos.String())
+	b.WriteString(lib.StableSetString(s.followpos))
 
 	b.WriteString(", tk = ")
 	b.WriteString(s.token.String())
@@ -268,7 +268,7 @@ func (tree *BST) ConvertTreeToTable() []TableRow {
 
 				lastPos := lib.NewSet[int]()
 				lastPos.Merge(&right.extraProperties.lastpos)
-				if left.IsNullable() {
+				if right.IsNullable() {
 					lastPos.Merge(&left.extraProperties.lastpos)
 				}
 

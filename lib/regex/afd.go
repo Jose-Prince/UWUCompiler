@@ -233,7 +233,7 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	//}
 
 	// Estado inicial del AFD
-	afd.InitialState = table[len(table)-1].firstpos.String()
+	afd.InitialState = lib.StableSetString(table[len(table)-1].firstpos)
 	// afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
 
 	newStates := lib.NewSet[string]()

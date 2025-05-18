@@ -159,97 +159,109 @@ func CreateCanvasExampleTable() []TableRow {
 	return []TableRow{
 		TableRow{
 			nullable:  false,
+			firstpos:  lib.Set[int]{0: struct{}{}},
+			lastpos:   lib.Set[int]{0: struct{}{}},
+			followpos: lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+			simbol:    'a',
+			token:     CreateValueToken('a'),
+		},
+
+		TableRow{
+			nullable:  false,
 			firstpos:  lib.Set[int]{1: struct{}{}},
 			lastpos:   lib.Set[int]{1: struct{}{}},
-			followpos: lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
-			simbol:    'a',
-		},
-
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{2: struct{}{}},
-			lastpos:   lib.Set[int]{2: struct{}{}},
-			followpos: lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			followpos: lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
 			simbol:    'b',
+			token:     CreateValueToken('b'),
 		},
 
 		TableRow{
 			nullable:  false,
-			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}},
-			lastpos:   lib.Set[int]{1: struct{}{}, 2: struct{}{}},
+			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}},
+			lastpos:   lib.Set[int]{0: struct{}{}, 1: struct{}{}},
 			followpos: lib.Set[int]{},
 			simbol:    '\x00',
+			token:     CreateOperatorToken(OR),
 		},
 		TableRow{
 			nullable:  true,
-			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}},
-			lastpos:   lib.Set[int]{1: struct{}{}, 2: struct{}{}},
+			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}},
+			lastpos:   lib.Set[int]{0: struct{}{}, 1: struct{}{}},
 			followpos: lib.Set[int]{},
 			simbol:    '\x00',
-		},
-
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{3: struct{}{}},
-			lastpos:   lib.Set[int]{3: struct{}{}},
-			followpos: lib.Set[int]{4: struct{}{}},
-			simbol:    'a',
-		},
-
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
-			lastpos:   lib.Set[int]{3: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
+			token:     CreateOperatorToken(ZERO_OR_MANY),
 		},
 
 		TableRow{
 			nullable:  false,
 			firstpos:  lib.Set[int]{4: struct{}{}},
 			lastpos:   lib.Set[int]{4: struct{}{}},
-			followpos: lib.Set[int]{5: struct{}{}},
-			simbol:    'b',
+			followpos: lib.Set[int]{6: struct{}{}},
+			simbol:    'a',
+			token:     CreateValueToken('a'),
 		},
 
 		TableRow{
 			nullable:  false,
-			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
 			lastpos:   lib.Set[int]{4: struct{}{}},
 			followpos: lib.Set[int]{},
 			simbol:    '\x00',
-		},
-
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{5: struct{}{}},
-			lastpos:   lib.Set[int]{5: struct{}{}},
-			followpos: lib.Set[int]{6: struct{}{}},
-			simbol:    'b',
-		},
-
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
-			lastpos:   lib.Set[int]{5: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
+			token:     CreateOperatorToken(AND),
 		},
 
 		TableRow{
 			nullable:  false,
 			firstpos:  lib.Set[int]{6: struct{}{}},
 			lastpos:   lib.Set[int]{6: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '#',
+			followpos: lib.Set[int]{8: struct{}{}},
+			simbol:    'b',
+			token:     CreateValueToken('b'),
 		},
 
 		TableRow{
 			nullable:  false,
-			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
 			lastpos:   lib.Set[int]{6: struct{}{}},
 			followpos: lib.Set[int]{},
 			simbol:    '\x00',
+			token:     CreateOperatorToken(AND),
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{8: struct{}{}},
+			lastpos:   lib.Set[int]{8: struct{}{}},
+			followpos: lib.Set[int]{10: struct{}{}},
+			simbol:    'b',
+			token:     CreateValueToken('b'),
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+			lastpos:   lib.Set[int]{8: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+			token:     CreateOperatorToken(AND),
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{10: struct{}{}},
+			lastpos:   lib.Set[int]{10: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '#',
+			token:     CreateValueToken('#'),
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+			lastpos:   lib.Set[int]{10: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+			token:     CreateOperatorToken(AND),
 		},
 	}
 }
