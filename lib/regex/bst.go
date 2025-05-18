@@ -1,6 +1,8 @@
 package regex
 
 import (
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/Jose-Prince/UWULexer/lib"
@@ -25,13 +27,15 @@ func (s BSTNode) String() string {
 	return b.String()
 }
 
-func CreateBSTNode(val RX_Token) BSTNode {
+func NewBSTNode(val RX_Token) BSTNode {
 	return BSTNode{
 		Val: val,
 
 		father: -1,
 		left:   -1,
 		right:  -1,
+
+		extraProperties: NewTableRow(),
 	}
 }
 
@@ -77,11 +81,56 @@ func (b BSTNode) Copy() BSTNode {
 
 type TableRow struct {
 	nullable  bool
-	firstpos  []int
-	lastpos   []int
-	followpos []int
+	firstpos  lib.Set[int]
+	lastpos   lib.Set[int]
+	followpos lib.Set[int]
 	simbol    rune
 	token     RX_Token
+}
+
+func NewTableRow() TableRow {
+	return TableRow{
+		firstpos:  lib.NewSet[int](),
+		lastpos:   lib.NewSet[int](),
+		followpos: lib.NewSet[int](),
+	}
+}
+
+func (s TableRow) Equals(other *TableRow) bool {
+	return s.nullable == other.nullable &&
+		s.simbol == other.simbol &&
+		s.token.Equals(&other.token) &&
+		s.firstpos.Equals(&other.firstpos) &&
+		s.lastpos.Equals(&other.lastpos) &&
+		s.followpos.Equals(&other.followpos)
+}
+
+func (s TableRow) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+
+	b.WriteString("simbol = ")
+	b.WriteRune(s.simbol)
+
+	b.WriteString(", nullable = ")
+	if s.nullable {
+		b.WriteRune('T')
+	} else {
+		b.WriteRune('F')
+	}
+
+	b.WriteString(", firstPos = ")
+	b.WriteString(s.firstpos.String())
+	b.WriteString(", lasPos = ")
+	b.WriteString(s.firstpos.String())
+	b.WriteString(", followPos = ")
+	b.WriteString(s.firstpos.String())
+
+	b.WriteString(", tk = ")
+	b.WriteString(s.token.String())
+
+	b.WriteString(" }")
+	return b.String()
 }
 
 func (b *BSTNode) IsNullable() bool {
@@ -97,10 +146,10 @@ func BSTFromRegexStream(postfix []RX_Token) *BST {
 	postfix = append(postfix, CreateValueToken('#'))
 	postfix = append(postfix, CreateOperatorToken(AND))
 
-	var stack lib.Stack[int]
+	stack := lib.NewStack[int]()
 
 	for _, v := range postfix {
-		node := CreateBSTNode(v)
+		node := NewBSTNode(v)
 		i := len(b.nodes)
 
 		if v.IsOperator() {
@@ -132,71 +181,57 @@ func BSTFromRegexStream(postfix []RX_Token) *BST {
 	return b
 }
 
-func ConvertTreeToTable(tree *BST) []*TableRow {
-	table := []*TableRow{}
-	andToken := CreateOperatorToken(AND)
-	zeroToken := CreateOperatorToken(ZERO_OR_MANY)
+func TableToString(s *[]TableRow) string {
+	b := strings.Builder{}
 
+	MAX_DIGITS := 3
+	for i, row := range *s {
+		b.WriteString(strconv.FormatInt(int64(i), 10))
+
+		rightPadding := max(0, MAX_DIGITS-1-int(math.Floor(math.Log10(float64(i)))))
+		if i == 0 {
+			rightPadding = MAX_DIGITS - 1
+		}
+		for range rightPadding {
+			b.WriteString(" ")
+		}
+
+		b.WriteString(": ")
+		b.WriteString(row.String())
+		b.WriteRune('\n')
+	}
+
+	return b.String()
+}
+
+func (tree *BST) ConvertTreeToTable() []TableRow {
+	// Compute first and last pos of all nodes...
 	for i, node := range tree.nodes {
 		if node.IsLeaf() {
-			nullable := !(node.Val.IsValue() && node.Val.GetValue().HasValue())
-			firstPos := []int{}
-			lastPos := []int{}
+			nullable := node.Val.IsValue() && !node.Val.GetValue().HasValue()
+			firstPos := lib.NewSet[int]()
+			lastPos := lib.NewSet[int]()
+			simbol := '\x00'
 
-			if node.Val.IsDummy() || node.Val.GetValue().HasValue() {
-				firstPos = append(firstPos, i)
-				lastPos = append(lastPos, i)
-			} else {
-				for j := i - 1; j >= 0; j-- {
-					if tree.nodes[j].Val.IsOperator() && (tree.nodes[j].Val.Equals(&andToken) || tree.nodes[j].Val.Equals(&zeroToken)) {
-						lastPos = append(lastPos, tree.nodes[j].extraProperties.lastpos...)
-						break
-					}
-				}
-			}
-
-			var simbol rune
-			if node.Val.IsDummy() {
-				simbol = rune(i)
-			}
-
-			if !nullable && !node.Val.IsDummy() {
+			if !nullable {
+				firstPos.Add(i)
+				lastPos.Add(i)
 				simbol = node.Val.GetValue().GetValue()
 			}
 
-			row := TableRow{
-				nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: simbol, token: node.Val,
-			}
+			row := NewTableRow()
+			row.nullable = nullable
+			row.firstpos = firstPos
+			row.lastpos = lastPos
+			row.simbol = simbol
+			row.token = node.Val
 
 			tree.nodes[i].extraProperties = row
 		} else {
+			simbol := '\x00'
+
 			op := node.Val.GetOperator()
 			switch op {
-			case AND:
-				left := tree.nodes[node.left]
-				right := tree.nodes[node.right]
-
-				nullable := left.IsNullable() && right.IsNullable()
-				firstPos := left.extraProperties.firstpos
-				if left.IsNullable() {
-					firstPos = append(firstPos, right.extraProperties.firstpos...)
-				}
-
-				lastPos := right.extraProperties.lastpos
-				if left.IsNullable() {
-					lastPos = append(lastPos, left.extraProperties.lastpos...)
-				}
-
-				row := TableRow{
-					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: '\x00', token: node.Val,
-				}
-				tree.nodes[i].extraProperties = row
-				for _, i := range left.extraProperties.lastpos {
-					node_i := tree.nodes[i]
-					if node_i.IsLeaf() {
-						tree.nodes[i].extraProperties.followpos = append(tree.nodes[i].extraProperties.followpos, right.extraProperties.firstpos...)
-					}
-				}
 
 			case OR:
 				left := tree.nodes[node.left]
@@ -204,14 +239,40 @@ func ConvertTreeToTable(tree *BST) []*TableRow {
 
 				nullable := left.IsNullable() || right.IsNullable()
 				firstPos := left.extraProperties.firstpos
-				firstPos = append(firstPos, right.extraProperties.firstpos...)
+				lastPos := left.extraProperties.lastpos
+
+				firstPos.Merge(&right.extraProperties.firstpos)
+				lastPos.Merge(&right.extraProperties.lastpos)
+
+				row := NewTableRow()
+				row.nullable = nullable
+				row.firstpos = firstPos
+				row.lastpos = lastPos
+				row.simbol = simbol
+				row.token = node.Val
+				tree.nodes[i].extraProperties = row
+
+			case AND:
+				left := tree.nodes[node.left]
+				right := tree.nodes[node.right]
+
+				nullable := left.IsNullable() && right.IsNullable()
+				firstPos := left.extraProperties.firstpos
+				if left.IsNullable() {
+					firstPos.Merge(&right.extraProperties.firstpos)
+				}
 
 				lastPos := right.extraProperties.lastpos
-				lastPos = append(lastPos, left.extraProperties.lastpos...)
-
-				row := TableRow{
-					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: '\x00', token: node.Val,
+				if left.IsNullable() {
+					lastPos.Merge(&left.extraProperties.lastpos)
 				}
+
+				row := NewTableRow()
+				row.nullable = nullable
+				row.firstpos = firstPos
+				row.lastpos = lastPos
+				row.simbol = simbol
+				row.token = node.Val
 				tree.nodes[i].extraProperties = row
 
 			case ZERO_OR_MANY:
@@ -219,34 +280,47 @@ func ConvertTreeToTable(tree *BST) []*TableRow {
 
 				nullable := true
 				firstPos := left.extraProperties.firstpos
-
 				lastPos := left.extraProperties.lastpos
 
-				for j := i - 1; j >= 0; j-- {
-					if tree.nodes[j].Val.Equals(&andToken) && j != i-1 {
-						lastPos = append(lastPos, tree.nodes[j].extraProperties.lastpos...)
-						break
-					}
-				}
-				row := TableRow{
-					nullable: nullable, firstpos: firstPos, lastpos: lastPos, simbol: '\x00', token: node.Val,
-				}
-				tree.nodes[i].extraProperties = row
+				row := NewTableRow()
+				row.nullable = nullable
+				row.firstpos = firstPos
+				row.lastpos = lastPos
+				row.simbol = simbol
+				row.token = node.Val
 
-				for _, i := range lastPos {
-					node_i := tree.nodes[i]
-					if node_i.IsLeaf() {
-						tree.nodes[i].extraProperties.followpos = append(tree.nodes[i].extraProperties.followpos, firstPos...)
-					}
-				}
+				tree.nodes[i].extraProperties = row
 			}
 		}
 	}
 
+	// Compute followpos of all nodes...
+	for _, node := range tree.nodes {
+		if !node.Val.IsOperator() {
+			continue
+		}
+
+		op := node.Val.GetOperator()
+		switch op {
+		case AND:
+			left := tree.nodes[node.left]
+			right := tree.nodes[node.right]
+
+			for i := range left.extraProperties.lastpos {
+				tree.nodes[i].extraProperties.followpos.Merge(&right.extraProperties.firstpos)
+			}
+		case ZERO_OR_MANY:
+			for i := range node.extraProperties.lastpos {
+				tree.nodes[i].extraProperties.followpos.Merge(&node.extraProperties.firstpos)
+			}
+		}
+	}
+
+	table := []TableRow{}
 	for _, n := range tree.nodes {
 		row := n.extraProperties
 
-		table = append(table, &row)
+		table = append(table, row)
 	}
 
 	return table

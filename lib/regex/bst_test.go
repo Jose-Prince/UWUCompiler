@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/Jose-Prince/UWULexer/lib"
 )
 
 func _validateTree(t *testing.T, expected *BST, expectedCurrent int, result *BST, resultCurrent int, level int) error {
@@ -77,8 +79,37 @@ func validateTree(t *testing.T, expected *BST, actual *BST) error {
 	return _validateTree(t, expected, expected.RootIdx, actual, actual.RootIdx, 1)
 }
 
+func validateTable(t *testing.T, expected []TableRow, result []TableRow) error {
+	if len(expected) != len(result) {
+		t.Errorf("Tables lengths don't match! %d != %d", len(expected), len(result))
+	}
+
+	for i, expRow := range expected {
+		resRow := result[i]
+
+		if !expRow.Equals(&resRow) {
+			return errors.New(fmt.Sprintf(`Expected:
+%s
+Result:
+%s
+Rows at index %d don't match!
+%s
+!=
+%s`,
+				TableToString(&expected),
+				TableToString(&result),
+				i,
+				expRow.String(),
+				resRow.String(),
+			))
+		}
+	}
+
+	return nil
+}
+
 func createLeftChild(b *BST, father int, value RX_Token) int {
-	node := CreateBSTNode(value)
+	node := NewBSTNode(value)
 	node.father = father
 
 	insertedIdx := len(b.nodes)
@@ -89,7 +120,7 @@ func createLeftChild(b *BST, father int, value RX_Token) int {
 }
 
 func createRightChild(b *BST, father int, value RX_Token) int {
-	node := CreateBSTNode(value)
+	node := NewBSTNode(value)
 	node.father = father
 
 	insertedIdx := len(b.nodes)
@@ -101,7 +132,7 @@ func createRightChild(b *BST, father int, value RX_Token) int {
 
 func CreateCanvasExampleTree() *BST {
 	b := new(BST)
-	root := CreateBSTNode(CreateOperatorToken(AND))
+	root := NewBSTNode(CreateOperatorToken(AND))
 	b.nodes = append(b.nodes, root)
 	b.RootIdx = 0
 
@@ -124,6 +155,105 @@ func CreateCanvasExampleTree() *BST {
 	return b
 }
 
+func CreateCanvasExampleTable() []TableRow {
+	return []TableRow{
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{1: struct{}{}},
+			lastpos:   lib.Set[int]{1: struct{}{}},
+			followpos: lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			simbol:    'a',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{2: struct{}{}},
+			lastpos:   lib.Set[int]{2: struct{}{}},
+			followpos: lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			simbol:    'b',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}},
+			lastpos:   lib.Set[int]{1: struct{}{}, 2: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+		},
+		TableRow{
+			nullable:  true,
+			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}},
+			lastpos:   lib.Set[int]{1: struct{}{}, 2: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{3: struct{}{}},
+			lastpos:   lib.Set[int]{3: struct{}{}},
+			followpos: lib.Set[int]{4: struct{}{}},
+			simbol:    'a',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			lastpos:   lib.Set[int]{3: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{4: struct{}{}},
+			lastpos:   lib.Set[int]{4: struct{}{}},
+			followpos: lib.Set[int]{5: struct{}{}},
+			simbol:    'b',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			lastpos:   lib.Set[int]{4: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{5: struct{}{}},
+			lastpos:   lib.Set[int]{5: struct{}{}},
+			followpos: lib.Set[int]{6: struct{}{}},
+			simbol:    'b',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			lastpos:   lib.Set[int]{5: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{6: struct{}{}},
+			lastpos:   lib.Set[int]{6: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '#',
+		},
+
+		TableRow{
+			nullable:  false,
+			firstpos:  lib.Set[int]{1: struct{}{}, 2: struct{}{}, 3: struct{}{}},
+			lastpos:   lib.Set[int]{6: struct{}{}},
+			followpos: lib.Set[int]{},
+			simbol:    '\x00',
+		},
+	}
+}
+
 func TestCanvasExample(t *testing.T) {
 	regexStream := []RX_Token{
 		CreateValueToken('a'),
@@ -138,10 +268,17 @@ func TestCanvasExample(t *testing.T) {
 		CreateOperatorToken(AND),
 	}
 	tree := BSTFromRegexStream(regexStream)
-
 	expectedTree := CreateCanvasExampleTree()
 
 	err := validateTree(t, expectedTree, tree)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	expectedTable := CreateCanvasExampleTable()
+	table := tree.ConvertTreeToTable()
+
+	err = validateTable(t, expectedTable, table)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

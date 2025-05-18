@@ -233,7 +233,8 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 	//}
 
 	// Estado inicial del AFD
-	afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
+	afd.InitialState = table[len(table)-1].firstpos.String()
+	// afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
 
 	newStates := lib.NewSet[string]()
 	newStates.Add(afd.InitialState)
@@ -262,9 +263,11 @@ func ConvertFromTableToAFD(table []*TableRow) *AFD {
 						num, err := strconv.Atoi(index[:len(index)-1])
 						if err == nil {
 							if table[num].token.Equals(&a) {
-								for _, follow := range table[num].followpos {
-									newFollowpos.Add(follow)
-								}
+								// for _, follow := range table[num].followpos {
+								// 	newFollowpos.Add(follow)
+								// }
+
+								newFollowpos.Merge(&table[num].followpos)
 							}
 						}
 					}
