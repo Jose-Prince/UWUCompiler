@@ -1,9 +1,12 @@
 package regex
 
-import "github.com/Jose-Prince/UWULexer/lib"
+import (
+	"strings"
+
+	"github.com/Jose-Prince/UWULexer/lib"
+)
 
 type BSTNode struct {
-	Key int
 	Val RX_Token
 
 	father int
@@ -12,6 +15,14 @@ type BSTNode struct {
 	right int
 
 	extraProperties TableRow
+}
+
+func (s BSTNode) String() string {
+	b := strings.Builder{}
+	b.WriteString("{ ")
+	b.WriteString(s.Val.String())
+	b.WriteString(" }")
+	return b.String()
 }
 
 func CreateBSTNode(val RX_Token) BSTNode {
@@ -25,12 +36,36 @@ func CreateBSTNode(val RX_Token) BSTNode {
 }
 
 type BST struct {
-	nodes []BSTNode
+	nodes   []BSTNode
+	RootIdx int
+}
+
+func bstTreeToString(s *BST, current int, b *strings.Builder, level uint) {
+	if current == -1 {
+		return
+	}
+
+	for range level {
+		b.WriteString("  ")
+	}
+	b.WriteString(s.nodes[current].String())
+	b.WriteRune('\n')
+
+	left := s.nodes[current].left
+	bstTreeToString(s, left, b, level+1)
+
+	right := s.nodes[current].right
+	bstTreeToString(s, right, b, level+1)
+}
+
+func (s BST) String() string {
+	b := strings.Builder{}
+	bstTreeToString(&s, s.RootIdx, &b, 0)
+	return b.String()
 }
 
 func (b BSTNode) Copy() BSTNode {
 	var other BSTNode
-	other.Key = b.Key
 	other.Val = b.Val
 	other.father = b.father
 	other.left = b.left
@@ -57,16 +92,16 @@ func (b *BSTNode) IsLeaf() bool {
 	return b.left == -1 && b.right == -1
 }
 
-func (b *BST) FromRegexStream(postfix []RX_Token) {
+func BSTFromRegexStream(postfix []RX_Token) *BST {
+	b := new(BST)
 	postfix = append(postfix, CreateValueToken('#'))
 	postfix = append(postfix, CreateOperatorToken(AND))
 
 	var stack lib.Stack[int]
-	var nodes []BSTNode
 
 	for _, v := range postfix {
 		node := CreateBSTNode(v)
-		i := len(nodes)
+		i := len(b.nodes)
 
 		if v.IsOperator() {
 			op := v.GetOperator()
@@ -78,22 +113,23 @@ func (b *BST) FromRegexStream(postfix []RX_Token) {
 				node.left = left
 				node.right = right
 
-				nodes[left].father = i
-				nodes[right].father = i
+				b.nodes[left].father = i
+				b.nodes[right].father = i
 
 			case ZERO_OR_MANY:
 				left := stack.Pop().GetValue()
 
 				node.left = left
-				nodes[left].father = i
+				b.nodes[left].father = i
 			}
 		}
 
 		stack.Push(i)
-		nodes = append(nodes, node)
+		b.nodes = append(b.nodes, node)
 	}
 
-	b.nodes = nodes
+	b.RootIdx = len(b.nodes) - 1
+	return b
 }
 
 func ConvertTreeToTable(tree *BST) []*TableRow {

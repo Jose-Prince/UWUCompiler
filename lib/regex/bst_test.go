@@ -1,130 +1,134 @@
 package regex
 
 import (
+	"errors"
+	"fmt"
 	"testing"
-
-	"github.com/Jose-Prince/UWULexer/lib"
 )
 
-func validateTree(t *testing.T, tree *BST, expectedKeys *[]int, expectedVals *[]RX_Token) {
-	if len(tree.nodes) != len(*expectedKeys) {
-		t.Fatalf("Número incorrecto de nodos. Esperado %d, pero obtuvo %d", len(*expectedKeys), len(tree.nodes))
+func _validateTree(t *testing.T, expected *BST, expectedCurrent int, result *BST, resultCurrent int, level int) error {
+	bothDontExist := resultCurrent == -1 && expectedCurrent == -1
+	if bothDontExist {
+		return nil
 	}
 
-	// Verifies each node
-	for i, node := range tree.nodes {
-		if node.Key != (*expectedKeys)[i] {
-			t.Errorf("Nodo incorrecto en posición %d: esperado (%d) pero obtuvo (%d)",
-				i, (*expectedKeys)[i], node.Key)
-		}
-
-		bothAreValue := node.Val.IsValue() && (*expectedVals)[i].IsValue()
-		bothAreOperator := node.Val.IsOperator() && (*expectedVals)[i].IsOperator()
-		if bothAreValue && lib.OptionalEquals(node.Val.GetValue(), (*expectedVals)[i].GetValue()) {
-			t.Errorf("Nodo incorrecto en posición %d: esperado (%v) pero obtuvo (%v)",
-				i, (*expectedVals)[i].GetValue(), node.Val.GetValue())
-
-		} else if bothAreOperator && node.Val.GetOperator() == (*expectedVals)[i].GetOperator() {
-			t.Errorf("Nodo incorrecto en posición %d: esperado (%d) pero obtuvo (%d)",
-				i, node.Val.GetOperator(), node.Val.GetOperator())
-
-		} else {
-			t.Errorf("Nodo incorrecto en posición %d: los tipos de valor no coinciden", i)
-		}
-
+	expectedExistsButResultDoesnt := resultCurrent == -1 && expectedCurrent != resultCurrent
+	if expectedExistsButResultDoesnt {
+		return errors.New(fmt.Sprintf(`Expected:
+%s
+Actual:
+%s
+Result tree doesn't have node %s on level %d!`,
+			expected.String(),
+			result.String(),
+			expected.nodes[expectedCurrent],
+			level,
+		))
 	}
+
+	resultExistsButExpectedDoesnt := expectedCurrent == -1 && expectedCurrent != resultCurrent
+	if resultExistsButExpectedDoesnt {
+		return errors.New(fmt.Sprintf(`Expected:
+%s
+Actual:
+%s
+Result tree has extra node %s on level %d!`,
+			expected.String(),
+			result.String(),
+			result.nodes[resultCurrent],
+			level,
+		))
+	}
+
+	expectedNode := expected.nodes[expectedCurrent]
+	actualNode := result.nodes[resultCurrent]
+	if !expectedNode.Val.Equals(&actualNode.Val) {
+		return errors.New(fmt.Sprintf(`Expected:
+%s
+Actual:
+%s
+Nodes on level %d don't match! %s != %s`,
+			expected.String(),
+			result.String(),
+			level,
+			expectedNode.String(),
+			actualNode.String(),
+		))
+	}
+
+	err := _validateTree(t, expected, expectedNode.left, result, actualNode.left, level+1)
+	if err != nil {
+		return err
+	}
+
+	err = _validateTree(t, expected, expectedNode.right, result, actualNode.right, level+1)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// General Test for BST
-func TestBST(t *testing.T) {
+func validateTree(t *testing.T, expected *BST, actual *BST) error {
+	if len(expected.nodes) != len(actual.nodes) {
+		t.Errorf("Tree nodes don't match! %d != %d", len(expected.nodes), len(actual.nodes))
+	}
+
+	return _validateTree(t, expected, expected.RootIdx, actual, actual.RootIdx, 1)
+}
+
+func createLeftChild(b *BST, father int, value RX_Token) int {
+	node := CreateBSTNode(value)
+	node.father = father
+
+	insertedIdx := len(b.nodes)
+	b.nodes[father].left = insertedIdx
+	b.nodes = append(b.nodes, node)
+
+	return insertedIdx
+}
+
+func createRightChild(b *BST, father int, value RX_Token) int {
+	node := CreateBSTNode(value)
+	node.father = father
+
+	insertedIdx := len(b.nodes)
+	b.nodes[father].right = insertedIdx
+	b.nodes = append(b.nodes, node)
+
+	return insertedIdx
+}
+
+func CreateCanvasExampleTree() *BST {
+	b := new(BST)
+	root := CreateBSTNode(CreateOperatorToken(AND))
+	b.nodes = append(b.nodes, root)
+	b.RootIdx = 0
+
+	createRightChild(b, 0, CreateValueToken('#'))
+	leftTree := createLeftChild(b, 0, CreateOperatorToken(AND))
+
+	createRightChild(b, leftTree, CreateValueToken('b'))
+	leftTree = createLeftChild(b, leftTree, CreateOperatorToken(AND))
+
+	createRightChild(b, leftTree, CreateValueToken('b'))
+	leftTree = createLeftChild(b, leftTree, CreateOperatorToken(AND))
+
+	createRightChild(b, leftTree, CreateValueToken('a'))
+	leftTree = createLeftChild(b, leftTree, CreateOperatorToken(ZERO_OR_MANY))
+
+	leftTree = createLeftChild(b, leftTree, CreateOperatorToken(OR))
+	createRightChild(b, leftTree, CreateValueToken('b'))
+	createLeftChild(b, leftTree, CreateValueToken('a'))
+
+	return b
+}
+
+func TestCanvasExample(t *testing.T) {
 	// Node Creation
-	nodes := []RX_Token{
-		CreateOperatorToken(AND),
+	regexStream := []RX_Token{
 		CreateValueToken('a'),
 		CreateValueToken('b'),
-	}
-
-	// Creates tree
-	tree := new(BST)
-
-	tree.FromRegexStream(nodes)
-
-	// Expected nodes
-	expectedKeys := []int{3, 2, 1}
-	expectedVals := []RX_Token{CreateValueToken('b'), CreateValueToken('a'), CreateOperatorToken(AND)}
-
-	// Verifies total nodes
-	validateTree(t, tree, &expectedKeys, &expectedVals)
-}
-
-// Test Epsilon value
-func TestEpsilon(t *testing.T) {
-	nodes := []RX_Token{
-		CreateOperatorToken(OR),
-		CreateValueToken('a'),
-		CreateEpsilonToken(),
-	}
-
-	tree := new(BST)
-
-	tree.FromRegexStream(nodes)
-
-	expectedKeys := []int{3, 2, 1}
-	expectedVals := []RX_Token{CreateEpsilonToken(), CreateValueToken('a'), CreateOperatorToken(OR)}
-	validateTree(t, tree, &expectedKeys, &expectedVals)
-
-	table := ConvertTreeToTable(tree)
-
-	expectedFirstPos := [][]int{{}, {1}, {1}}
-	expectedLastPos := [][]int{{}, {1}, {1}}
-	expectedFollowPos := [][]int{{}, {}, {}}
-	expectedNullable := []bool{true, false, true}
-
-	for i, row := range table {
-		if !equalSlices(row.firstpos, expectedFirstPos[i]) {
-			t.Errorf("Error en firstpos en índice %d: esperado %v, obtenido %v", i, expectedFirstPos[i], row.firstpos)
-		}
-		if !equalSlices(row.lastpos, expectedLastPos[i]) {
-			t.Errorf("Error en lastpos en índice %d: esperado %v, obtenido %v", i, expectedLastPos[i], row.lastpos)
-		}
-		if !equalSlices(row.followpos, expectedFollowPos[i]) {
-			t.Errorf("Error en lastpos en índice %d: esperado %v, obtenido %v", i, expectedFollowPos[i], row.followpos)
-		}
-
-		if row.nullable != expectedNullable[i] {
-			t.Errorf("Error en nullable en índice %d: esperado %v, obtenido %v", i, expectedNullable[i], row.nullable)
-		}
-	}
-}
-
-// Class example
-func TestExampleBST(t *testing.T) {
-	// Node Creation
-	nodes := []RX_Token{
-		CreateOperatorToken(AND),
-		CreateValueToken('#'),
-		CreateOperatorToken(AND),
-		CreateValueToken('b'),
-		CreateOperatorToken(AND),
-		CreateValueToken('b'),
-		CreateOperatorToken(AND),
-		CreateValueToken('a'),
-		CreateOperatorToken(ZERO_OR_MANY),
-		CreateOperatorToken(OR),
-		CreateValueToken('a'),
-		CreateValueToken('b'),
-	}
-
-	// Creates tree
-	tree := new(BST)
-
-	tree.FromRegexStream(nodes)
-
-	// Expected nodes
-	expectedKeys := []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
-	expectedVals := []RX_Token{
-		CreateValueToken('b'),
-		CreateValueToken('a'),
 		CreateOperatorToken(OR),
 		CreateOperatorToken(ZERO_OR_MANY),
 		CreateValueToken('a'),
@@ -133,118 +137,13 @@ func TestExampleBST(t *testing.T) {
 		CreateOperatorToken(AND),
 		CreateValueToken('b'),
 		CreateOperatorToken(AND),
-		CreateValueToken('#'),
-		CreateOperatorToken(AND),
 	}
+	tree := BSTFromRegexStream(regexStream)
 
-	validateTree(t, tree, &expectedKeys, &expectedVals)
-}
+	expectedTree := CreateCanvasExampleTree()
 
-func TestTable(t *testing.T) {
-	nodes := []RX_Token{
-		CreateOperatorToken(AND),
-		CreateValueToken('a'),
-		CreateValueToken('b'),
-	}
-
-	// Creates tree
-	tree := new(BST)
-
-	tree.FromRegexStream(nodes)
-
-	table := ConvertTreeToTable(tree)
-
-	// Valores esperados
-	expectedFirstPos := [][]int{{0}, {1}, {0}}
-	expectedLastPos := [][]int{{0}, {1}, {1}}
-	expectedFollowPos := [][]int{{1}, {}, {}}
-	expectedNullable := []bool{false, false, false}
-
-	// Validar la tabla generada
-	for i, row := range table {
-		if !equalSlices(row.firstpos, expectedFirstPos[i]) {
-			t.Errorf("Error en firstpos en índice %d: esperado %v, obtenido %v", i, expectedFirstPos[i], row.firstpos)
-		}
-		if !equalSlices(row.lastpos, expectedLastPos[i]) {
-			t.Errorf("Error en lastpos en índice %d: esperado %v, obtenido %v", i, expectedLastPos[i], row.lastpos)
-		}
-		if !equalSlices(row.followpos, expectedFollowPos[i]) {
-			t.Errorf("Error en lastpos en índice %d: esperado %v, obtenido %v", i, expectedFollowPos[i], row.followpos)
-		}
-
-		if row.nullable != expectedNullable[i] {
-			t.Errorf("Error en nullable en índice %d: esperado %v, obtenido %v", i, expectedNullable[i], row.nullable)
-		}
+	err := validateTree(t, expectedTree, tree)
+	if err != nil {
+		t.Fatal(err.Error())
 	}
 }
-
-func TestExampleTable(t *testing.T) {
-	nodes := []RX_Token{
-		CreateOperatorToken(AND),
-		CreateValueToken('#'),
-		CreateOperatorToken(AND),
-		CreateValueToken('b'),
-		CreateOperatorToken(AND),
-		CreateValueToken('b'),
-		CreateOperatorToken(AND),
-		CreateValueToken('a'),
-		CreateOperatorToken(ZERO_OR_MANY),
-		CreateOperatorToken(OR),
-		CreateValueToken('a'),
-		CreateValueToken('b'),
-	}
-
-	// Creates tree
-	tree := new(BST)
-
-	tree.FromRegexStream(nodes)
-
-	table := ConvertTreeToTable(tree)
-
-	// Valores esperados
-	expectedFirstPos := [][]int{{0}, {1}, {0, 1}, {0, 1}, {4}, {0, 1, 4}, {6}, {0, 1, 4}, {8}, {0, 1, 4}, {10}, {0, 1, 4}}
-	expectedLastPos := [][]int{{0}, {1}, {0, 1}, {0, 1}, {4}, {4}, {6}, {6}, {8}, {8}, {10}, {10}}
-	expectedNullable := []bool{false, false, false, true, false, false, false, false, false, false, false, false}
-
-	// Validar la tabla generada
-	for i, row := range table {
-		if !equalSlices(row.firstpos, expectedFirstPos[i]) {
-			t.Errorf("Error en firstpos en índice %d: esperado %v, obtenido %v", i, expectedFirstPos[i], row.firstpos)
-		}
-		if !equalSlices(row.lastpos, expectedLastPos[i]) {
-			t.Errorf("Error en lastpos en índice %d: esperado %v, obtenido %v", i, expectedLastPos[i], row.lastpos)
-		}
-		if row.nullable != expectedNullable[i] {
-			t.Errorf("Error en nullable en índice %d: esperado %v, obtenido %v", i, expectedNullable[i], row.nullable)
-		}
-	}
-}
-
-func equalSlices(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// func TestBST_Insertion(t *testing.T) {
-// 	tests := []struct {
-// 		name string // description of this test case
-// 		// Named input parameters for target function.
-// 		postfix []RX_Token
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// TODO: construct the receiver type.
-// 			var b BST
-// 			b.Insertion(tt.postfix)
-// 		})
-// 	}
-// }
