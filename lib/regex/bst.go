@@ -238,11 +238,14 @@ func (tree *BST) ConvertTreeToTable() []TableRow {
 				right := tree.nodes[node.right]
 
 				nullable := left.IsNullable() || right.IsNullable()
-				firstPos := left.extraProperties.firstpos
-				lastPos := left.extraProperties.lastpos
+				firstPos := lib.NewSet[int]()
+				lastPos := lib.NewSet[int]()
 
 				firstPos.Merge(&right.extraProperties.firstpos)
+				firstPos.Merge(&left.extraProperties.firstpos)
+
 				lastPos.Merge(&right.extraProperties.lastpos)
+				lastPos.Merge(&left.extraProperties.lastpos)
 
 				row := NewTableRow()
 				row.nullable = nullable
@@ -257,12 +260,14 @@ func (tree *BST) ConvertTreeToTable() []TableRow {
 				right := tree.nodes[node.right]
 
 				nullable := left.IsNullable() && right.IsNullable()
-				firstPos := left.extraProperties.firstpos
+				firstPos := lib.NewSet[int]()
+				firstPos.Merge(&left.extraProperties.firstpos)
 				if left.IsNullable() {
 					firstPos.Merge(&right.extraProperties.firstpos)
 				}
 
-				lastPos := right.extraProperties.lastpos
+				lastPos := lib.NewSet[int]()
+				lastPos.Merge(&right.extraProperties.lastpos)
 				if left.IsNullable() {
 					lastPos.Merge(&left.extraProperties.lastpos)
 				}
