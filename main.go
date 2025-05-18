@@ -69,8 +69,8 @@ func main() {
 
 	// Generates BST
 	bst := regx.ASTFromRegex(postfix)
-	table := bst.ConvertTreeToTable()
-	afd := regx.ConvertFromTableToAFD(table)
+	table := bst.ToTable()
+	afd := table.ToAFD()
 
 	//afd = MinimizeAFD(afd)
 	// afd := &regx.AFD{InitialState: "0",

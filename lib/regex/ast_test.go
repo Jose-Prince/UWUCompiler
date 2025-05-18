@@ -136,7 +136,9 @@ func CreateCanvasExampleTree() *AST {
 	b.nodes = append(b.nodes, root)
 	b.RootIdx = 0
 
-	createRightChild(b, 0, CreateValueToken('#'))
+	rightTree := createRightChild(b, 0, CreateValueToken('#'))
+	b.nodes[rightTree].extraProperties.acceptance = true
+	b.AcceptedIdx = rightTree
 	leftTree := createLeftChild(b, 0, CreateOperatorToken(AND))
 
 	createRightChild(b, leftTree, CreateValueToken('b'))
@@ -247,12 +249,13 @@ func CreateCanvasExampleTable() ASTTable {
 		},
 
 		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{10: struct{}{}},
-			lastpos:   lib.Set[int]{10: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '#',
-			token:     CreateValueToken('#'),
+			nullable:   false,
+			firstpos:   lib.Set[int]{10: struct{}{}},
+			lastpos:    lib.Set[int]{10: struct{}{}},
+			followpos:  lib.Set[int]{},
+			simbol:     '#',
+			token:      CreateValueToken('#'),
+			acceptance: true,
 		},
 
 		TableRow{
@@ -288,7 +291,7 @@ func TestCanvasExample(t *testing.T) {
 	}
 
 	expectedTable := CreateCanvasExampleTable()
-	table := tree.ConvertTreeToTable()
+	table := tree.ToTable()
 
 	err = validateTable(t, expectedTable, table)
 	if err != nil {

@@ -40,8 +40,9 @@ func NewASTNode(val RX_Token) ASTNode {
 }
 
 type AST struct {
-	nodes   []ASTNode
-	RootIdx int
+	nodes       []ASTNode
+	RootIdx     int
+	AcceptedIdx int
 }
 
 func bstTreeToString(s *AST, current int, b *strings.Builder, level uint) {
@@ -80,12 +81,13 @@ func (b ASTNode) Copy() ASTNode {
 }
 
 type TableRow struct {
-	nullable  bool
-	firstpos  lib.Set[int]
-	lastpos   lib.Set[int]
-	followpos lib.Set[int]
-	simbol    rune
-	token     RX_Token
+	nullable   bool
+	firstpos   lib.Set[int]
+	lastpos    lib.Set[int]
+	followpos  lib.Set[int]
+	simbol     rune
+	token      RX_Token
+	acceptance bool
 }
 
 func NewTableRow() TableRow {
@@ -99,6 +101,7 @@ func NewTableRow() TableRow {
 func (s TableRow) Equals(other *TableRow) bool {
 	return s.nullable == other.nullable &&
 		s.simbol == other.simbol &&
+		s.acceptance == other.acceptance &&
 		s.token.Equals(&other.token) &&
 		s.firstpos.Equals(&other.firstpos) &&
 		s.lastpos.Equals(&other.lastpos) &&
@@ -111,6 +114,13 @@ func (s TableRow) String() string {
 
 	b.WriteString("simbol = ")
 	b.WriteRune(s.simbol)
+
+	b.WriteString(", acceptance = ")
+	if s.acceptance {
+		b.WriteRune('T')
+	} else {
+		b.WriteRune('F')
+	}
 
 	b.WriteString(", nullable = ")
 	if s.nullable {
@@ -178,6 +188,7 @@ func ASTFromRegex(postfix []RX_Token) *AST {
 	}
 
 	b.RootIdx = len(b.nodes) - 1
+	b.AcceptedIdx = len(b.nodes) - 2
 	return b
 }
 
@@ -206,7 +217,7 @@ func (s ASTTable) String() string {
 	return b.String()
 }
 
-func (tree *AST) ConvertTreeToTable() ASTTable {
+func (tree *AST) ToTable() ASTTable {
 	// Compute first and last pos of all nodes...
 	for i, node := range tree.nodes {
 		if node.IsLeaf() {
@@ -227,6 +238,7 @@ func (tree *AST) ConvertTreeToTable() ASTTable {
 			row.lastpos = lastPos
 			row.simbol = simbol
 			row.token = node.Val
+			row.acceptance = i == tree.AcceptedIdx
 
 			tree.nodes[i].extraProperties = row
 		} else {
