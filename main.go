@@ -71,7 +71,7 @@ func main() {
 	bst := regx.BSTFromRegexStream(postfix)
 
 	// Creates tables with nodes from tree
-	table := regx.ConvertTreeToTable(bst)
+	table := bst.ConvertTreeToTable()
 
 	afd := new(regx.AFD)
 	afd = regx.ConvertFromTableToAFD(table)
