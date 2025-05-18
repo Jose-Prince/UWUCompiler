@@ -8,7 +8,7 @@ import (
 	"github.com/Jose-Prince/UWULexer/lib"
 )
 
-type BSTNode struct {
+type ASTNode struct {
 	Val RX_Token
 
 	father int
@@ -19,7 +19,7 @@ type BSTNode struct {
 	extraProperties TableRow
 }
 
-func (s BSTNode) String() string {
+func (s ASTNode) String() string {
 	b := strings.Builder{}
 	b.WriteString("{ ")
 	b.WriteString(s.Val.String())
@@ -27,8 +27,8 @@ func (s BSTNode) String() string {
 	return b.String()
 }
 
-func NewBSTNode(val RX_Token) BSTNode {
-	return BSTNode{
+func NewASTNode(val RX_Token) ASTNode {
+	return ASTNode{
 		Val: val,
 
 		father: -1,
@@ -39,12 +39,12 @@ func NewBSTNode(val RX_Token) BSTNode {
 	}
 }
 
-type BST struct {
-	nodes   []BSTNode
+type AST struct {
+	nodes   []ASTNode
 	RootIdx int
 }
 
-func bstTreeToString(s *BST, current int, b *strings.Builder, level uint) {
+func bstTreeToString(s *AST, current int, b *strings.Builder, level uint) {
 	if current == -1 {
 		return
 	}
@@ -62,14 +62,14 @@ func bstTreeToString(s *BST, current int, b *strings.Builder, level uint) {
 	bstTreeToString(s, right, b, level+1)
 }
 
-func (s BST) String() string {
+func (s AST) String() string {
 	b := strings.Builder{}
 	bstTreeToString(&s, s.RootIdx, &b, 0)
 	return b.String()
 }
 
-func (b BSTNode) Copy() BSTNode {
-	var other BSTNode
+func (b ASTNode) Copy() ASTNode {
+	var other ASTNode
 	other.Val = b.Val
 	other.father = b.father
 	other.left = b.left
@@ -133,23 +133,23 @@ func (s TableRow) String() string {
 	return b.String()
 }
 
-func (b *BSTNode) IsNullable() bool {
+func (b *ASTNode) IsNullable() bool {
 	return b.extraProperties.nullable
 }
 
-func (b *BSTNode) IsLeaf() bool {
+func (b *ASTNode) IsLeaf() bool {
 	return b.left == -1 && b.right == -1
 }
 
-func BSTFromRegexStream(postfix []RX_Token) *BST {
-	b := new(BST)
+func ASTFromRegex(postfix []RX_Token) *AST {
+	b := new(AST)
 	postfix = append(postfix, CreateValueToken('#'))
 	postfix = append(postfix, CreateOperatorToken(AND))
 
 	stack := lib.NewStack[int]()
 
 	for _, v := range postfix {
-		node := NewBSTNode(v)
+		node := NewASTNode(v)
 		i := len(b.nodes)
 
 		if v.IsOperator() {
@@ -181,9 +181,9 @@ func BSTFromRegexStream(postfix []RX_Token) *BST {
 	return b
 }
 
-type BSTTable []TableRow
+type ASTTable []TableRow
 
-func (s BSTTable) String() string {
+func (s ASTTable) String() string {
 	b := strings.Builder{}
 
 	MAX_DIGITS := 3
@@ -206,7 +206,7 @@ func (s BSTTable) String() string {
 	return b.String()
 }
 
-func (tree *BST) ConvertTreeToTable() BSTTable {
+func (tree *AST) ConvertTreeToTable() ASTTable {
 	// Compute first and last pos of all nodes...
 	for i, node := range tree.nodes {
 		if node.IsLeaf() {

@@ -8,7 +8,7 @@ import (
 	"github.com/Jose-Prince/UWULexer/lib"
 )
 
-func _validateTree(t *testing.T, expected *BST, expectedCurrent int, result *BST, resultCurrent int, level int) error {
+func _validateTree(t *testing.T, expected *AST, expectedCurrent int, result *AST, resultCurrent int, level int) error {
 	bothDontExist := resultCurrent == -1 && expectedCurrent == -1
 	if bothDontExist {
 		return nil
@@ -71,7 +71,7 @@ Nodes on level %d don't match! %s != %s`,
 	return nil
 }
 
-func validateTree(t *testing.T, expected *BST, actual *BST) error {
+func validateTree(t *testing.T, expected *AST, actual *AST) error {
 	if len(expected.nodes) != len(actual.nodes) {
 		t.Errorf("Tree nodes don't match! %d != %d", len(expected.nodes), len(actual.nodes))
 	}
@@ -79,7 +79,7 @@ func validateTree(t *testing.T, expected *BST, actual *BST) error {
 	return _validateTree(t, expected, expected.RootIdx, actual, actual.RootIdx, 1)
 }
 
-func validateTable(t *testing.T, expected BSTTable, result BSTTable) error {
+func validateTable(t *testing.T, expected ASTTable, result ASTTable) error {
 	if len(expected) != len(result) {
 		t.Errorf("Tables lengths don't match! %d != %d", len(expected), len(result))
 	}
@@ -108,8 +108,8 @@ Rows at index %d don't match!
 	return nil
 }
 
-func createLeftChild(b *BST, father int, value RX_Token) int {
-	node := NewBSTNode(value)
+func createLeftChild(b *AST, father int, value RX_Token) int {
+	node := NewASTNode(value)
 	node.father = father
 
 	insertedIdx := len(b.nodes)
@@ -119,8 +119,8 @@ func createLeftChild(b *BST, father int, value RX_Token) int {
 	return insertedIdx
 }
 
-func createRightChild(b *BST, father int, value RX_Token) int {
-	node := NewBSTNode(value)
+func createRightChild(b *AST, father int, value RX_Token) int {
+	node := NewASTNode(value)
 	node.father = father
 
 	insertedIdx := len(b.nodes)
@@ -130,9 +130,9 @@ func createRightChild(b *BST, father int, value RX_Token) int {
 	return insertedIdx
 }
 
-func CreateCanvasExampleTree() *BST {
-	b := new(BST)
-	root := NewBSTNode(CreateOperatorToken(AND))
+func CreateCanvasExampleTree() *AST {
+	b := new(AST)
+	root := NewASTNode(CreateOperatorToken(AND))
 	b.nodes = append(b.nodes, root)
 	b.RootIdx = 0
 
@@ -155,8 +155,8 @@ func CreateCanvasExampleTree() *BST {
 	return b
 }
 
-func CreateCanvasExampleTable() BSTTable {
-	return BSTTable{
+func CreateCanvasExampleTable() ASTTable {
+	return ASTTable{
 		TableRow{
 			nullable:  false,
 			firstpos:  lib.Set[int]{0: struct{}{}},
@@ -279,7 +279,7 @@ func TestCanvasExample(t *testing.T) {
 		CreateValueToken('b'),
 		CreateOperatorToken(AND),
 	}
-	tree := BSTFromRegexStream(regexStream)
+	tree := ASTFromRegex(regexStream)
 	expectedTree := CreateCanvasExampleTree()
 
 	err := validateTree(t, expectedTree, tree)
