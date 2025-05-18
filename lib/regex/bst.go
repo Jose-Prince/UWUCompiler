@@ -101,7 +101,7 @@ func (s TableRow) Equals(other *TableRow) bool {
 		s.simbol == other.simbol &&
 		s.token.Equals(&other.token) &&
 		s.firstpos.Equals(&other.firstpos) &&
-		s.lastpos.Equals(&other.lastpos) && 
+		s.lastpos.Equals(&other.lastpos) &&
 		s.followpos.Equals(&other.followpos)
 }
 
@@ -181,11 +181,13 @@ func BSTFromRegexStream(postfix []RX_Token) *BST {
 	return b
 }
 
-func TableToString(s *[]TableRow) string {
+type BSTTable []TableRow
+
+func (s BSTTable) String() string {
 	b := strings.Builder{}
 
 	MAX_DIGITS := 3
-	for i, row := range *s {
+	for i, row := range s {
 		b.WriteString(strconv.FormatInt(int64(i), 10))
 
 		rightPadding := max(0, MAX_DIGITS-1-int(math.Floor(math.Log10(float64(i)))))
@@ -204,7 +206,7 @@ func TableToString(s *[]TableRow) string {
 	return b.String()
 }
 
-func (tree *BST) ConvertTreeToTable() []TableRow {
+func (tree *BST) ConvertTreeToTable() BSTTable {
 	// Compute first and last pos of all nodes...
 	for i, node := range tree.nodes {
 		if node.IsLeaf() {

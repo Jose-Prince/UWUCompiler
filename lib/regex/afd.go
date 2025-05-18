@@ -210,8 +210,8 @@ func (self *AFDStateTable[T]) Get(a *AFDState, b *AFDState) (T, bool) {
 	return defaultPairType, false
 }
 
-func ConvertFromTableToAFD(table []*TableRow) *AFD {
-	afd := &AFD{
+func ConvertFromTableToAFD(table []TableRow) AFD {
+	afd := AFD{
 		Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
 		AcceptanceStates: lib.NewSet[string](),
 	}

@@ -79,7 +79,7 @@ func validateTree(t *testing.T, expected *BST, actual *BST) error {
 	return _validateTree(t, expected, expected.RootIdx, actual, actual.RootIdx, 1)
 }
 
-func validateTable(t *testing.T, expected []TableRow, result []TableRow) error {
+func validateTable(t *testing.T, expected BSTTable, result BSTTable) error {
 	if len(expected) != len(result) {
 		t.Errorf("Tables lengths don't match! %d != %d", len(expected), len(result))
 	}
@@ -96,11 +96,11 @@ Rows at index %d don't match!
 %s
 !=
 %s`,
-				TableToString(&expected),
-				TableToString(&result),
+				expected,
+				result,
 				i,
-				expRow.String(),
-				resRow.String(),
+				expRow,
+				resRow,
 			))
 		}
 	}
@@ -155,8 +155,8 @@ func CreateCanvasExampleTree() *BST {
 	return b
 }
 
-func CreateCanvasExampleTable() []TableRow {
-	return []TableRow{
+func CreateCanvasExampleTable() BSTTable {
+	return BSTTable{
 		TableRow{
 			nullable:  false,
 			firstpos:  lib.Set[int]{0: struct{}{}},

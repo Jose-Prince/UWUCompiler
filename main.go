@@ -69,12 +69,8 @@ func main() {
 
 	// Generates BST
 	bst := regx.BSTFromRegexStream(postfix)
-
-	// Creates tables with nodes from tree
 	table := bst.ConvertTreeToTable()
-
-	afd := new(regx.AFD)
-	afd = regx.ConvertFromTableToAFD(table)
+	afd := regx.ConvertFromTableToAFD(table)
 
 	//afd = MinimizeAFD(afd)
 	// afd := &regx.AFD{InitialState: "0",
@@ -101,7 +97,7 @@ func main() {
 
 	fmt.Println("The AFD is:", afd.String())
 
-	err := WriteLexFile(outputLexerFile, lexFileData, *afd)
+	err := WriteLexFile(outputLexerFile, lexFileData, afd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
 		panic(err)
