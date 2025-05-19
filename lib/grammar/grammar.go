@@ -221,8 +221,8 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 			A := rule.Head
 			production := rule.Production
 
-			for i := 0; i < len(production); i++ {
-				B := production[i]
+			for i, B := range production {
+				follow := table.table[B].Follow
 
 				if !B.IsNonTerminal() {
 					continue
@@ -234,13 +234,13 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 					for _, terminal := range beta {
 						if terminal.IsTerminal() {
 
-							if table.table[B].Follow.Add_(terminal) {
+							if follow.Add(terminal) {
 								changed = true
 							}
 						} else {
 							newTerminal := derivateNonTerminal(terminal, grammar)
 
-							if table.table[B].Follow.Add_(newTerminal) {
+							if follow.Add(newTerminal) {
 								changed = true
 							}
 						}
@@ -249,7 +249,7 @@ func GetFollows(grammar *Grammar, table *FirstFollowTable) {
 					break
 				} else {
 					for terminal := range table.table[A].Follow {
-						if table.table[B].Follow.Add_(terminal) {
+						if follow.Add(terminal) {
 							changed = true
 						}
 					}
