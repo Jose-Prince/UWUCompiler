@@ -273,7 +273,7 @@ func CreateCanvasExampleTable() ASTTable {
 	}
 }
 
-func TestCanvasExample(t *testing.T) {
+func TestASTCanvasExample(t *testing.T) {
 	regexStream := []RX_Token{
 		CreateValueToken('a'),
 		CreateValueToken('b'),

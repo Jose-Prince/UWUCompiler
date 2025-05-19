@@ -210,20 +210,20 @@ func (self *AFDStateTable[T]) Get(a *AFDState, b *AFDState) (T, bool) {
 	return defaultPairType, false
 }
 
-func ConvertFromTableToAFD(table []TableRow) AFD {
+func (table ASTTable) ToAFD() AFD {
 	afd := AFD{
 		Transitions:      make(map[AFDState]map[AlphabetInput]AFDState),
 		AcceptanceStates: lib.NewSet[string](),
 	}
 
-	alphabet := lib.NewSet[RX_Token]()
-
 	// Identificar el alfabeto del AFD
-	for _, row := range table {
+	alphabet := lib.NewSet[RX_Token]()
+	for _, row := range table.Rows {
 		if !row.token.IsOperator() {
 			alphabet.Add(row.token)
 		}
 	}
+	// alphabetSlice := alphabet.ToSlice()
 
 	// Crear estado trampa
 	//trapState := "TRAP"
@@ -233,80 +233,120 @@ func ConvertFromTableToAFD(table []TableRow) AFD {
 	//}
 
 	// Estado inicial del AFD
-	afd.InitialState = lib.StableSetString(table[len(table)-1].firstpos)
-	// afd.InitialState = convertSliceIntToString(table[len(table)-1].firstpos)
+	afd.InitialState = lib.StableSetString(table.Rows[table.RootRow].firstpos)
 
-	newStates := lib.NewSet[string]()
-	newStates.Add(afd.InitialState)
+	// Maps a specified state string into the set that gave it birth
+	statesMapper := make(map[string]lib.Set[int])
+	statesMapper[afd.InitialState] = table.Rows[table.RootRow].firstpos
 
-	visited := lib.NewSet[string]()
-	visited.Add(afd.InitialState)
+	newStates := lib.NewStack[string]()
+	newStates.Push(afd.InitialState)
+	for !newStates.Empty() {
+		currentState := newStates.Pop().GetValue()
 
-	// Calcular transiciones del AFD
-	for !newStates.IsEmpty() {
-		currentStates := newStates.ToSlice()
-		newStates.Clear()
-
-		for _, n := range currentStates {
-			if _, exists := afd.Transitions[n]; !exists {
-				afd.Transitions[n] = make(map[AlphabetInput]AFDState)
-			}
-
-			indexList := strings.SplitAfter(n, ",")
-
-			for a := range alphabet {
-				newFollowpos := lib.NewSet[int]()
-
-				for _, index := range indexList {
-					if index != "" {
-
-						num, err := strconv.Atoi(index[:len(index)-1])
-						if err == nil {
-							if table[num].token.Equals(&a) {
-								// for _, follow := range table[num].followpos {
-								// 	newFollowpos.Add(follow)
-								// }
-
-								newFollowpos.Merge(&table[num].followpos)
-							}
-						}
-					}
-				}
-
-				newState := convertSliceIntToString(newFollowpos.ToSlice())
-				newState = sortNumbers(newState)
-				if newState == "" {
-					//newState = trapState
-				}
-
-				afd.Transitions[n][a] = newState
-				if newState != "" && visited.Add(newState) {
-					newStates.Add(newState)
-				}
-				//if newState != trapState && visited.Add(newState) {
-				//	newStates.Add(newState)
-				//}
-			}
+		if _, exists := afd.Transitions[currentState]; !exists {
+			afd.Transitions[currentState] = make(map[AlphabetInput]AFDState)
 		}
-	}
 
-	for state, transitions := range afd.Transitions {
-		for key, newState := range transitions {
-			if newState == "" {
-				delete(afd.Transitions[state], key)
+		stateIndexes := statesMapper[currentState]
+		stateTransitions := make(map[AlphabetInput]lib.Set[int])
+		for stateIdx := range stateIndexes {
+			if stateIdx == table.AcceptanceRow {
+				afd.AcceptanceStates.Add(currentState)
+			} else {
+				associatedRow := table.Rows[stateIdx]
+				associatedToken := associatedRow.token
+				if _, exists := stateTransitions[associatedToken]; !exists {
+					stateTransitions[associatedToken] = lib.NewSet[int]()
+				}
+
+				prev := stateTransitions[associatedToken]
+				prev.Merge(&associatedRow.followpos)
+				stateTransitions[associatedToken] = prev
 			}
 		}
 
-	}
+		for input, idxSet := range stateTransitions {
+			newState := lib.StableSetString(idxSet)
+			if _, exists := statesMapper[newState]; !exists {
+				newStates.Push(newState)
+				statesMapper[newState] = idxSet
+			}
 
-	// Determinar estados de aceptación
-	finalNode := len(table) - 2
-	finalNodeStr := fmt.Sprintf("%d", finalNode)
-	for state := range visited {
-		if strings.Contains(state, finalNodeStr) {
-			afd.AcceptanceStates.Add(state)
+			afd.Transitions[currentState][input] = newState
 		}
 	}
+
+	// newStates := lib.NewSet[string]()
+	// newStates.Add(afd.InitialState)
+	//
+	// visited := lib.NewSet[string]()
+	// visited.Add(afd.InitialState)
+	//
+	// // Calcular transiciones del AFD
+	// for !newStates.IsEmpty() {
+	// 	currentStates := newStates.ToSlice()
+	// 	newStates.Clear()
+	//
+	// 	for _, n := range currentStates {
+	// 		if _, exists := afd.Transitions[n]; !exists {
+	// 			afd.Transitions[n] = make(map[AlphabetInput]AFDState)
+	// 		}
+	//
+	// 		indexList := strings.SplitAfter(n, ",")
+	//
+	// 		for a := range alphabet {
+	// 			newFollowpos := lib.NewSet[int]()
+	//
+	// 			for _, index := range indexList {
+	// 				if index != "" {
+	//
+	// 					num, err := strconv.Atoi(index[:len(index)-1])
+	// 					if err == nil {
+	// 						if table.Rows[num].token.Equals(&a) {
+	// 							// for _, follow := range table[num].followpos {
+	// 							// 	newFollowpos.Add(follow)
+	// 							// }
+	//
+	// 							newFollowpos.Merge(&table.Rows[num].followpos)
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	//
+	// 			newState := lib.StableSetString(newFollowpos)
+	// 			// newState = sortNumbers(newState)
+	// 			// if newState == "" {
+	// 			// 	//newState = trapState
+	// 			// }
+	//
+	// 			afd.Transitions[n][a] = newState
+	// 			if newState != "" && visited.Add(newState) {
+	// 				newStates.Add(newState)
+	// 			}
+	// 			//if newState != trapState && visited.Add(newState) {
+	// 			//	newStates.Add(newState)
+	// 			//}
+	// 		}
+	// 	}
+	// }
+	//
+	// for state, transitions := range afd.Transitions {
+	// 	for key, newState := range transitions {
+	// 		if newState == "" {
+	// 			delete(afd.Transitions[state], key)
+	// 		}
+	// 	}
+	//
+	// }
+	//
+	// // Determinar estados de aceptación
+	// finalNodeStr := fmt.Sprintf("%d", table.AcceptanceRow)
+	// for state := range visited {
+	// 	if strings.Contains(state, finalNodeStr) {
+	// 		afd.AcceptanceStates.Add(state)
+	// 	}
+	// }
 
 	return afd
 }
