@@ -80,12 +80,12 @@ func validateTree(t *testing.T, expected *AST, actual *AST) error {
 }
 
 func validateTable(t *testing.T, expected ASTTable, result ASTTable) error {
-	if len(expected) != len(result) {
-		t.Errorf("Tables lengths don't match! %d != %d", len(expected), len(result))
+	if len(expected.Rows) != len(result.Rows) {
+		t.Errorf("Tables lengths don't match! %d != %d", len(expected.Rows), len(result.Rows))
 	}
 
-	for i, expRow := range expected {
-		resRow := result[i]
+	for i, expRow := range expected.Rows {
+		resRow := result.Rows[i]
 
 		if !expRow.Equals(&resRow) {
 			return errors.New(fmt.Sprintf(`Expected:
@@ -159,112 +159,116 @@ func CreateCanvasExampleTree() *AST {
 
 func CreateCanvasExampleTable() ASTTable {
 	return ASTTable{
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{0: struct{}{}},
-			lastpos:   lib.Set[int]{0: struct{}{}},
-			followpos: lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
-			simbol:    'a',
-			token:     CreateValueToken('a'),
-		},
+		RootRow:       11,
+		AcceptanceRow: 10,
+		Rows: []TableRow{
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{0: struct{}{}},
+				lastpos:   lib.Set[int]{0: struct{}{}},
+				followpos: lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+				simbol:    'a',
+				token:     CreateValueToken('a'),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{1: struct{}{}},
-			lastpos:   lib.Set[int]{1: struct{}{}},
-			followpos: lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
-			simbol:    'b',
-			token:     CreateValueToken('b'),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{1: struct{}{}},
+				lastpos:   lib.Set[int]{1: struct{}{}},
+				followpos: lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+				simbol:    'b',
+				token:     CreateValueToken('b'),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}},
-			lastpos:   lib.Set[int]{0: struct{}{}, 1: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
-			token:     CreateOperatorToken(OR),
-		},
-		TableRow{
-			nullable:  true,
-			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}},
-			lastpos:   lib.Set[int]{0: struct{}{}, 1: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
-			token:     CreateOperatorToken(ZERO_OR_MANY),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}},
+				lastpos:   lib.Set[int]{0: struct{}{}, 1: struct{}{}},
+				followpos: lib.Set[int]{},
+				simbol:    '\x00',
+				token:     CreateOperatorToken(OR),
+			},
+			TableRow{
+				nullable:  true,
+				firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}},
+				lastpos:   lib.Set[int]{0: struct{}{}, 1: struct{}{}},
+				followpos: lib.Set[int]{},
+				simbol:    '\x00',
+				token:     CreateOperatorToken(ZERO_OR_MANY),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{4: struct{}{}},
-			lastpos:   lib.Set[int]{4: struct{}{}},
-			followpos: lib.Set[int]{6: struct{}{}},
-			simbol:    'a',
-			token:     CreateValueToken('a'),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{4: struct{}{}},
+				lastpos:   lib.Set[int]{4: struct{}{}},
+				followpos: lib.Set[int]{6: struct{}{}},
+				simbol:    'a',
+				token:     CreateValueToken('a'),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
-			lastpos:   lib.Set[int]{4: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
-			token:     CreateOperatorToken(AND),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+				lastpos:   lib.Set[int]{4: struct{}{}},
+				followpos: lib.Set[int]{},
+				simbol:    '\x00',
+				token:     CreateOperatorToken(AND),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{6: struct{}{}},
-			lastpos:   lib.Set[int]{6: struct{}{}},
-			followpos: lib.Set[int]{8: struct{}{}},
-			simbol:    'b',
-			token:     CreateValueToken('b'),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{6: struct{}{}},
+				lastpos:   lib.Set[int]{6: struct{}{}},
+				followpos: lib.Set[int]{8: struct{}{}},
+				simbol:    'b',
+				token:     CreateValueToken('b'),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
-			lastpos:   lib.Set[int]{6: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
-			token:     CreateOperatorToken(AND),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+				lastpos:   lib.Set[int]{6: struct{}{}},
+				followpos: lib.Set[int]{},
+				simbol:    '\x00',
+				token:     CreateOperatorToken(AND),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{8: struct{}{}},
-			lastpos:   lib.Set[int]{8: struct{}{}},
-			followpos: lib.Set[int]{10: struct{}{}},
-			simbol:    'b',
-			token:     CreateValueToken('b'),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{8: struct{}{}},
+				lastpos:   lib.Set[int]{8: struct{}{}},
+				followpos: lib.Set[int]{10: struct{}{}},
+				simbol:    'b',
+				token:     CreateValueToken('b'),
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
-			lastpos:   lib.Set[int]{8: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
-			token:     CreateOperatorToken(AND),
-		},
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+				lastpos:   lib.Set[int]{8: struct{}{}},
+				followpos: lib.Set[int]{},
+				simbol:    '\x00',
+				token:     CreateOperatorToken(AND),
+			},
 
-		TableRow{
-			nullable:   false,
-			firstpos:   lib.Set[int]{10: struct{}{}},
-			lastpos:    lib.Set[int]{10: struct{}{}},
-			followpos:  lib.Set[int]{},
-			simbol:     '#',
-			token:      CreateValueToken('#'),
-			acceptance: true,
-		},
+			TableRow{
+				nullable:   false,
+				firstpos:   lib.Set[int]{10: struct{}{}},
+				lastpos:    lib.Set[int]{10: struct{}{}},
+				followpos:  lib.Set[int]{},
+				simbol:     '#',
+				token:      CreateValueToken('#'),
+				acceptance: true,
+			},
 
-		TableRow{
-			nullable:  false,
-			firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
-			lastpos:   lib.Set[int]{10: struct{}{}},
-			followpos: lib.Set[int]{},
-			simbol:    '\x00',
-			token:     CreateOperatorToken(AND),
+			TableRow{
+				nullable:  false,
+				firstpos:  lib.Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}},
+				lastpos:   lib.Set[int]{10: struct{}{}},
+				followpos: lib.Set[int]{},
+				simbol:    '\x00',
+				token:     CreateOperatorToken(AND),
+			},
 		},
 	}
 }

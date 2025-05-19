@@ -192,13 +192,17 @@ func ASTFromRegex(postfix []RX_Token) *AST {
 	return b
 }
 
-type ASTTable []TableRow
+type ASTTable struct {
+	Rows          []TableRow
+	RootRow       int
+	AcceptanceRow int
+}
 
 func (s ASTTable) String() string {
 	b := strings.Builder{}
 
 	MAX_DIGITS := 3
-	for i, row := range s {
+	for i, row := range s.Rows {
 		b.WriteString(strconv.FormatInt(int64(i), 10))
 
 		rightPadding := max(0, MAX_DIGITS-1-int(math.Floor(math.Log10(float64(i)))))
@@ -229,7 +233,11 @@ func (tree *AST) ToTable() ASTTable {
 			if !nullable {
 				firstPos.Add(i)
 				lastPos.Add(i)
-				simbol = node.Val.GetValue().GetValue()
+				if node.Val.IsValue() {
+					simbol = node.Val.GetValue().GetValue()
+				} else {
+					simbol = '🤡'
+				}
 			}
 
 			row := NewTableRow()
@@ -335,11 +343,21 @@ func (tree *AST) ToTable() ASTTable {
 		}
 	}
 
-	table := []TableRow{}
-	for _, n := range tree.nodes {
+	table := ASTTable{
+		Rows: []TableRow{},
+	}
+	for i, n := range tree.nodes {
 		row := n.extraProperties
+		table.Rows = append(table.Rows, row)
 
-		table = append(table, row)
+		if tree.RootIdx == i {
+			table.RootRow = i
+		}
+
+		if tree.AcceptedIdx == i {
+			table.AcceptanceRow = i
+		}
+
 	}
 
 	return table
