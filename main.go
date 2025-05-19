@@ -64,37 +64,17 @@ func main() {
 	}
 
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
-	fmt.Println("The Infix expression is:", regx.TokenStreamToString(infix))
-	fmt.Println("The Postfix expression is:", regx.TokenStreamToString(postfix))
+	fmt.Println("The Infix expression is:\n", regx.TokenStreamToString(infix))
+	fmt.Println("The Postfix expression is:\n", regx.TokenStreamToString(postfix))
 
 	// Generates BST
 	bst := regx.ASTFromRegex(postfix)
+	fmt.Println("The AST is:\n", bst.String())
+
 	table := bst.ToTable()
+	fmt.Println("The AST Table is:\n", table.String())
+
 	afd := table.ToAFD()
-
-	//afd = MinimizeAFD(afd)
-	// afd := &regx.AFD{InitialState: "0",
-	// 	AcceptanceStates: regx.Set[regx.AFDState]{"f": struct{}{}},
-	// 	Transitions: map[regx.AFDState]map[regx.AlphabetInput]regx.AFDState{
-	// 		"0": {
-	// 			regx.CreateValueToken('a'): "1",
-	// 			regx.CreateValueToken('c'): "4",
-	// 		},
-	// 		"1": {
-	// 			regx.CreateValueToken('b'): "2",
-	// 		},
-	// 		"2": {
-	// 			regx.CreateValueToken('c'): "3",
-	// 		},
-	// 		"3": {
-	// 			regx.CreateDummyToken(lexFileData.Rule["abc"]):     "f",
-	// 			regx.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
-	// 		},
-	// 		"4": {
-	// 			regx.CreateDummyToken(lexFileData.Rule["(abc)|c"]): "f",
-	// 		},
-	// 	}}
-
 	fmt.Println("The AFD is:", afd.String())
 
 	err := WriteLexFile(outputLexerFile, lexFileData, afd)

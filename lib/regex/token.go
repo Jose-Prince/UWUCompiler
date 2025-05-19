@@ -173,7 +173,7 @@ func TokenStreamToString(stream []RX_Token) string {
 	b := strings.Builder{}
 	for _, elem := range stream {
 		b.WriteString(elem.String())
-		b.WriteByte(' ')
+		b.WriteRune('\n')
 	}
 
 	return b.String()

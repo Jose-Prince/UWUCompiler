@@ -90,17 +90,16 @@ func _simplifyIntoSwitch(afd *reg.AFD, state reg.AFDState, sw *afdSwitch, visite
 	}
 
 	dummyChildren := getChildrenWithDummyTransitions(afd, state)
-	for tranInput := range dummyChildren {
-		lowestPriorityDummy := getLowestPriorityDummy(afd, tranInput)
+	for childState := range dummyChildren {
+		lowestPriorityDummy := getLowestPriorityDummy(afd, childState)
 		code := lowestPriorityDummy.GetDummy().Code
 		tranRune := rune(0)
 		for input, childreState := range afd.Transitions[state] {
-			if childreState == tranInput {
+			if childreState == childState {
 				tranRune = input.GetValue().GetValue()
-				break
+				sw.Transitions[state][tranRune] = afdLeafInfo{NewState: childState, Code: code}
 			}
 		}
-		sw.Transitions[state][tranRune] = afdLeafInfo{NewState: tranInput, Code: code}
 	}
 }
 
