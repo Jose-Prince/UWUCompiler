@@ -20,34 +20,6 @@ var precedence = map[reg.Operator]int{
 	reg.ZERO_OR_MANY: 1, // ZERO_OR_MORE
 }
 
-func isDigit(t *reg.RX_Token) bool {
-	if !t.IsValue() {
-		return false
-	}
-
-	tValue := t.GetValue()
-	if !tValue.HasValue() {
-		return false
-	}
-
-	b := tValue.GetValue()
-	return b >= '0' && b <= '9'
-}
-
-func isLetter(t *reg.RX_Token) bool {
-	if !t.IsValue() {
-		return false
-	}
-
-	tValue := t.GetValue()
-	if !tValue.HasValue() {
-		return false
-	}
-
-	b := tValue.GetValue()
-	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
-}
-
 func tryToAppendWithPrecedence(stack *shunStack, operator reg.Operator, output *[]reg.RX_Token) {
 	if stack.Empty() {
 		stack.Push(operator)
@@ -98,8 +70,7 @@ func toPostFix(alph *Alphabet, infixExpression *[]reg.RX_Token, stack *shunStack
 	previousCanBeANDedTo := false
 
 	previousExprStack := reg.ExprStack{}
-	for i := 0; i < len(infixExpr); i++ {
-		currentToken := infixExpr[i]
+	for _, currentToken := range infixExpr {
 
 		if currentToken.IsOperator() {
 			op := currentToken.GetOperator()

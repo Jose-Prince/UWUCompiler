@@ -199,6 +199,84 @@ func TestCanvasExample(t *testing.T) {
 	compareTokensStreams(t, "(a|b)*abb", expected, result)
 }
 
+func TestPythonFromRegex(t *testing.T) {
+	infix := "[0-9]+"
+	infixExpr := InfixToTokens(infix)
+	expected := []reg.RX_Token{
+		reg.CreateOperatorToken(reg.LEFT_PAREN),
+		reg.CreateValueToken('0'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('1'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('2'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('3'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('4'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('5'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('6'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('7'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('8'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('9'),
+		reg.CreateOperatorToken(reg.RIGHT_PAREN),
+		reg.CreateOperatorToken(reg.ONE_OR_MANY),
+	}
+
+	compareTokensStreams(t, infix, expected, infixExpr)
+
+	expectedRes := []reg.RX_Token{
+		reg.CreateValueToken('0'),
+		reg.CreateValueToken('1'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('2'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('3'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('4'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('5'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('6'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('7'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('8'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('9'),
+		reg.CreateOperatorToken(reg.OR),
+
+		reg.CreateValueToken('0'),
+		reg.CreateValueToken('1'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('2'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('3'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('4'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('5'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('6'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('7'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('8'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateValueToken('9'),
+		reg.CreateOperatorToken(reg.OR),
+		reg.CreateOperatorToken(reg.ZERO_OR_MANY),
+		reg.CreateOperatorToken(reg.AND),
+	}
+
+	result := DEFAULT_ALPHABET.ToPostfix(&infixExpr)
+	compareTokensStreams(t, infix, expectedRes, result)
+}
+
 // func TestFuzzFail(t *testing.T) {
 // 	source := rand.NewSource(int64(69326))
 // 	random := rand.New(source)

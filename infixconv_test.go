@@ -225,3 +225,35 @@ func FuzzFromInfixToRegex(f *testing.F) {
 		compareTokensStreams(t, infix, expected, result)
 	})
 }
+
+func TestPythonExample(t *testing.T) {
+	infix := "[0-9]+"
+	result := InfixToTokens(infix)
+	expected := []l.RX_Token{
+		l.CreateOperatorToken(l.LEFT_PAREN),
+		l.CreateValueToken('0'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('1'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('2'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('3'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('4'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('5'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('6'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('7'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('8'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('9'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
+		l.CreateOperatorToken(l.ONE_OR_MANY),
+	}
+
+	compareTokensStreams(t, infix, expected, result)
+
+}
