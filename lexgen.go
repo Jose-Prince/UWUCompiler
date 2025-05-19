@@ -193,8 +193,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error opening the source file! %v", err)
 	}
 
-	// previousParsingResult := -1000
-	// afdState := "0" // INITIAL AFD STATE!
 	for i := 0; i < len(sourceFileContent); i++ {
 
 		afdState := "`)
