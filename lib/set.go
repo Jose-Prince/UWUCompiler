@@ -25,11 +25,7 @@ func (self Set[T]) String() string {
 	return b.String()
 }
 
-// Prints a set as a string with it's keys on the same order every time!
-func StableSetString[T cmp.Ordered](self Set[T]) string {
-	b := strings.Builder{}
-	b.WriteString("[ ")
-
+func GetValuesStable[T cmp.Ordered](self Set[T]) []T {
 	values := make([]T, 0, len(self))
 	for k := range self {
 		values = append(values, k)
@@ -37,6 +33,15 @@ func StableSetString[T cmp.Ordered](self Set[T]) string {
 
 	slices.Sort(values)
 
+	return values
+}
+
+// Prints a set as a string with it's keys on the same order every time!
+func StableSetString[T cmp.Ordered](self Set[T]) string {
+	b := strings.Builder{}
+	b.WriteString("[ ")
+
+	values := GetValuesStable(self)
 	for _, k := range values {
 		b.WriteString(fmt.Sprint(k))
 		b.WriteString(", ")
