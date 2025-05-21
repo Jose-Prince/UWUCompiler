@@ -1,6 +1,7 @@
 package grammar
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Jose-Prince/UWULexer/lib"
@@ -14,6 +15,10 @@ type GrammarToken struct {
 
 	// Determines if this token is the '$' token at the end of a grammar.
 	IsEnd bool
+	// Determines if this token is ',' for the look ahead.
+	IsLookAhead bool
+	// Determines if this token is '.' for making closure in the grammar
+	IsPointer bool
 }
 
 func (self GrammarToken) String() string {
@@ -44,6 +49,19 @@ func NewEndToken() GrammarToken {
 		IsEnd: true,
 	}
 }
+
+func NewLookAheadToken() GrammarToken {
+	return GrammarToken{
+		IsLookAhead: true,
+	}
+}
+
+func NewPointerToken() GrammarToken {
+	return GrammarToken{
+		IsPointer: true,
+	}
+}
+
 func NewTerminalToken(val string) GrammarToken {
 	return GrammarToken{
 		NonTerminal: lib.CreateNull[string](),
@@ -151,6 +169,14 @@ func (self *GrammarToken) Equal(other *GrammarToken) bool {
 type GrammarRule struct {
 	Head       GrammarToken
 	Production []GrammarToken
+}
+
+func (self GrammarRule) ToString() string {
+	prodStr := ""
+	for _, p := range self.Production {
+		prodStr += p.String() + " "
+	}
+	return fmt.Sprintf("%s -> %s", self.Head.String(), prodStr)
 }
 
 type Grammar struct {
@@ -281,4 +307,53 @@ func derivateNonTerminal(token GrammarToken, grammar *Grammar) GrammarToken {
 	}
 
 	return CreateEpsilonToken()
+}
+
+func (g *Grammar) First(token GrammarToken) []GrammarToken {
+	result := make(map[string]GrammarToken)
+
+	if token.IsTerminal() {
+		result[token.String()] = token
+		return mapToSlice(result)
+	}
+
+	for _, rule := range g.Rules {
+		if rule.Head.Equal(&token) {
+			for i := 0; i < len(rule.Production); i++ {
+				symbol := rule.Production[i]
+				if symbol.IsTerminal() {
+					result[symbol.String()] = symbol
+					break
+				}
+
+				firsts := g.First(symbol)
+				hasEpsilon := false
+				for _, f := range firsts {
+					if f.String() == "ε" {
+						hasEpsilon = true
+					} else {
+						result[f.String()] = f
+					}
+				}
+
+				if !hasEpsilon {
+					break
+				}
+
+				if i == len(rule.Production)-1 && hasEpsilon {
+					result["ε"] = NewEndToken()
+				}
+			}
+		}
+	}
+
+	return mapToSlice(result)
+}
+
+func mapToSlice(m map[string]GrammarToken) []GrammarToken {
+	slice := make([]GrammarToken, 0, len(m))
+	for _, v := range m {
+		slice = append(slice, v)
+	}
+	return slice
 }
