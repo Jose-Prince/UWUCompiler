@@ -35,10 +35,6 @@ func simplifyIntoSwitch(afd *reg.AFD) afdSwitch {
 	return sw
 }
 
-type tranInput struct {
-	State reg.AFDState
-}
-
 func getChildrenWithDummyTransitions(afd *reg.AFD, state reg.AFDState) l.Set[reg.AFDState] {
 	children := l.Set[reg.AFDState]{}
 

@@ -71,8 +71,7 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 	defer file.Close()
 
 	// Identifies priority
-	var index uint
-	index = 1
+	var index uint = 1
 
 	var info regex.DummyInfo
 

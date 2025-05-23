@@ -211,7 +211,7 @@ func InfixToTokens(infix string) []regex.RX_Token {
 				state := IN_BRACKETS
 
 				nextRune := runes[i+1]
-				if '^' == nextRune {
+				if nextRune == '^' {
 					state = IN_NEGATIVE_BRACKETS
 					i++
 				}
