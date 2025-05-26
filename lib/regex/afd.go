@@ -2,8 +2,6 @@ package regex
 
 import (
 	"fmt"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
@@ -223,14 +221,6 @@ func (table ASTTable) ToAFD() AFD {
 			alphabet.Add(row.token)
 		}
 	}
-	// alphabetSlice := alphabet.ToSlice()
-
-	// Crear estado trampa
-	//trapState := "TRAP"
-	//afd.Transitions[trapState] = make(map[AlphabetInput]AFDState)
-	//for value := range alphabet {
-	//afd.Transitions[trapState][CreateValueToken(value)] = trapState
-	//}
 
 	// Estado inicial del AFD
 	afd.InitialState = lib.StableSetString(table.Rows[table.RootRow].firstpos)
@@ -277,77 +267,6 @@ func (table ASTTable) ToAFD() AFD {
 		}
 	}
 
-	// newStates := lib.NewSet[string]()
-	// newStates.Add(afd.InitialState)
-	//
-	// visited := lib.NewSet[string]()
-	// visited.Add(afd.InitialState)
-	//
-	// // Calcular transiciones del AFD
-	// for !newStates.IsEmpty() {
-	// 	currentStates := newStates.ToSlice()
-	// 	newStates.Clear()
-	//
-	// 	for _, n := range currentStates {
-	// 		if _, exists := afd.Transitions[n]; !exists {
-	// 			afd.Transitions[n] = make(map[AlphabetInput]AFDState)
-	// 		}
-	//
-	// 		indexList := strings.SplitAfter(n, ",")
-	//
-	// 		for a := range alphabet {
-	// 			newFollowpos := lib.NewSet[int]()
-	//
-	// 			for _, index := range indexList {
-	// 				if index != "" {
-	//
-	// 					num, err := strconv.Atoi(index[:len(index)-1])
-	// 					if err == nil {
-	// 						if table.Rows[num].token.Equals(&a) {
-	// 							// for _, follow := range table[num].followpos {
-	// 							// 	newFollowpos.Add(follow)
-	// 							// }
-	//
-	// 							newFollowpos.Merge(&table.Rows[num].followpos)
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	//
-	// 			newState := lib.StableSetString(newFollowpos)
-	// 			// newState = sortNumbers(newState)
-	// 			// if newState == "" {
-	// 			// 	//newState = trapState
-	// 			// }
-	//
-	// 			afd.Transitions[n][a] = newState
-	// 			if newState != "" && visited.Add(newState) {
-	// 				newStates.Add(newState)
-	// 			}
-	// 			//if newState != trapState && visited.Add(newState) {
-	// 			//	newStates.Add(newState)
-	// 			//}
-	// 		}
-	// 	}
-	// }
-	//
-	// for state, transitions := range afd.Transitions {
-	// 	for key, newState := range transitions {
-	// 		if newState == "" {
-	// 			delete(afd.Transitions[state], key)
-	// 		}
-	// 	}
-	//
-	// }
-	//
-	// // Determinar estados de aceptación
-	// finalNodeStr := fmt.Sprintf("%d", table.AcceptanceRow)
-	// for state := range visited {
-	// 	if strings.Contains(state, finalNodeStr) {
-	// 		afd.AcceptanceStates.Add(state)
-	// 	}
-	// }
-
 	return afd
 }
 
@@ -358,37 +277,4 @@ func (self *AFD) Derivation(w string) bool {
 	}
 
 	return self.AcceptanceStates.Contains(state)
-}
-
-func convertSliceIntToString(slice []int) string {
-	var sb strings.Builder
-	for _, i := range slice {
-		sb.WriteString(fmt.Sprintf("%d,", i))
-	}
-
-	return sb.String()
-}
-
-func sortNumbers(input string) string {
-	numberStrings := strings.Split(strings.TrimSuffix(input, ","), ",")
-
-	numbers := make([]int, len(numberStrings))
-	for i, str := range numberStrings {
-		num, err := strconv.Atoi(str)
-		if err != nil {
-			// FIXME: !!!!!
-			// fmt.Println("Error convirtiendo a entero:", err)
-			return ""
-		}
-		numbers[i] = num
-	}
-
-	sort.Ints(numbers)
-
-	result := make([]string, len(numbers))
-	for i, num := range numbers {
-		result[i] = strconv.Itoa(num)
-	}
-
-	return strings.Join(result, ",") + ","
 }
