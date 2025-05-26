@@ -23,4 +23,7 @@ type ParsingTable struct {
 	GoToTable map[AFDNodeId]map[GrammarToken]AFDNodeId
 	// The original grammar, IT MUST NOT BE EXPANDED!
 	Original Grammar
+
+	// The node to start parsing from
+	InitialNodeId AFDNodeId
 }
