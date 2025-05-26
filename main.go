@@ -10,16 +10,6 @@ import (
 	regx "github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
-const CMD_HELP string = `
-UWUCompiler is a compiler generator similar to Yalex and Lex.
-Usage:
-	UWUCompiler <lexfile> <grammarfile> [outputFileToWriteCodeTo]
-
-Example:
-	- To produce the compiler code inside a file named MyCompiler.go
-	UWUCompiler ./input.lex ./grammar.yal MyCompiler.go
-`
-
 type programParams struct {
 	LexFilePath     string
 	GrammarFilePath string
