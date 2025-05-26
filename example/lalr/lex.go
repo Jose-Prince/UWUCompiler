@@ -1,118 +1,4 @@
-package main
 
-import (
-	"bufio"
-	"fmt"
-	"math"
-	"os"
-	"regexp"
-	"strconv"
-
-	l "github.com/Jose-Prince/UWUCompiler/lib"
-	"github.com/Jose-Prince/UWUCompiler/lib/grammar"
-	reg "github.com/Jose-Prince/UWUCompiler/lib/regex"
-	parsertypes "github.com/Jose-Prince/UWUCompiler/parserTypes"
-)
-
-type afdLeafInfo struct {
-	Code     string
-	NewState reg.AFDState
-}
-
-type afdSwitch struct {
-	// The first key is the state
-	// The second key is the input
-	// The third key is the nextState and the code to write
-	Transitions map[reg.AFDState]map[rune]afdLeafInfo
-
-	InitialState     reg.AFDState
-	AcceptanceStates l.Set[reg.AFDState]
-}
-
-func simplifyIntoSwitch(afd *reg.AFD) afdSwitch {
-	visitedSet := l.Set[reg.AFDState]{}
-	sw := afdSwitch{
-		InitialState:     afd.InitialState,
-		AcceptanceStates: afd.AcceptanceStates,
-		Transitions:      make(map[reg.AFDState]map[rune]afdLeafInfo),
-	}
-	_simplifyIntoSwitch(afd, afd.InitialState, &sw, &visitedSet)
-	return sw
-}
-
-func getChildrenWithDummyTransitions(afd *reg.AFD, state reg.AFDState) l.Set[reg.AFDState] {
-	children := l.Set[reg.AFDState]{}
-
-	for _, childState := range afd.Transitions[state] {
-		for input := range afd.Transitions[childState] {
-			if input.IsDummy() {
-				children.Add(childState)
-			}
-		}
-	}
-
-	return children
-}
-
-func getLowestPriorityDummy(afd *reg.AFD, state reg.AFDState) reg.AlphabetInput {
-	var lowestPriority uint = math.MaxUint
-	lowestDummy := reg.AlphabetInput{}
-	for input := range afd.Transitions[state] {
-		if input.IsDummy() {
-			if input.GetDummy().Priority < lowestPriority {
-				lowestPriority = input.GetDummy().Priority
-				lowestDummy = input
-			}
-		}
-	}
-
-	if lowestPriority == math.MaxUint {
-		panic("No lowest priority dummy found!")
-	}
-	return lowestDummy
-}
-
-func _simplifyIntoSwitch(afd *reg.AFD, state reg.AFDState, sw *afdSwitch, visitedSet *l.Set[reg.AFDState]) {
-	if afd.AcceptanceStates.Contains(state) || !visitedSet.Add(state) {
-		return
-	}
-
-	for input, newState := range afd.Transitions[state] {
-		if input.IsValue() {
-			inputRune := input.GetValue().GetValue()
-			_, found := sw.Transitions[state]
-			if !found {
-				sw.Transitions[state] = make(map[rune]afdLeafInfo)
-			}
-
-			sw.Transitions[state][inputRune] = afdLeafInfo{NewState: newState, Code: "return GIVE_NEXT"}
-			_simplifyIntoSwitch(afd, newState, sw, visitedSet)
-		}
-	}
-
-	dummyChildren := getChildrenWithDummyTransitions(afd, state)
-	for childState := range dummyChildren {
-		lowestPriorityDummy := getLowestPriorityDummy(afd, childState)
-		code := lowestPriorityDummy.GetDummy().Code
-		tranRune := rune(0)
-		for input, childreState := range afd.Transitions[state] {
-			if childreState == childState {
-				tranRune = input.GetValue().GetValue()
-				sw.Transitions[state][tranRune] = afdLeafInfo{NewState: childState, Code: code}
-			}
-		}
-	}
-}
-
-func WriteCompilerFile(filePath string, info *CompilerFileInfo) error {
-	f, err := os.Create(filePath)
-	if err != nil {
-		panic("Error creating output file!")
-	}
-	defer f.Close()
-
-	writer := bufio.NewWriter(f)
-	writer.WriteString(`
 package main
 
 
@@ -125,23 +11,17 @@ import (
 	"cmp"
 	"slices"
 )
-	`)
-	writer.WriteString(info.LexInfo.Header)
-	writer.WriteString(`
-const END_TOKEN_TYPE =`)
-	endTk := grammar.NewEndToken()
-	writer.WriteString(strconv.FormatInt(int64(info.ParsingTable.Original.TokenToParserType(&endTk)), 10))
-	writer.WriteString(`
+	const (
+C int = iota
+D
+)
+
+const END_TOKEN_TYPE =4
 const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
 
-const CMD_HELP = `)
-	writer.WriteRune('`')
-	writer.WriteString(
-		`Tokenizes a specified source file
-Usage: lexer <source file>`)
-	writer.WriteRune('`')
-	writer.WriteString(`
+const CMD_HELP = `Tokenizes a specified source file
+Usage: lexer <source file>`
 
 type Optional[T any] struct {
 	isValid bool
@@ -466,9 +346,7 @@ func main() {
 	tokens := make([]Token, 0, 1000)
 
 	for i := 0; i < len(sourceFileContent); i++ {
-		afdState := "`)
-	writer.WriteString(info.LexAFD.InitialState)
-	writer.WriteString(`" // INITIAL AFD STATE!
+		afdState := "[ 0, 3, ]" // INITIAL AFD STATE!
 
 		previousParsingResult := -1000
 		j := 0
@@ -494,13 +372,7 @@ func main() {
 
 	tokens = append(tokens, Token {Start: len(sourceFileContent), Type: END_TOKEN_TYPE})
 
-	`)
-
-	writer.WriteString("table := ")
-	var transformedTable parsertypes.ParsingTable = info.ParsingTable.ToParserTable()
-	writer.WriteString(removeModulesFromStaticType(fmt.Sprintf("%#v", transformedTable)))
-
-	writer.WriteString(`
+	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "1":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "2":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "36":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "47":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}, "5":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}, "89":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}}, GoToTable:map[string]map[int]string{"0":map[int]string{2:"1", 3:"2"}, "2":map[int]string{3:"5"}, "36":map[int]string{3:"89"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}}, InitialNodeId:"0"}
 
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
@@ -575,69 +447,23 @@ func main() {
 }
 
 func gettoken(state *string, input rune) int {
-`)
-
-	sw := simplifyIntoSwitch(&info.LexAFD)
-	sw.WriteTo(writer)
-	writer.WriteRune('}')
-	writer.WriteString(info.LexInfo.Footer)
-
-	return writer.Flush()
+switch *state {
+case "[ 0, 3, ]":
+	switch input {
+case 'd':
+		*state = "[ 4, ]"
+return D
+case 'c':
+		*state = "[ 1, ]"
+return C
+}
+case "[ 4, ]":
+	switch input {
+}
+case "[ 1, ]":
+	switch input {
 }
 
-func (s *afdSwitch) WriteTo(writer *bufio.Writer) {
-	alreadyWrittenStates := l.Set[reg.AFDState]{}
-	writer.WriteString("switch *state {\n")
-	_writeTo(s, writer, s.InitialState, &alreadyWrittenStates)
-	writer.WriteString(`
 }
 return UNRECOGNIZABLE
-`)
-}
-
-func _writeTo(s *afdSwitch, w *bufio.Writer, state reg.AFDState, alreadyWrittenStates *l.Set[reg.AFDState]) {
-	if !alreadyWrittenStates.Add(state) {
-		return
-	}
-
-	w.WriteString("case \"")
-	w.WriteString(state)
-	w.WriteString(`":
-	switch input {
-`)
-
-	for input, caseInfo := range s.Transitions[state] {
-		w.WriteString("case '")
-		switch input {
-		case '\t':
-			w.WriteString("\\t")
-		case '\n':
-			w.WriteString("\\n")
-		case '\r':
-			w.WriteString("\\r")
-		default:
-			w.WriteRune(input)
-		}
-		w.WriteString(`':
-		*state = "`)
-		w.WriteString(caseInfo.NewState)
-		w.WriteString("\"\n")
-		w.WriteString(caseInfo.Code)
-		w.WriteRune('\n')
-	}
-	w.WriteString("}\n")
-
-	for _, caseInfo := range s.Transitions[state] {
-		_writeTo(s, w, caseInfo.NewState, alreadyWrittenStates)
-	}
-}
-
-func removeModulesFromStaticType(t string) string {
-	reg, err := regexp.Compile("([A-Za-z\\/-]+)\\.")
-	if err != nil {
-		panic(err)
-	}
-
-	replaced := reg.ReplaceAll([]byte(t), []byte{})
-	return string(replaced)
 }

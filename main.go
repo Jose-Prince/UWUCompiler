@@ -101,12 +101,14 @@ func main() {
 			TokenIds: map[grammar.GrammarToken]parsertypes.GrammarToken{
 				grammar.NewTerminalToken("c"):    0,
 				grammar.NewTerminalToken("d"):    1,
-				grammar.NewNonTerminalToken("C"): 2,
-				grammar.NewNonTerminalToken("S"): 3,
+				grammar.NewNonTerminalToken("S"): 2,
+				grammar.NewNonTerminalToken("C"): 3,
+				grammar.NewEndToken():            4,
 			},
 			Terminals: lib.Set[grammar.GrammarToken]{
 				grammar.NewTerminalToken("c"): struct{}{},
 				grammar.NewTerminalToken("d"): struct{}{},
+				grammar.NewEndToken():         struct{}{},
 			},
 			NonTerminals: lib.Set[grammar.GrammarToken]{
 				grammar.NewNonTerminalToken("C"): struct{}{},
@@ -118,11 +120,41 @@ func main() {
 				grammar.NewNonTerminalToken("S"): "1",
 				grammar.NewNonTerminalToken("C"): "2",
 			},
+			"2": map[grammar.GrammarToken]grammar.AFDNodeId{
+				grammar.NewNonTerminalToken("C"): "5",
+			},
+			"36": map[grammar.GrammarToken]grammar.AFDNodeId{
+				grammar.NewNonTerminalToken("C"): "89",
+			},
 		},
 		ActionTable: map[grammar.AFDNodeId]map[grammar.GrammarToken]grammar.Action{
 			"0": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewTerminalToken("c"): grammar.NewShiftAction("3"),
-				grammar.NewTerminalToken("d"): grammar.NewShiftAction("4"),
+				grammar.NewTerminalToken("c"): grammar.NewShiftAction("36"),
+				grammar.NewTerminalToken("d"): grammar.NewShiftAction("47"),
+			},
+			"1": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewEndToken(): grammar.NewAcceptAction(),
+			},
+			"2": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewTerminalToken("c"): grammar.NewShiftAction("36"),
+				grammar.NewTerminalToken("d"): grammar.NewShiftAction("47"),
+			},
+			"36": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewTerminalToken("c"): grammar.NewShiftAction("36"),
+				grammar.NewTerminalToken("d"): grammar.NewShiftAction("47"),
+			},
+			"47": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewTerminalToken("c"): grammar.NewReduceAction(2),
+				grammar.NewTerminalToken("d"): grammar.NewReduceAction(2),
+				grammar.NewEndToken():         grammar.NewReduceAction(2),
+			},
+			"5": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewEndToken(): grammar.NewReduceAction(1),
+			},
+			"89": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewTerminalToken("c"): grammar.NewReduceAction(1),
+				grammar.NewTerminalToken("d"): grammar.NewReduceAction(1),
+				grammar.NewEndToken():         grammar.NewReduceAction(1),
 			},
 		},
 	}
