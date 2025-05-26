@@ -1,23 +1,24 @@
+
 package main
+
 
 // Lexer imports
 import (
-	"cmp"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
+	"cmp"
+	"slices"
 )
-
-const (
-	NUMBER int = iota
-	PLUS
-	MINUS
-	TIMES
-	DIV
-	LPAREN
-	RPAREN
+	const (
+NUMBER int = iota
+PLUS
+MINUS
+TIMES
+DIV
+LPAREN
+RPAREN
 )
 
 const UNRECOGNIZABLE int = -1
@@ -349,7 +350,7 @@ func main() {
 	tokens := make([]Token, 0, 1000)
 
 	for i := 0; i < len(sourceFileContent); i++ {
-		afdState := "[ 0, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 46, 50, 54, 58, 62, ]" // INITIAL AFD STATE!
+		afdState := "[ 0, 3, 7, 11, 15, 16, 18, 20, 22, 24, 26, 28, 30, 32, 58, 62, ]" // INITIAL AFD STATE!
 
 		previousParsingResult := -1000
 		j := 0
@@ -373,7 +374,7 @@ func main() {
 		}
 	}
 
-	table := ParsingTable{}
+	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}}, GoToTable:map[string]map[int]string{"0":map[int]string{2:"2", 3:"1"}}, Original:Grammar{InitialSimbol:3, Rules:[]GrammarRule{GrammarRule{Head:3, Production:[]int{2, 2}}, GrammarRule{Head:2, Production:[]int{0, 2}}, GrammarRule{Head:2, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}}, NonTerminals:Set[int]{0:struct {}{}, 1:struct {}{}}}, InitialNodeId:"0"}
 
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
@@ -448,110 +449,110 @@ func main() {
 }
 
 func gettoken(state *string, input rune) int {
-	switch *state {
-	case "[ 0, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 46, 50, 54, 58, 62, ]":
-		switch input {
-		case '4':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '8':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '*':
-			*state = "[ 55, ]"
-			return TIMES
-		case '2':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case ')':
-			*state = "[ 1, ]"
-			return RPAREN
-		case '1':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '0':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '9':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '5':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '/':
-			*state = "[ 59, ]"
-			return DIV
-		case '(':
-			*state = "[ 63, ]"
-			return LPAREN
-		case '7':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '6':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '3':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '-':
-			*state = "[ 51, ]"
-			return MINUS
-		case '+':
-			*state = "[ 47, ]"
-			return PLUS
-		}
-	case "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]":
-		switch input {
-		case '2':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '0':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '4':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '8':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '9':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '5':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '3':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '1':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '6':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		case '7':
-			*state = "[ 22, 23, 25, 27, 29, 31, 33, 35, 37, 39, 43, ]"
-			return NUMBER
-		}
-	case "[ 51, ]":
-		switch input {
-		}
-	case "[ 47, ]":
-		switch input {
-		}
-	case "[ 55, ]":
-		switch input {
-		}
-	case "[ 1, ]":
-		switch input {
-		}
-	case "[ 59, ]":
-		switch input {
-		}
-	case "[ 63, ]":
-		switch input {
-		}
+switch *state {
+case "[ 0, 3, 7, 11, 15, 16, 18, 20, 22, 24, 26, 28, 30, 32, 58, 62, ]":
+	switch input {
+case '*':
+		*state = "[ 1, ]"
+return TIMES
+case '2':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '-':
+		*state = "[ 63, ]"
+return MINUS
+case '3':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '4':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '1':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '6':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '+':
+		*state = "[ 59, ]"
+return PLUS
+case '0':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '5':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '/':
+		*state = "[ 4, ]"
+return DIV
+case '(':
+		*state = "[ 8, ]"
+return LPAREN
+case '9':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case ')':
+		*state = "[ 12, ]"
+return RPAREN
+case '8':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '7':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+}
+case "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]":
+	switch input {
+case '5':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '6':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '9':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '0':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '3':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '4':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '7':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '2':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '8':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+case '1':
+		*state = "[ 34, 35, 37, 39, 41, 43, 45, 47, 49, 51, 55, ]"
+return NUMBER
+}
+case "[ 63, ]":
+	switch input {
+}
+case "[ 59, ]":
+	switch input {
+}
+case "[ 4, ]":
+	switch input {
+}
+case "[ 8, ]":
+	switch input {
+}
+case "[ 12, ]":
+	switch input {
+}
+case "[ 1, ]":
+	switch input {
+}
 
-	}
-	return UNRECOGNIZABLE
+}
+return UNRECOGNIZABLE
 }

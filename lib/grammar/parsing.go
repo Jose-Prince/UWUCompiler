@@ -21,6 +21,22 @@ type Action struct {
 	Accept bool
 }
 
+func NewShiftAction(id AFDNodeId) Action {
+	return Action{
+		Shift:  lib.CreateValue(id),
+		Reduce: lib.CreateNull[int](),
+		Accept: false,
+	}
+}
+
+func NewReduceAction(idx int) Action {
+	return Action{
+		Shift:  lib.CreateNull[AFDNodeId](),
+		Reduce: lib.CreateValue(idx),
+		Accept: false,
+	}
+}
+
 type ParsingTable struct {
 	// The Action table contains all the reduce and shifts of the parsing table.
 	ActionTable map[AFDNodeId]map[GrammarToken]Action

@@ -7,8 +7,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/Jose-Prince/UWUCompiler/lib"
 	"github.com/Jose-Prince/UWUCompiler/lib/grammar"
 	regx "github.com/Jose-Prince/UWUCompiler/lib/regex"
+	parsertypes "github.com/Jose-Prince/UWUCompiler/parserTypes"
 )
 
 type programParams struct {
@@ -87,7 +89,43 @@ func main() {
 	fmt.Println("The AFD is:", afd.String())
 
 	// TODO: Implement real parsing table
-	parsingTable := grammar.ParsingTable{}
+	parsingTable := grammar.ParsingTable{
+		InitialNodeId: "0",
+		Original: grammar.Grammar{
+			InitialSimbol: grammar.NewNonTerminalToken("S"),
+			Rules: []grammar.GrammarRule{
+				{Head: grammar.NewNonTerminalToken("S"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("C"), grammar.NewNonTerminalToken("C")}},
+				{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("c"), grammar.NewNonTerminalToken("C")}},
+				{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("d")}},
+			},
+			TokenIds: map[grammar.GrammarToken]parsertypes.GrammarToken{
+				grammar.NewTerminalToken("c"):    0,
+				grammar.NewTerminalToken("d"):    1,
+				grammar.NewNonTerminalToken("C"): 2,
+				grammar.NewNonTerminalToken("S"): 3,
+			},
+			Terminals: lib.Set[grammar.GrammarToken]{
+				grammar.NewTerminalToken("c"): struct{}{},
+				grammar.NewTerminalToken("d"): struct{}{},
+			},
+			NonTerminals: lib.Set[grammar.GrammarToken]{
+				grammar.NewNonTerminalToken("C"): struct{}{},
+				grammar.NewNonTerminalToken("S"): struct{}{},
+			},
+		},
+		GoToTable: map[grammar.AFDNodeId]map[grammar.GrammarToken]grammar.AFDNodeId{
+			"0": map[grammar.GrammarToken]grammar.AFDNodeId{
+				grammar.NewNonTerminalToken("S"): "1",
+				grammar.NewNonTerminalToken("C"): "2",
+			},
+		},
+		ActionTable: map[grammar.AFDNodeId]map[grammar.GrammarToken]grammar.Action{
+			"0": map[grammar.GrammarToken]grammar.Action{
+				grammar.NewTerminalToken("c"): grammar.NewShiftAction("3"),
+				grammar.NewTerminalToken("d"): grammar.NewShiftAction("4"),
+			},
+		},
+	}
 	info := CompilerFileInfo{
 		LexInfo:      lexFileData,
 		LexAFD:       afd,
