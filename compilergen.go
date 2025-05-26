@@ -2,11 +2,14 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"math"
 	"os"
+	"regexp"
 
 	l "github.com/Jose-Prince/UWUCompiler/lib"
 	reg "github.com/Jose-Prince/UWUCompiler/lib/regex"
+	parsertypes "github.com/Jose-Prince/UWUCompiler/parserTypes"
 )
 
 type afdLeafInfo struct {
@@ -483,8 +486,13 @@ func main() {
 		}
 	}
 
-	// TODO: Implement parsing table conversion
-	table := ParsingTable{}
+	`)
+
+	writer.WriteString("table := ")
+	var transformedTable parsertypes.ParsingTable = info.ParsingTable.ToParserTable()
+	writer.WriteString(removeModulesFromStaticType(fmt.Sprintf("%#v", transformedTable)))
+
+	writer.WriteString(`
 
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
@@ -614,4 +622,14 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state reg.AFDState, alreadyWrittenS
 	for _, caseInfo := range s.Transitions[state] {
 		_writeTo(s, w, caseInfo.NewState, alreadyWrittenStates)
 	}
+}
+
+func removeModulesFromStaticType(t string) string {
+	reg, err := regexp.Compile("([A-Za-z\\/-]+)\\.")
+	if err != nil {
+		panic(err)
+	}
+
+	replaced := reg.ReplaceAll([]byte(t), []byte{})
+	return string(replaced)
 }

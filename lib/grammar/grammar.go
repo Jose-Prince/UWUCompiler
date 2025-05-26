@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
+	parsertypes "github.com/Jose-Prince/UWUCompiler/parserTypes"
 )
 
 type EpsilonString = lib.Optional[string]
@@ -184,6 +185,10 @@ type Grammar struct {
 	Rules         []GrammarRule
 	Terminals     lib.Set[GrammarToken]
 	NonTerminals  lib.Set[GrammarToken]
+	// Represents the final numeric id of the token.
+	// You can use the file definition order,
+	// so the first defined token will have id 0 and so on
+	TokenIds map[GrammarToken]parsertypes.GrammarToken
 }
 
 func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
