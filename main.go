@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Jose-Prince/UWUCompiler/lib/grammar"
 	regx "github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
@@ -25,6 +26,12 @@ func parseProgramParams() programParams {
 
 	flag.Parse()
 	return params
+}
+
+type CompilerFileInfo struct {
+	LexInfo      LexFileData
+	LexAFD       regx.AFD
+	ParsingTable grammar.ParsingTable
 }
 
 func main() {
@@ -79,7 +86,14 @@ func main() {
 	afd := table.ToAFD()
 	fmt.Println("The AFD is:", afd.String())
 
-	err = WriteLexFile(params.OutGoPath, lexFileData, afd)
+	// TODO: Implement real parsing table
+	parsingTable := grammar.ParsingTable{}
+	info := CompilerFileInfo{
+		LexInfo:      lexFileData,
+		LexAFD:       afd,
+		ParsingTable: parsingTable,
+	}
+	err = WriteCompilerFile(params.OutGoPath, &info)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
 		panic(err)

@@ -99,7 +99,7 @@ func _simplifyIntoSwitch(afd *reg.AFD, state reg.AFDState, sw *afdSwitch, visite
 	}
 }
 
-func WriteLexFile(filePath string, info LexFileData, afd reg.AFD) error {
+func WriteCompilerFile(filePath string, info *CompilerFileInfo) error {
 	f, err := os.Create(filePath)
 	if err != nil {
 		panic("Error creating output file!")
@@ -119,7 +119,7 @@ import (
 	"strings"
 )
 	`)
-	writer.WriteString(info.Header)
+	writer.WriteString(info.LexInfo.Header)
 	writer.WriteString(`
 const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
@@ -191,7 +191,7 @@ func main() {
 	for i := 0; i < len(sourceFileContent); i++ {
 
 		afdState := "`)
-	writer.WriteString(afd.InitialState)
+	writer.WriteString(info.LexAFD.InitialState)
 	writer.WriteString(`" // INITIAL AFD STATE!
 
 		previousParsingResult := -1000
@@ -219,11 +219,10 @@ func main() {
 func gettoken(state *string, input rune) int {
 `)
 
-	// TODO: Write AFD Logic into switch
-	sw := simplifyIntoSwitch(&afd)
+	sw := simplifyIntoSwitch(&info.LexAFD)
 	sw.WriteTo(writer)
 	writer.WriteRune('}')
-	writer.WriteString(info.Footer)
+	writer.WriteString(info.LexInfo.Footer)
 
 	return writer.Flush()
 }
