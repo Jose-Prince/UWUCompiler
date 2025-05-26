@@ -62,11 +62,11 @@ type LexFileData struct {
 // 	}
 // }
 
-func LexParser(yalexFile string) LexFileData { // string represents the error
+func LexParser(yalexFile string) (LexFileData, error) { // string represents the error
 	file, err := os.Open(yalexFile)
 	if err != nil {
 		fmt.Println("Error opening the file:", err)
-		return LexFileData{}
+		return LexFileData{}, err
 	}
 	defer file.Close()
 
@@ -203,7 +203,7 @@ func LexParser(yalexFile string) LexFileData { // string represents the error
 		Rule:   rules,
 	}
 
-	return fileData
+	return fileData, nil
 }
 
 // Replace rules into other rules

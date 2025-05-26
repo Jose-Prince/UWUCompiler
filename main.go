@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -19,28 +20,38 @@ Example:
 	UWUCompiler ./input.lex ./grammar.yal MyCompiler.go
 `
 
+type programParams struct {
+	LexFilePath     string
+	GrammarFilePath string
+	OutGoPath       string
+}
+
+func parseProgramParams() programParams {
+	params := programParams{}
+
+	flag.StringVar(&params.LexFilePath, "lexPath", "tokens.lex", "The path to the .lex file with the tokens definitions!")
+	flag.StringVar(&params.GrammarFilePath, "grammarPath", "grammar.yal", "The path to the .yal file with the grammar definition!")
+	flag.StringVar(&params.OutGoPath, "outPath", "out.go", "The path where the generated code should be outputted!")
+
+	flag.Parse()
+	return params
+}
+
 func main() {
 	// Disable loggin
 	log.SetOutput(io.Discard)
 
-	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "Invalid use!\n")
-		panic(CMD_HELP)
+	params := parseProgramParams()
+
+	fmt.Println("Lex file to use:", params.LexFilePath)
+	fmt.Println("Grammar file to use:", params.GrammarFilePath)
+	fmt.Println("Output file will be:", params.OutGoPath)
+
+	lexFileData, err := LexParser(params.LexFilePath)
+	if err != nil {
+		panic(err)
 	}
 
-	lexFilePath := os.Args[1]
-	fmt.Println("Lex file to use:", lexFilePath)
-
-	grammarFilePath := os.Args[2]
-	fmt.Println("Grammar file to use:", grammarFilePath)
-
-	outputLexerFile := "out_compiler.go"
-	if len(os.Args) == 3 {
-		outputLexerFile = os.Args[2]
-	}
-	fmt.Println("Output file will be:", outputLexerFile)
-
-	lexFileData := LexParser(lexFilePath)
 	// Combine all regexes into a single regex
 	infix := []regx.RX_Token{}
 	i := 0
@@ -78,7 +89,7 @@ func main() {
 	afd := table.ToAFD()
 	fmt.Println("The AFD is:", afd.String())
 
-	err := WriteLexFile(outputLexerFile, lexFileData, afd)
+	err = WriteLexFile(params.LexFilePath, lexFileData, afd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
 		panic(err)
