@@ -79,7 +79,7 @@ func main() {
 	afd := table.ToAFD()
 	fmt.Println("The AFD is:", afd.String())
 
-	err = WriteLexFile(params.LexFilePath, lexFileData, afd)
+	err = WriteLexFile(params.OutGoPath, lexFileData, afd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
 		panic(err)
