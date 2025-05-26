@@ -10,36 +10,37 @@ import (
 )
 
 const CMD_HELP string = `
-UWUCompiler is a Lexer generator similar to Yalex and Lex.
+UWUCompiler is a compiler generator similar to Yalex and Lex.
 Usage:
-	UWUCompiler <lexfile> [outputFileToWriteCodeTo]
+	UWUCompiler <lexfile> <grammarfile> [outputFileToWriteCodeTo]
 
 Example:
-	- To produce the Lexer code inside a file named MyLexer.go
-	UWUCompiler ./input.lex MyLexer.go
+	- To produce the compiler code inside a file named MyCompiler.go
+	UWUCompiler ./input.lex ./grammar.yal MyCompiler.go
 `
 
 func main() {
 	// Disable loggin
 	log.SetOutput(io.Discard)
 
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Please ONLY supply a lex file!\n")
+	if len(os.Args) < 3 {
+		fmt.Fprintf(os.Stderr, "Invalid use!\n")
 		panic(CMD_HELP)
 	}
 
 	lexFilePath := os.Args[1]
-	fmt.Println("Parsing file:", lexFilePath)
+	fmt.Println("Lex file to use:", lexFilePath)
 
-	outputLexerFile := "out_lexer.go"
+	grammarFilePath := os.Args[2]
+	fmt.Println("Grammar file to use:", grammarFilePath)
+
+	outputLexerFile := "out_compiler.go"
 	if len(os.Args) == 3 {
 		outputLexerFile = os.Args[2]
 	}
 	fmt.Println("Output file will be:", outputLexerFile)
 
-	// TODO: Parse lex file instead of using a default values
 	lexFileData := LexParser(lexFilePath)
-
 	// Combine all regexes into a single regex
 	infix := []regx.RX_Token{}
 	i := 0
