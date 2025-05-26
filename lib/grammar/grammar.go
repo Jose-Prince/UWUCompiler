@@ -357,3 +357,21 @@ func mapToSlice(m map[string]GrammarToken) []GrammarToken {
 	}
 	return slice
 }
+
+func (r1 GrammarRule) EqualRule(r2 *GrammarRule) bool {
+	if !r1.Head.Equal(&r2.Head) {
+		return false
+	}
+
+	if len(r1.Production) != len(r2.Production) {
+		return false
+	}
+
+	for i := range r1.Production {
+		if !r1.Production[i].Equal(&r2.Production[i]) {
+			return false
+		}
+	}
+
+	return true
+}

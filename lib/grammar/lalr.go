@@ -1,14 +1,16 @@
 package grammar
 
-import "github.com/Jose-Prince/UWULexer/lib"
+import (
+	"github.com/Jose-Prince/UWULexer/lib"
+)
 
 type automata struct {
 	nodes map[int]automataState
 }
 
 type automataState struct {
-	States      map[int]automataItem
-	Productions map[GrammarToken]int
+	Items       map[int]automataItem
+	Productions map[string]int
 }
 
 type automataItem struct {
@@ -28,15 +30,17 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) automata {
 	}
 
 	state := automataState{
-		States:      make(map[int]automataItem),
-		Productions: make(map[GrammarToken]int),
+		Items:       make(map[int]automataItem),
+		Productions: make(map[string]int),
 	}
 
-	state.States[0] = initialItem
+	state.Items[0] = initialItem
 
 	closure(state, grammar)
 
 	lr1.nodes[0] = state
+
+	generateStates(0, &lr1, grammar)
 
 	return lr1
 }
@@ -49,7 +53,7 @@ func closure(state automataState, grammar Grammar) {
 
 	itemIndex := make(map[string]int)
 
-	for i, item := range state.States {
+	for i, item := range state.Items {
 		itemIndex[itemToKey(item)] = i
 	}
 
@@ -61,7 +65,7 @@ func closure(state automataState, grammar Grammar) {
 			if visited.Contains(key) {
 				continue
 			}
-			item := state.States[key]
+			item := state.Items[key]
 			if item.DotPosition < len(item.Rule.Production) && item.Rule.Production[item.DotPosition].IsNonTerminal() {
 				B := item.Rule.Production[item.DotPosition]
 
@@ -77,21 +81,27 @@ func closure(state automataState, grammar Grammar) {
 							DotPosition: 0,
 							Lookahead:   lookaheads,
 						}
+						var equals bool
+						for _, i := range state.Items {
+							if itemsEqual(i, newItem) {
+								continue
+							} else {
+								keyStr := itemToKey(newItem)
 
-						keyStr := itemToKey(newItem)
-
-						if idx, exists := itemIndex[keyStr]; exists {
-							existing := state.States[idx]
-							existing.Lookahead = unionLookaheads(existing.Lookahead, lookaheads)
-							state.States[idx] = existing
-						} else {
-							newID := len(state.States)
-							state.States[newID] = newItem
-							items.Add(newID)
-							itemIndex[keyStr] = newID
-							changed = true
-
+								if idx, exists := itemIndex[keyStr]; exists && equals {
+									existing := state.Items[idx]
+									existing.Lookahead = unionLookaheads(existing.Lookahead, lookaheads)
+									state.Items[idx] = existing
+								} else {
+									newID := len(state.Items)
+									state.Items[newID] = newItem
+									items.Add(newID)
+									itemIndex[keyStr] = newID
+									changed = true
+								}
+							}
 						}
+
 					}
 				}
 
@@ -100,6 +110,41 @@ func closure(state automataState, grammar Grammar) {
 		}
 
 	}
+}
+
+func itemsEqual(a, b automataItem) bool {
+
+	if a.Rule.Head.String() != b.Rule.Head.String() {
+		return false
+	}
+
+	if len(a.Rule.Production) != len(b.Rule.Production) {
+		return false
+	}
+
+	for i := range a.Rule.Production {
+		if !a.Rule.Production[i].Equal(&b.Rule.Production[i]) {
+			return false
+		}
+	}
+
+	if len(a.Lookahead) != len(b.Lookahead) {
+		return false
+	}
+
+	// Comparar conjuntos de lookahead
+	setA := make(map[string]bool)
+	for _, tok := range a.Lookahead {
+		setA[tok.String()] = true
+	}
+
+	for _, tok := range b.Lookahead {
+		if !setA[tok.String()] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
@@ -143,4 +188,138 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 	}
 
 	return union
+}
+
+func generateStates(stateID int, afd *automata, grammar Grammar) {
+	state := afd.nodes[stateID]
+
+	terminals := grammar.Terminals.ToSlice()
+	nonTerminals := grammar.NonTerminals.ToSlice()
+
+	terms := append(nonTerminals, terminals...)
+
+	for _, nt := range terms {
+		for _, val := range state.Items {
+			if val.DotPosition >= len(val.Rule.Production) {
+				continue
+			}
+
+			if val.Rule.Production[val.DotPosition].Equal(&nt) {
+				newState := automataState{
+					Items:       make(map[int]automataItem),
+					Productions: make(map[string]int),
+				}
+
+				newItem := val
+				newItem.DotPosition = val.DotPosition + 1
+				newState.Items[0] = newItem
+
+				closure(newState, grammar)
+
+				for _, s := range afd.nodes {
+					if !equalState(s, newState) {
+						state.Productions[nt.String()] = len(afd.nodes)
+						afd.nodes[len(afd.nodes)] = newState
+						break
+					}
+				}
+
+				break
+
+			}
+		}
+	}
+
+	// symbolToItems := make(map[string][]automataItem)
+
+	// for _, item := range state.Items {
+	// 	if item.DotPosition < len(item.Rule.Production) {
+	// 		nextSymbol := item.Rule.Production[item.DotPosition]
+	// 		key := nextSymbol.String()
+	// 		symbolToItems[key] = append(symbolToItems[key], item)
+	// 	}
+	// }
+
+	// for symbolStr, items := range symbolToItems {
+	// 	newState := automataState{
+	// 		Items:       make(map[int]automataItem),
+	// 		Productions: make(map[string]int),
+	// 	}
+
+	// 	for _, item := range items {
+	// 		newItem := automataItem{
+	// 			Rule:        item.Rule,
+	// 			DotPosition: item.DotPosition + 1,
+	// 			Lookahead:   item.Lookahead,
+	// 		}
+	// 		newState.Items[len(newState.Items)] = newItem
+	// 	}
+
+	// 	closure(newState, grammar)
+
+	// 	existingID := -1
+	// 	for id, s := range afd.nodes {
+	// 		if equalState(s, newState) {
+	// 			existingID = id
+	// 			break
+	// 		}
+	// 	}
+
+	// 	var symbol GrammarToken
+	// 	nonTerminals := grammar.NonTerminals.ToSlice()
+	// 	terminals := grammar.Terminals.ToSlice()
+
+	// 	for _, t := range append(nonTerminals, terminals...) {
+	// 		if t.String() == symbolStr {
+	// 			symbol = t
+	// 			break
+	// 		}
+	// 	}
+
+	// 	if existingID == -1 {
+	// 		newID := len(afd.nodes)
+	// 		afd.nodes[newID] = newState
+	// 		afd.nodes[stateID].Productions[symbol.String()] = existingID
+	// 	}
+	// }
+}
+
+func equalState(a, b automataState) bool {
+	if len(a.Items) != len(b.Items) {
+		return false
+	}
+
+	for _, itemA := range a.Items {
+		found := false
+		for _, itemB := range b.Items {
+			if itemA.Rule.EqualRule(&itemB.Rule) &&
+				itemA.DotPosition == itemB.DotPosition &&
+				equalLookahead(itemA.Lookahead, itemB.Lookahead) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+func equalLookahead(a, b []GrammarToken) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	count := make(map[string]int)
+	for _, tok := range a {
+		count[tok.String()]++
+	}
+	for _, tok := range b {
+		if count[tok.String()] == 0 {
+			return false
+		}
+		count[tok.String()]--
+	}
+	return true
 }
