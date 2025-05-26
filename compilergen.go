@@ -502,6 +502,7 @@ func main() {
 
 	writer.WriteString(`
 
+	isAccepted := false
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
 	for _, token := range tokens {
@@ -521,7 +522,8 @@ func main() {
 		if isTerminal {
 			action := table.ActionTable[nodeId][token.Type]
 			if action.Accept {
-				fmt.Println("ACCEPTED")
+				isAccepted = true
+				break
 			} else if action.IsShift() {
 				stack.Push(CreateTokenItem(token.Type))
 				stack.Push(CreateNodeItem(action.GetShift()))
@@ -571,6 +573,12 @@ func main() {
 		} else {
 			panic("Token should always be a terminal!")
 		}
+	}
+
+	if isAccepted {
+		fmt.Println("The input is accepted!")
+	} else {
+		fmt.Println("The input can't be accepted!")
 	}
 }
 

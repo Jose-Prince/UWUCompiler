@@ -374,6 +374,7 @@ func main() {
 
 	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "1":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "2":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "36":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "47":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}, "5":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}, "89":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}}, GoToTable:map[string]map[int]string{"0":map[int]string{2:"1", 3:"2"}, "2":map[int]string{3:"5"}, "36":map[int]string{3:"89"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}}, InitialNodeId:"0"}
 
+	isAccepted := false
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
 	for _, token := range tokens {
@@ -393,7 +394,8 @@ func main() {
 		if isTerminal {
 			action := table.ActionTable[nodeId][token.Type]
 			if action.Accept {
-				fmt.Println("ACCEPTED")
+				isAccepted = true
+				break
 			} else if action.IsShift() {
 				stack.Push(CreateTokenItem(token.Type))
 				stack.Push(CreateNodeItem(action.GetShift()))
@@ -443,6 +445,12 @@ func main() {
 		} else {
 			panic("Token should always be a terminal!")
 		}
+	}
+
+	if isAccepted {
+		fmt.Println("The input is accepted!")
+	} else {
+		fmt.Println("The input can't be accepted!")
 	}
 }
 
