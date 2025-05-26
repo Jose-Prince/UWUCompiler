@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
 func _validateTree(t *testing.T, expected *AST, expectedCurrent int, result *AST, resultCurrent int, level int) error {

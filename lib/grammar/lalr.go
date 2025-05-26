@@ -1,7 +1,7 @@
 package grammar
 
 import (
-	"github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
 type automata struct {

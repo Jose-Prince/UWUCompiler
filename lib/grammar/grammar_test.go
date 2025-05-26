@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
 func createExampleGrammar() Grammar {

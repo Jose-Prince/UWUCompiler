@@ -1,7 +1,7 @@
 package regex
 
 import (
-	"github.com/Jose-Prince/UWULexer/lib"
+	"github.com/Jose-Prince/UWUCompiler/lib"
 	"strings"
 )
 

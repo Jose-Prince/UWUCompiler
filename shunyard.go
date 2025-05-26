@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	l "github.com/Jose-Prince/UWULexer/lib"
-	reg "github.com/Jose-Prince/UWULexer/lib/regex"
+	l "github.com/Jose-Prince/UWUCompiler/lib"
+	reg "github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
 // Maps an operator in the form of a rune into a precedence number.

@@ -1,5 +1,5 @@
 {
-  description = "UWULexer flake";
+  description = "UWUCompiler flake";
 
   # Nixpkgs / NixOS version to use.
   inputs.nixpkgs.url = "nixpkgs/nixos-unstable";

@@ -3,8 +3,8 @@ package main
 import (
 	"math"
 
-	"github.com/Jose-Prince/UWULexer/lib"
-	"github.com/Jose-Prince/UWULexer/lib/regex"
+	"github.com/Jose-Prince/UWUCompiler/lib"
+	"github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
 type infixConverterState int

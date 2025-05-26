@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"testing"
 
-	l "github.com/Jose-Prince/UWULexer/lib"
-	reg "github.com/Jose-Prince/UWULexer/lib/regex"
+	l "github.com/Jose-Prince/UWUCompiler/lib"
+	reg "github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
 func generateExpectedPostfix(r *rand.Rand) []reg.RX_Token {

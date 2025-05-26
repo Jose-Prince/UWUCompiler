@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Jose-Prince/UWULexer/lib/regex"
+	"github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
 type LexFileData struct {

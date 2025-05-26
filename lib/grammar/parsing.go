@@ -1,6 +1,6 @@
 package grammar
 
-import "github.com/Jose-Prince/UWULexer/lib"
+import "github.com/Jose-Prince/UWUCompiler/lib"
 
 type AFDNodeId = string
 

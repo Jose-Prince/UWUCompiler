@@ -6,17 +6,17 @@ import (
 	"log"
 	"os"
 
-	regx "github.com/Jose-Prince/UWULexer/lib/regex"
+	regx "github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
 const CMD_HELP string = `
-UWULexer is a Lexer generator similar to Yalex and Lex.
+UWUCompiler is a Lexer generator similar to Yalex and Lex.
 Usage:
-	UWULexer <lexfile> [outputFileToWriteCodeTo]
+	UWUCompiler <lexfile> [outputFileToWriteCodeTo]
 
 Example:
 	- To produce the Lexer code inside a file named MyLexer.go
-	UWULexer ./input.lex MyLexer.go
+	UWUCompiler ./input.lex MyLexer.go
 `
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	reg "github.com/Jose-Prince/UWULexer/lib/regex"
+	reg "github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
 func TestLexParser(t *testing.T) {
