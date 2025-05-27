@@ -40,7 +40,7 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) automata {
 
 	lr1.nodes[0] = state
 
-	generateStates(0, &lr1, grammar)
+	generateStates(&lr1, grammar)
 
 	return lr1
 }
@@ -190,98 +190,55 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 	return union
 }
 
-func generateStates(stateID int, afd *automata, grammar Grammar) {
-	state := afd.nodes[stateID]
+func generateStates(afd *automata, grammar Grammar) {
+	visited := lib.NewSet[int]()
+	changed := true
 
-	terminals := grammar.Terminals.ToSlice()
-	nonTerminals := grammar.NonTerminals.ToSlice()
+	for changed {
+		changed = false
 
-	terms := append(nonTerminals, terminals...)
+		terminals := grammar.Terminals.ToSlice()
+		nonTerminals := grammar.NonTerminals.ToSlice()
 
-	for _, nt := range terms {
-		for _, val := range state.Items {
-			if val.DotPosition >= len(val.Rule.Production) {
-				continue
-			}
+		terms := append(nonTerminals, terminals...)
 
-			if val.Rule.Production[val.DotPosition].Equal(&nt) {
-				newState := automataState{
-					Items:       make(map[int]automataItem),
-					Productions: make(map[string]int),
-				}
+		for k := range afd.nodes {
+			state := afd.nodes[k]
 
-				newItem := val
-				newItem.DotPosition = val.DotPosition + 1
-				newState.Items[0] = newItem
+			for _, nt := range terms {
+				for _, val := range state.Items {
+					if val.DotPosition >= len(val.Rule.Production) {
+						continue
+					}
 
-				closure(newState, grammar)
+					if val.Rule.Production[val.DotPosition].Equal(&nt) {
+						newState := automataState{
+							Items:       make(map[int]automataItem),
+							Productions: make(map[string]int),
+						}
 
-				for _, s := range afd.nodes {
-					if !equalState(s, newState) {
-						state.Productions[nt.String()] = len(afd.nodes)
-						afd.nodes[len(afd.nodes)] = newState
+						newItem := val
+						newItem.DotPosition = val.DotPosition + 1
+						newState.Items[0] = newItem
+
+						closure(newState, grammar)
+
+						for _, s := range afd.nodes {
+							if !equalState(s, newState) {
+								state.Productions[nt.String()] = len(afd.nodes)
+								afd.nodes[len(afd.nodes)] = newState
+								visited.Add(k)
+								break
+							}
+						}
+
 						break
+
 					}
 				}
-
-				break
-
 			}
 		}
 	}
-
-	// symbolToItems := make(map[string][]automataItem)
-
-	// for _, item := range state.Items {
-	// 	if item.DotPosition < len(item.Rule.Production) {
-	// 		nextSymbol := item.Rule.Production[item.DotPosition]
-	// 		key := nextSymbol.String()
-	// 		symbolToItems[key] = append(symbolToItems[key], item)
-	// 	}
-	// }
-
-	// for symbolStr, items := range symbolToItems {
-	// 	newState := automataState{
-	// 		Items:       make(map[int]automataItem),
-	// 		Productions: make(map[string]int),
-	// 	}
-
-	// 	for _, item := range items {
-	// 		newItem := automataItem{
-	// 			Rule:        item.Rule,
-	// 			DotPosition: item.DotPosition + 1,
-	// 			Lookahead:   item.Lookahead,
-	// 		}
-	// 		newState.Items[len(newState.Items)] = newItem
-	// 	}
-
-	// 	closure(newState, grammar)
-
-	// 	existingID := -1
-	// 	for id, s := range afd.nodes {
-	// 		if equalState(s, newState) {
-	// 			existingID = id
-	// 			break
-	// 		}
-	// 	}
-
-	// 	var symbol GrammarToken
-	// 	nonTerminals := grammar.NonTerminals.ToSlice()
-	// 	terminals := grammar.Terminals.ToSlice()
-
-	// 	for _, t := range append(nonTerminals, terminals...) {
-	// 		if t.String() == symbolStr {
-	// 			symbol = t
-	// 			break
-	// 		}
-	// 	}
-
-	// 	if existingID == -1 {
-	// 		newID := len(afd.nodes)
-	// 		afd.nodes[newID] = newState
-	// 		afd.nodes[stateID].Productions[symbol.String()] = existingID
-	// 	}
-	// }
 }
 
 func equalState(a, b automataState) bool {
