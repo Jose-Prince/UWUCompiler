@@ -54,7 +54,10 @@ func TestLexParser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Llama a LexParser y guarda el valor de retorno
-			got := LexParser(tt.filePath)
+			got, err := LexParser(tt.filePath)
+			if err != nil {
+				t.Errorf("LexParser() error = %v", err)
+			}
 
 			// Verifica si se produjo un error
 			if (got.Header == "" && got.Footer == "" && len(got.Rule) == 0) != tt.wantErr {

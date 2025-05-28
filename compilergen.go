@@ -643,7 +643,7 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state reg.AFDState, alreadyWrittenS
 }
 
 func removeModulesFromStaticType(t string) string {
-	reg, err := regexp.Compile("([A-Za-z\\/-]+)\\.")
+	reg, err := regexp.Compile(`([A-Za-z\/-]+)\.`)
 	if err != nil {
 		panic(err)
 	}

@@ -460,17 +460,17 @@ func gettoken(state *string, input rune) int {
 switch *state {
 case "[ 0, 3, ]":
 	switch input {
-case 'c':
-		*state = "[ 1, ]"
-return C
 case 'd':
 		*state = "[ 4, ]"
 return D
-}
-case "[ 1, ]":
-	switch input {
+case 'c':
+		*state = "[ 1, ]"
+return C
 }
 case "[ 4, ]":
+	switch input {
+}
+case "[ 1, ]":
 	switch input {
 }
 
