@@ -505,7 +505,8 @@ func main() {
 	isAccepted := false
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
-	for _, token := range tokens {
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
 		if val := stack.Peek(); !val.HasValue() {
 			panic("Invalid parsing state! Stack is empty!")
 		}
@@ -530,9 +531,9 @@ func main() {
 
 			} else if action.IsReduce() {
 				idx := action.GetReduce()
-				rule := table.Original.Rules[idx]
-				productionsCopy := make([]GrammarToken, 0, len(rule.Production))
-				copy(productionsCopy, rule.Production)
+				// rule := table.Original.Rules[idx]
+				productionsCopy := make([]GrammarToken, len(table.Original.Rules[idx].Production))
+				copy(productionsCopy, table.Original.Rules[idx].Production)
 
 				for len(productionsCopy) > 0 {
 					reduceItem := stack.Pop()
@@ -559,7 +560,7 @@ func main() {
 
 					}
 				}
-				stack.Push(CreateTokenItem(rule.Head))
+				stack.Push(CreateTokenItem(table.Original.Rules[idx].Head))
 
 				// Now we execute the follow
 				nonTerminalToken := stack.Pop().GetValue()
@@ -569,6 +570,7 @@ func main() {
 				stack.Push(gotoNodeId)
 				stack.Push(nonTerminalToken)
 				stack.Push(CreateNodeItem(newNodeId))
+				i--
 			}
 		} else {
 			panic("Token should always be a terminal!")

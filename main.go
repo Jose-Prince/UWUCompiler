@@ -149,7 +149,7 @@ func main() {
 				grammar.NewEndToken():         grammar.NewReduceAction(2),
 			},
 			"5": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewEndToken(): grammar.NewReduceAction(1),
+				grammar.NewEndToken(): grammar.NewReduceAction(0),
 			},
 			"89": map[grammar.GrammarToken]grammar.Action{
 				grammar.NewTerminalToken("c"): grammar.NewReduceAction(1),

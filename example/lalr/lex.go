@@ -372,12 +372,13 @@ func main() {
 
 	tokens = append(tokens, Token {Start: len(sourceFileContent), Type: END_TOKEN_TYPE})
 
-	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "1":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "2":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "36":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "47":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}, "5":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}, "89":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}}, GoToTable:map[string]map[int]string{"0":map[int]string{2:"1", 3:"2"}, "2":map[int]string{3:"5"}, "36":map[int]string{3:"89"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}}, InitialNodeId:"0"}
+	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "1":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "2":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "36":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"36"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"47"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "47":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}, "5":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:0}, Accept:false}}, "89":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}}, GoToTable:map[string]map[int]string{"0":map[int]string{2:"1", 3:"2"}, "2":map[int]string{3:"5"}, "36":map[int]string{3:"89"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}}, InitialNodeId:"0"}
 
 	isAccepted := false
 	stack := Stack[ParseItem]{}
 	stack = append(stack, CreateNodeItem(table.InitialNodeId))
-	for _, token := range tokens {
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
 		if val := stack.Peek(); !val.HasValue() {
 			panic("Invalid parsing state! Stack is empty!")
 		}
@@ -402,9 +403,9 @@ func main() {
 
 			} else if action.IsReduce() {
 				idx := action.GetReduce()
-				rule := table.Original.Rules[idx]
-				productionsCopy := make([]GrammarToken, 0, len(rule.Production))
-				copy(productionsCopy, rule.Production)
+				// rule := table.Original.Rules[idx]
+				productionsCopy := make([]GrammarToken, len(table.Original.Rules[idx].Production))
+				copy(productionsCopy, table.Original.Rules[idx].Production)
 
 				for len(productionsCopy) > 0 {
 					reduceItem := stack.Pop()
@@ -431,7 +432,7 @@ func main() {
 
 					}
 				}
-				stack.Push(CreateTokenItem(rule.Head))
+				stack.Push(CreateTokenItem(table.Original.Rules[idx].Head))
 
 				// Now we execute the follow
 				nonTerminalToken := stack.Pop().GetValue()
@@ -441,6 +442,7 @@ func main() {
 				stack.Push(gotoNodeId)
 				stack.Push(nonTerminalToken)
 				stack.Push(CreateNodeItem(newNodeId))
+				i--
 			}
 		} else {
 			panic("Token should always be a terminal!")
@@ -458,17 +460,17 @@ func gettoken(state *string, input rune) int {
 switch *state {
 case "[ 0, 3, ]":
 	switch input {
-case 'd':
-		*state = "[ 4, ]"
-return D
 case 'c':
 		*state = "[ 1, ]"
 return C
-}
-case "[ 4, ]":
-	switch input {
+case 'd':
+		*state = "[ 4, ]"
+return D
 }
 case "[ 1, ]":
+	switch input {
+}
+case "[ 4, ]":
 	switch input {
 }
 
