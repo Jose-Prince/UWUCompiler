@@ -321,3 +321,109 @@ func compareStateItems(actual, expected map[int]automataItem) bool {
 	}
 	return true
 }
+
+func TestClosure(t *testing.T) {
+	// Tokens
+	E := NewNonTerminalToken("E")
+	T := NewNonTerminalToken("T")
+	plus := NewTerminalToken("+")
+	id := NewTerminalToken("id")
+	end := NewEndToken()
+
+	// Gramática:
+	// E → E + T
+	// E → T
+	// T → id
+
+	rules := []GrammarRule{
+		{Head: E, Production: []GrammarToken{E, plus, T}},
+		{Head: E, Production: []GrammarToken{T}},
+		{Head: T, Production: []GrammarToken{id}},
+	}
+
+	// Gramática
+	grammar := Grammar{
+		InitialSimbol: E,
+		Rules:         rules,
+		Terminals:     lib.NewSet[GrammarToken](),
+		NonTerminals:  lib.NewSet[GrammarToken](),
+	}
+	grammar.Terminals.Add(plus)
+	grammar.Terminals.Add(id)
+	grammar.NonTerminals.Add(E)
+	grammar.NonTerminals.Add(T)
+
+	// Item inicial: E → .E + T, $
+	initialItem := automataItem{
+		Rule:        GrammarRule{Head: NewNonTerminalToken("S'"), Production: []GrammarToken{E}},
+		DotPosition: 0,
+		Lookahead:   []GrammarToken{end},
+	}
+
+	initialItems := map[int]automataItem{
+		0: initialItem,
+	}
+
+	instialState := automataState{
+		Items:       initialItems,
+		Productions: make(map[string]int),
+	}
+
+	// Ejecutar closure
+	closure(instialState, grammar)
+
+	// Esperamos ver los siguientes ítems:
+	expected := []automataItem{
+		initialItem,
+		{
+			Rule:        rules[0], // E → . E + T
+			DotPosition: 0,
+			Lookahead:   []GrammarToken{plus},
+		},
+		{
+			Rule:        rules[1], // E → . T
+			DotPosition: 0,
+			Lookahead:   []GrammarToken{plus},
+		},
+		{
+			Rule:        rules[2], // T → . id
+			DotPosition: 0,
+			Lookahead:   []GrammarToken{plus},
+		},
+	}
+
+	// Validación
+	for _, exp := range expected {
+		found := false
+		for _, item := range instialState.Items {
+			if item.Rule.EqualRule(&exp.Rule) &&
+				item.DotPosition == exp.DotPosition &&
+				lookaheadsEqual(item.Lookahead, exp.Lookahead) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("No se encontró el item esperado: %v", exp.Rule.ToString())
+		}
+	}
+}
+
+func lookaheadsEqual(a, b []GrammarToken) bool {
+	if a[0].IsEnd && b[0].IsEnd {
+		return true
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	m := make(map[string]bool)
+	for _, tok := range a {
+		m[tok.String()] = true
+	}
+	for _, tok := range b {
+		if !m[tok.String()] {
+			return false
+		}
+	}
+	return true
+}

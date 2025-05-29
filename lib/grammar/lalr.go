@@ -1,6 +1,9 @@
 package grammar
 
 import (
+	"fmt"
+	"sort"
+
 	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
@@ -46,69 +49,80 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) automata {
 }
 
 func closure(state automataState, grammar Grammar) {
-	items := lib.NewSet[int]()
-	visited := lib.NewSet[int]()
+	workList := make([]int, 0)
 
-	items.Add(0)
-
-	itemIndex := make(map[string]int)
-
-	for i, item := range state.Items {
-		itemIndex[itemToKey(item)] = i
+	for i := range state.Items {
+		workList = append(workList, i)
 	}
 
-	changed := true
-	for changed {
-		changed = false
+	itemIndex := make(map[string]int)
+	for i, item := range state.Items {
+		key := itemToKey(item)
+		itemIndex[key] = i
+	}
 
-		for key := range items {
-			if visited.Contains(key) {
-				continue
-			}
-			item := state.Items[key]
-			if item.DotPosition < len(item.Rule.Production) && item.Rule.Production[item.DotPosition].IsNonTerminal() {
-				B := item.Rule.Production[item.DotPosition]
+	for len(workList) > 0 {
+		currentIdx := workList[0]
+		workList = workList[1:]
 
-				beta := item.Rule.Production[item.DotPosition+1:]
+		item := state.Items[currentIdx]
 
-				lookaheadSeq := append(beta, item.Lookahead...)
-				lookaheads := first(lookaheadSeq, grammar)
-
-				for _, rule := range grammar.Rules {
-					if rule.Head.Equal(&B) {
-						newItem := automataItem{
-							Rule:        rule,
-							DotPosition: 0,
-							Lookahead:   lookaheads,
-						}
-						var equals bool
-						for _, i := range state.Items {
-							if itemsEqual(i, newItem) {
-								continue
-							} else {
-								keyStr := itemToKey(newItem)
-
-								if idx, exists := itemIndex[keyStr]; exists && equals {
-									existing := state.Items[idx]
-									existing.Lookahead = unionLookaheads(existing.Lookahead, lookaheads)
-									state.Items[idx] = existing
-								} else {
-									newID := len(state.Items)
-									state.Items[newID] = newItem
-									items.Add(newID)
-									itemIndex[keyStr] = newID
-									changed = true
-								}
-							}
-						}
-
-					}
-				}
-
-				visited.Add(key)
-			}
+		if item.DotPosition >= len(item.Rule.Production) {
+			continue
 		}
 
+		currentSymbol := item.Rule.Production[item.DotPosition]
+		if !currentSymbol.IsNonTerminal() {
+			continue
+		}
+
+		beta := make([]GrammarToken, 0)
+		if item.DotPosition+1 < len(item.Rule.Production) {
+			beta = item.Rule.Production[item.DotPosition+1:]
+		}
+
+		betaAlpha := append(beta, item.Lookahead...)
+		firstSet := first(betaAlpha, grammar)
+
+		for _, rule := range grammar.Rules {
+			if !rule.Head.Equal(&currentSymbol) {
+				continue
+			}
+
+			newItem := automataItem{
+				Rule:        rule,
+				DotPosition: 0,
+				Lookahead:   firstSet,
+			}
+
+			key := itemToKeyWithoutLookAhead(newItem)
+
+			if existingIdx, exists := itemIndex[key]; exists {
+				existing := state.Items[existingIdx]
+				originalSize := len(existing.Lookahead)
+				existing.Lookahead = unionLookaheads(existing.Lookahead, firstSet)
+
+				if len(existing.Lookahead) != originalSize {
+					state.Items[existingIdx] = existing
+
+					found := false
+					for _, idx := range workList {
+						if idx == existingIdx {
+							found = true
+							break
+						}
+					}
+					if !found {
+						workList = append(workList, existingIdx)
+					}
+				}
+			} else {
+				newIdx := len(state.Items)
+				state.Items[newIdx] = newItem
+				itemIndex[key] = newIdx
+				workList = append(workList, newIdx)
+			}
+		}
 	}
 }
 
@@ -159,10 +173,20 @@ func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
 	return grammar.First(firstToken)
 }
 
+func itemToKeyWithoutLookAhead(item automataItem) string {
+	return item.Rule.ToString() + "|" + fmt.Sprintf("%d", item.DotPosition)
+}
+
 func itemToKey(item automataItem) string {
+	lookStrs := make([]string, len(item.Lookahead))
+	for i, l := range item.Lookahead {
+		lookStrs[i] = l.String()
+	}
+	sort.Strings(lookStrs) // Ordenar alfabéticamente
+
 	look := ""
-	for _, l := range item.Lookahead {
-		look += l.String() + ","
+	for _, l := range lookStrs {
+		look += l + ","
 	}
 	return item.Rule.ToString() + "|" + string(rune(item.DotPosition)) + "|" + look
 }
