@@ -98,29 +98,30 @@ const (
 }
 
 (* Character classes *)
-let letter          = [a-zA-Z_]
-let decimal_digit   = [0-9]
-let octal_digit     = [0-7]
-let hex_digit       = [0-9A-Fa-f]
+let letter          = ([a-zA-Z_])
+let decimal_digit   = ([0-9])
+let octal_digit     = ([0-7])
+let hex_digit       = ([0-9A-Fa-f])
 
 (* Number patterns *)
-let decimal_lit     = [1-9][0-9]*|0
-let octal_lit       = 0[0-7]*
-let hex_lit         = 0[xX][0-9A-Fa-f]+
-let float_lit       = {decimal_lit}\.{decimal_lit}?([eE][+-]?{decimal_lit})?|\.{decimal_lit}([eE][+-]?{decimal_lit})?|{decimal_lit}[eE][+-]?{decimal_lit}
+let decimal_lit     = (([1-9][0-9]*)|0)
+let octal_lit       = (0[0-7]*)
+let hex_lit         = (0[xX][0-9A-Fa-f]+)
+let float_lit = ({decimal_lit}\.{decimal_lit}?)
+(* let float_lit       = {decimal_lit}\.{decimal_lit}?([eE][+-]?{decimal_lit})?|\.{decimal_lit}([eE][+-]?{decimal_lit})?|{decimal_lit}[eE][+-]?{decimal_lit} *)
 let imaginary_lit   = ({decimal_lit}|{float_lit})i
 
 (* String and character patterns *)
-let unicode_char    = [^\n\r\\"]
-let char_lit        = '{unicode_char}'
-let string_lit      = "{unicode_char}*"|`[^`]*`
+let unicode_char    = ([^\n\r\\"])
+let char_lit        = ('{unicode_char}')
+let string_lit      = (("{unicode_char}*")|(`[^`]*`))
 
 (* Identifier pattern *)
-let identifier      = {letter}({letter}|{decimal_digit})*
+let identifier      = ({letter}({letter}|{decimal_digit})*)
 
 (* Whitespace and comments *)
-let whitespace      = [ \t\r\n]+
-let line_comment    = //[^\n\r]*
+let whitespace      = ([ \t\r\n]+)
+let line_comment    = (//[^\n\r]*)
 (* let block_comment   = /\*([^*]|\*+[^*/])*\*+/ *)
 
 rule gettoken =
@@ -162,7 +163,7 @@ rule gettoken =
 	| '/='                { return QUO_ASSIGN }
 	| '%='                { return REM_ASSIGN }
 	| '&='                { return AND_ASSIGN }
-	| '|='                { return OR_ASSIGN }
+	| '\|='                { return OR_ASSIGN }
 	| '^='                { return XOR_ASSIGN }
 	| '<<='               { return SHL_ASSIGN }
 	| '>>='               { return SHR_ASSIGN }
@@ -171,7 +172,7 @@ rule gettoken =
 	| '>>'                { return SHR }
 	| '&^'                { return AND_NOT }
 	| '&&'                { return LAND }
-	| '||'                { return LOR }
+	| '\|\|'                { return LOR }
 	| '<-'                { return ARROW }
 	| '\+\+'                { return INC }
 	| '--'                { return DEC }
@@ -189,7 +190,7 @@ rule gettoken =
 	| '/'                 { return QUO }
 	| '%'                 { return REM }
 	| '&'                 { return AND }
-	| '|'                 { return OR }
+	| '\|'                 { return OR }
 	| '^'                 { return XOR }
 	| '<'                 { return LSS }
 	| '>'                 { return GTR }
