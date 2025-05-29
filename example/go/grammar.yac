@@ -1,0 +1,657 @@
+/* Definición de parser para Go */
+/* INICIA Sección de TOKENS */
+/* Special tokens */
+%token COMMENT
+
+/* Identifiers and literals */
+%token IDENT
+%token INT
+%token FLOAT
+%token IMAG
+%token CHAR
+%token STRING
+
+/* Keywords */
+%token BREAK
+%token CASE
+%token CHAN
+%token CONST
+%token CONTINUE
+%token DEFAULT
+%token DEFER
+%token ELSE
+%token FALLTHROUGH
+%token FOR
+%token FUNC
+%token GO
+%token GOTO
+%token IF
+%token IMPORT
+%token INTERFACE
+%token MAP
+%token PACKAGE
+%token RANGE
+%token RETURN
+%token SELECT
+%token STRUCT
+%token SWITCH
+%token TYPE
+%token VAR
+
+/* Operators and delimiters */
+%token ADD SUB MUL QUO REM
+%token AND OR XOR SHL SHR AND_NOT
+%token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN QUO_ASSIGN REM_ASSIGN
+%token AND_ASSIGN OR_ASSIGN XOR_ASSIGN SHL_ASSIGN SHR_ASSIGN AND_NOT_ASSIGN
+%token LAND LOR ARROW INC DEC
+%token EQL LSS GTR ASSIGN NOT
+%token NEQ LEQ GEQ DEFINE ELLIPSIS
+%token LPAREN LBRACK LBRACE COMMA PERIOD
+%token RPAREN RBRACK RBRACE SEMICOLON COLON
+
+/* Operator precedence and associativity */
+/* %left LOR */
+/* %left LAND */
+/* %left EQL NEQ LSS LEQ GTR GEQ */
+/* %left ADD SUB OR XOR */
+/* %left MUL QUO REM SHL SHR AND AND_NOT */
+/* %right NOT */
+/* %left PERIOD LBRACK LPAREN */
+
+/* FINALIZA Sección de TOKENS */
+
+%%
+
+/* INICIA Sección de PRODUCCIONES */
+
+/* Top-level program structure */
+SourceFile:
+    PackageClause SEMICOLON ImportDeclList TopLevelDeclList
+;
+
+PackageClause:
+    PACKAGE IDENT
+;
+
+ImportDeclList:
+    /* empty */
+    | ImportDeclList ImportDecl SEMICOLON
+;
+
+ImportDecl:
+    IMPORT ImportSpec
+    | IMPORT LPAREN ImportSpecList RPAREN
+;
+
+ImportSpecList:
+    /* empty */
+    | ImportSpecList ImportSpec SEMICOLON
+;
+
+ImportSpec:
+    IDENT STRING
+    | PERIOD STRING
+    | STRING
+;
+
+TopLevelDeclList:
+    /* empty */
+    | TopLevelDeclList TopLevelDecl SEMICOLON
+;
+
+TopLevelDecl:
+    Declaration
+    | FunctionDecl
+    | MethodDecl
+;
+
+/* Declarations */
+Declaration:
+    ConstDecl
+    | TypeDecl
+    | VarDecl
+;
+
+ConstDecl:
+    CONST ConstSpec
+    | CONST LPAREN ConstSpecList RPAREN
+;
+
+ConstSpecList:
+    /* empty */
+    | ConstSpecList ConstSpec SEMICOLON
+;
+
+ConstSpec:
+    IdentifierList Type ASSIGN ExpressionList
+    | IdentifierList ASSIGN ExpressionList
+;
+
+TypeDecl:
+    TYPE TypeSpec
+    | TYPE LPAREN TypeSpecList RPAREN
+;
+
+TypeSpecList:
+    /* empty */
+    | TypeSpecList TypeSpec SEMICOLON
+;
+
+TypeSpec:
+    IDENT Type
+;
+
+VarDecl:
+    VAR VarSpec
+    | VAR LPAREN VarSpecList RPAREN
+;
+
+VarSpecList:
+    /* empty */
+    | VarSpecList VarSpec SEMICOLON
+;
+
+VarSpec:
+    IdentifierList Type
+    | IdentifierList Type ASSIGN ExpressionList
+    | IdentifierList ASSIGN ExpressionList
+;
+
+/* Function declarations */
+FunctionDecl:
+    FUNC IDENT Signature
+    | FUNC IDENT Signature Block
+;
+
+MethodDecl:
+    FUNC Receiver IDENT Signature
+    | FUNC Receiver IDENT Signature Block
+;
+
+Receiver:
+    LPAREN IDENT Type RPAREN
+    | LPAREN MUL IDENT Type RPAREN
+;
+
+Signature:
+    Parameters
+    | Parameters Result
+;
+
+Parameters:
+    LPAREN RPAREN
+    | LPAREN ParameterList RPAREN
+;
+
+ParameterList:
+    ParameterDecl
+    | ParameterList COMMA ParameterDecl
+;
+
+ParameterDecl:
+    IdentifierList Type
+    | Type
+    | IdentifierList ELLIPSIS Type
+    | ELLIPSIS Type
+;
+
+Result:
+    Type
+    | LPAREN TypeList RPAREN
+;
+
+/* Types */
+Type:
+    TypeName
+    | TypeLit
+    | LPAREN Type RPAREN
+;
+
+TypeName:
+    IDENT
+    | QualifiedIdent
+;
+
+TypeLit:
+    ArrayType
+    | StructType
+    | PointerType
+    | FunctionType
+    | InterfaceType
+    | SliceType
+    | MapType
+    | ChannelType
+;
+
+ArrayType:
+    LBRACK ArrayLength RBRACK Type
+;
+
+ArrayLength:
+    Expression
+;
+
+SliceType:
+    LBRACK RBRACK Type
+;
+
+StructType:
+    STRUCT LBRACE FieldDeclList RBRACE
+;
+
+FieldDeclList:
+    /* empty */
+    | FieldDeclList FieldDecl SEMICOLON
+;
+
+FieldDecl:
+    IdentifierList Type Tag
+    | IdentifierList Type
+    | AnonymousField Tag
+    | AnonymousField
+;
+
+AnonymousField:
+    Type
+    | MUL TypeName
+;
+
+Tag:
+    STRING
+;
+
+PointerType:
+    MUL Type
+;
+
+FunctionType:
+    FUNC Signature
+;
+
+InterfaceType:
+    INTERFACE LBRACE MethodSpecList RBRACE
+;
+
+MethodSpecList:
+    /* empty */
+    | MethodSpecList MethodSpec SEMICOLON
+;
+
+MethodSpec:
+    IDENT Signature
+    | TypeName
+;
+
+MapType:
+    MAP LBRACK Type RBRACK Type
+;
+
+ChannelType:
+    CHAN Type
+    | ARROW CHAN Type
+    | CHAN ARROW Type
+;
+
+/* Statements */
+Block:
+    LBRACE StatementList RBRACE
+;
+
+StatementList:
+    /* empty */
+    | StatementList Statement SEMICOLON
+;
+
+Statement:
+    Declaration
+    | LabeledStmt
+    | SimpleStmt
+    | GoStmt
+    | ReturnStmt
+    | BreakStmt
+    | ContinueStmt
+    | GotoStmt
+    | FallthroughStmt
+    | Block
+    | IfStmt
+    | SwitchStmt
+    | TypeSwitchStmt
+    | SelectStmt
+    | ForStmt
+    | DeferStmt
+;
+
+SimpleStmt:
+    /* empty */
+    | ExpressionStmt
+    | SendStmt
+    | IncDecStmt
+    | Assignment
+    | ShortVarDecl
+;
+
+ExpressionStmt:
+    Expression
+;
+
+SendStmt:
+    Expression ARROW Expression
+;
+
+IncDecStmt:
+    Expression INC
+    | Expression DEC
+;
+
+Assignment:
+    ExpressionList AssignOp ExpressionList
+;
+
+AssignOp:
+    ASSIGN
+    | ADD_ASSIGN
+    | SUB_ASSIGN
+    | MUL_ASSIGN
+    | QUO_ASSIGN
+    | REM_ASSIGN
+    | AND_ASSIGN
+    | OR_ASSIGN
+    | XOR_ASSIGN
+    | SHL_ASSIGN
+    | SHR_ASSIGN
+    | AND_NOT_ASSIGN
+;
+
+ShortVarDecl:
+    IdentifierList DEFINE ExpressionList
+;
+
+LabeledStmt:
+    IDENT COLON Statement
+;
+
+ReturnStmt:
+    RETURN
+    | RETURN ExpressionList
+;
+
+BreakStmt:
+    BREAK
+    | BREAK IDENT
+;
+
+ContinueStmt:
+    CONTINUE
+    | CONTINUE IDENT
+;
+
+GotoStmt:
+    GOTO IDENT
+;
+
+FallthroughStmt:
+    FALLTHROUGH
+;
+
+DeferStmt:
+    DEFER Expression
+;
+
+IfStmt:
+    IF Expression Block
+    | IF Expression Block ELSE IfStmt
+    | IF Expression Block ELSE Block
+    | IF SimpleStmt SEMICOLON Expression Block
+    | IF SimpleStmt SEMICOLON Expression Block ELSE IfStmt
+    | IF SimpleStmt SEMICOLON Expression Block ELSE Block
+;
+
+SwitchStmt:
+    ExprSwitchStmt
+;
+
+ExprSwitchStmt:
+    SWITCH Expression LBRACE ExprCaseClauseList RBRACE
+    | SWITCH SimpleStmt SEMICOLON Expression LBRACE ExprCaseClauseList RBRACE
+    | SWITCH LBRACE ExprCaseClauseList RBRACE
+    | SWITCH SimpleStmt SEMICOLON LBRACE ExprCaseClauseList RBRACE
+;
+
+ExprCaseClauseList:
+    /* empty */
+    | ExprCaseClauseList ExprCaseClause
+;
+
+ExprCaseClause:
+    ExprSwitchCase COLON StatementList
+;
+
+ExprSwitchCase:
+    CASE ExpressionList
+    | DEFAULT
+;
+
+TypeSwitchStmt:
+    SWITCH TypeSwitchGuard LBRACE TypeCaseClauseList RBRACE
+    | SWITCH SimpleStmt SEMICOLON TypeSwitchGuard LBRACE TypeCaseClauseList RBRACE
+;
+
+TypeSwitchGuard:
+    Expression PERIOD LPAREN TYPE RPAREN
+    | IDENT DEFINE Expression PERIOD LPAREN TYPE RPAREN
+;
+
+TypeCaseClauseList:
+    /* empty */
+    | TypeCaseClauseList TypeCaseClause
+;
+
+TypeCaseClause:
+    TypeSwitchCase COLON StatementList
+;
+
+TypeSwitchCase:
+    CASE TypeList
+    | DEFAULT
+;
+
+SelectStmt:
+    SELECT LBRACE CommClauseList RBRACE
+;
+
+CommClauseList:
+    /* empty */
+    | CommClauseList CommClause
+;
+
+CommClause:
+    CommCase COLON StatementList
+;
+
+CommCase:
+    CASE CommStmt
+    | DEFAULT
+;
+
+CommStmt:
+    SendStmt
+    | RecvStmt
+;
+
+RecvStmt:
+    Expression ASSIGN Expression
+    | IdentifierList DEFINE Expression
+;
+
+ForStmt:
+    FOR Block
+    | FOR Condition Block
+    | FOR ForClause Block
+    | FOR RangeClause Block
+;
+
+Condition:
+    Expression
+;
+
+ForClause:
+    SimpleStmt SEMICOLON Condition SEMICOLON SimpleStmt
+;
+
+RangeClause:
+    ExpressionList ASSIGN RANGE Expression
+    | IdentifierList DEFINE RANGE Expression
+    | RANGE Expression
+;
+
+GoStmt:
+    GO Expression
+;
+
+/* Expressions */
+Expression:
+    UnaryExpr
+    | Expression BinaryOp Expression
+;
+
+BinaryOp:
+    LOR
+    | LAND
+    | EQL | NEQ | LSS | LEQ | GTR | GEQ
+    | ADD | SUB | OR | XOR
+    | MUL | QUO | REM | SHL | SHR | AND | AND_NOT
+;
+
+UnaryExpr:
+    PrimaryExpr
+    | UnaryOp UnaryExpr
+;
+
+UnaryOp:
+    ADD | SUB | NOT | XOR | MUL | AND | ARROW
+;
+
+PrimaryExpr:
+    Operand
+    | Conversion
+    | PrimaryExpr Selector
+    | PrimaryExpr Index
+    | PrimaryExpr Slice
+    | PrimaryExpr TypeAssertion
+    | PrimaryExpr Arguments
+;
+
+Selector:
+    PERIOD IDENT
+;
+
+Index:
+    LBRACK Expression RBRACK
+;
+
+Slice:
+    LBRACK Expression COLON Expression RBRACK
+    | LBRACK Expression COLON Expression COLON Expression RBRACK
+    | LBRACK COLON Expression RBRACK
+    | LBRACK Expression COLON RBRACK
+    | LBRACK COLON RBRACK
+;
+
+TypeAssertion:
+    PERIOD LPAREN Type RPAREN
+;
+
+Arguments:
+    LPAREN RPAREN
+    | LPAREN ExpressionList RPAREN
+    | LPAREN ExpressionList COMMA RPAREN
+    | LPAREN ExpressionList ELLIPSIS RPAREN
+    | LPAREN ExpressionList COMMA ELLIPSIS RPAREN
+;
+
+Operand:
+    Literal
+    | OperandName
+    | LPAREN Expression RPAREN
+;
+
+Literal:
+    BasicLit
+    | CompositeLit
+    | FunctionLit
+;
+
+BasicLit:
+    INT
+    | FLOAT
+    | IMAG
+    | CHAR
+    | STRING
+;
+
+OperandName:
+    IDENT
+    | QualifiedIdent
+;
+
+QualifiedIdent:
+    IDENT PERIOD IDENT
+;
+
+CompositeLit:
+    LiteralType LiteralValue
+;
+
+LiteralType:
+    StructType
+    | ArrayType
+    | LBRACK ELLIPSIS RBRACK Type
+    | SliceType
+    | MapType
+    | TypeName
+;
+
+LiteralValue:
+    LBRACE ElementList RBRACE
+    | LBRACE RBRACE
+;
+
+ElementList:
+    Element
+    | ElementList COMMA Element
+;
+
+Element:
+    Expression
+    | Key COLON Expression
+;
+
+Key:
+    Expression
+;
+
+FunctionLit:
+    FUNC Signature Block
+;
+
+Conversion:
+    Type LPAREN Expression RPAREN
+;
+
+/* Helper rules */
+IdentifierList:
+    IDENT
+    | IdentifierList COMMA IDENT
+;
+
+ExpressionList:
+    Expression
+    | ExpressionList COMMA Expression
+;
+
+TypeList:
+    Type
+    | TypeList COMMA Type
+;
+
+/* FINALIZA Sección de PRODUCCIONES */
