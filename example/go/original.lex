@@ -3,7 +3,7 @@
 // Token constants
 const (
 	// Special tokens
-	COMMENT
+	COMMENT int = iota
 
 	// Identifiers and literals
 	IDENT
