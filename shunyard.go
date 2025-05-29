@@ -207,7 +207,7 @@ func (alph *Alphabet) GetCharsNotIn(tokens *[]*reg.RX_Token) string {
 
 // Contains all the basic characters that could be inputted on a string
 // You can define you're own alphabet
-var DEFAULT_ALPHABET = NewAlphabetFromString("abcdefghijklmnñopqrstuvwxyz0123456789:;\"\\'`,._{[()]}*+?¿¡!@#$%&/=~|")
+var DEFAULT_ALPHABET = NewAlphabetFromString("abcdefghijklmnñopqrstuvwxyz0123456789:;\t\n\"\\'`,._{[()]}*+?¿¡!@#$%&/=~|")
 
 func (alph Alphabet) ToPostfix(infixExpression *[]reg.RX_Token) []reg.RX_Token {
 	stack := shunStack{}

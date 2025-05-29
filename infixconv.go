@@ -1,8 +1,6 @@
 package main
 
 import (
-	"math"
-
 	"github.com/Jose-Prince/UWUCompiler/lib"
 	"github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
@@ -17,7 +15,7 @@ const (
 )
 
 // Converts an infix expression into an array of tokens
-func InfixToTokens(infix string) []regex.RX_Token {
+func (alph Alphabet) InfixToTokens(infix string) []regex.RX_Token {
 	previousCanBeANDedTo := false
 	tokens := []regex.RX_Token{}
 	stateStack := lib.Stack[infixConverterState]{}
@@ -146,20 +144,17 @@ func InfixToTokens(infix string) []regex.RX_Token {
 				case ']':
 					// Since we reached the end of the set negation
 					// now we need to add all the elements that are not in the negativeBuffer
-
-					addedCount := int32(0)
-					for j := int32(0); j <= math.MaxInt32; j++ {
-						_, found := negativeBuffer[j]
-						if found {
+					firstItemAdded := false
+					for alphabetRune := range alph {
+						if _, found := negativeBuffer[alphabetRune]; found {
 							continue
 						}
 
-						if addedCount > 0 {
+						if firstItemAdded {
 							tokens = append(tokens, regex.CreateOperatorToken(regex.OR))
 						}
-						tokens = append(tokens, regex.CreateValueToken(j))
-
-						addedCount++
+						tokens = append(tokens, regex.CreateValueToken(alphabetRune))
+						firstItemAdded = true
 					}
 
 					// In the end we create a right parenthesis to close the one we opened when reading [

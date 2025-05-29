@@ -68,7 +68,7 @@ func compareTokensStreams(t *testing.T, originalInfix string, expected []l.RX_To
 
 func TestSimpleExpression(t *testing.T) {
 	infix := "(a|b)c"
-	result := InfixToTokens(infix)
+	result := DEFAULT_ALPHABET.InfixToTokens(infix)
 	expected := []l.RX_Token{
 		l.CreateOperatorToken(l.LEFT_PAREN),
 		l.CreateValueToken('a'),
@@ -77,6 +77,27 @@ func TestSimpleExpression(t *testing.T) {
 		l.CreateOperatorToken(l.RIGHT_PAREN),
 		l.CreateOperatorToken(l.AND),
 		l.CreateValueToken('c'),
+	}
+
+	compareTokensStreams(t, infix, expected, result)
+}
+
+func TestGoExample(t *testing.T) {
+	alphabet := NewAlphabetFromString("ab{\t")
+	infix := "\"[^\n\r\\\"]\""
+	result := alphabet.InfixToTokens(infix)
+	expected := []l.RX_Token{
+		l.CreateValueToken('"'),
+		l.CreateOperatorToken(l.AND),
+		l.CreateOperatorToken(l.LEFT_PAREN),
+		l.CreateValueToken('a'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('b'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('{'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('\t'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
 	}
 
 	compareTokensStreams(t, infix, expected, result)
@@ -220,7 +241,7 @@ func FuzzFromInfixToRegex(f *testing.F) {
 
 		expected := generateExpectedInfix(random)
 		infix := fromTokenStreamToInfixString(expected)
-		result := InfixToTokens(infix)
+		result := DEFAULT_ALPHABET.InfixToTokens(infix)
 
 		compareTokensStreams(t, infix, expected, result)
 	})
@@ -228,7 +249,7 @@ func FuzzFromInfixToRegex(f *testing.F) {
 
 func TestPythonExample(t *testing.T) {
 	infix := "[0-9]+"
-	result := InfixToTokens(infix)
+	result := DEFAULT_ALPHABET.InfixToTokens(infix)
 	expected := []l.RX_Token{
 		l.CreateOperatorToken(l.LEFT_PAREN),
 		l.CreateValueToken('0'),

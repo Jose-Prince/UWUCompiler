@@ -56,7 +56,7 @@ func main() {
 		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
 
 		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
-		regxToTokens := InfixToTokens(regex)
+		regxToTokens := DEFAULT_ALPHABET.InfixToTokens(regex)
 		infix = append(infix, regxToTokens...)
 		infix = append(infix, regx.CreateOperatorToken(regx.RIGHT_PAREN))
 		infix = append(infix, regx.CreateOperatorToken(regx.AND))

@@ -201,7 +201,7 @@ func TestCanvasExample(t *testing.T) {
 
 func TestPythonFromRegex(t *testing.T) {
 	infix := "[0-9]+"
-	infixExpr := InfixToTokens(infix)
+	infixExpr := DEFAULT_ALPHABET.InfixToTokens(infix)
 	expected := []reg.RX_Token{
 		reg.CreateOperatorToken(reg.LEFT_PAREN),
 		reg.CreateValueToken('0'),
