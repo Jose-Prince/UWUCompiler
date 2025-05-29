@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"log"
 	"os"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
@@ -37,9 +35,6 @@ type CompilerFileInfo struct {
 }
 
 func main() {
-	// Disable loggin
-	log.SetOutput(io.Discard)
-
 	params := parseProgramParams()
 
 	fmt.Println("Lex file to use:", params.LexFilePath)
@@ -73,9 +68,9 @@ func main() {
 		}
 		i++
 	}
+	fmt.Println("The Infix expression is:\n", regx.TokenStreamToString(infix))
 
 	postfix := DEFAULT_ALPHABET.ToPostfix(&infix)
-	fmt.Println("The Infix expression is:\n", regx.TokenStreamToString(infix))
 	fmt.Println("The Postfix expression is:\n", regx.TokenStreamToString(postfix))
 
 	// Generates BST
