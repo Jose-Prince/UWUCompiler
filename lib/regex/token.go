@@ -2,6 +2,7 @@ package regex
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
@@ -171,7 +172,9 @@ func (self *RX_Token) IsUninitialized() bool {
 
 func TokenStreamToString(stream []RX_Token) string {
 	b := strings.Builder{}
-	for _, elem := range stream {
+	for idx, elem := range stream {
+		b.WriteString(strconv.FormatInt(int64(idx), 10))
+		b.WriteString(": ")
 		b.WriteString(elem.String())
 		b.WriteRune('\n')
 	}

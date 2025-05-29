@@ -6,6 +6,10 @@ func NewStack[T any]() Stack[T] {
 	return Stack[T]{}
 }
 
+func (self *Stack[T]) Length() int {
+	return len(*self)
+}
+
 func (self *Stack[T]) Empty() bool {
 	return len(*self) == 0
 }

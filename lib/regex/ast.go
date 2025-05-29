@@ -1,6 +1,7 @@
 package regex
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -158,7 +159,7 @@ func ASTFromRegex(postfix []RX_Token) *AST {
 
 	stack := lib.NewStack[int]()
 
-	for _, v := range postfix {
+	for idx, v := range postfix {
 		node := NewASTNode(v)
 		i := len(b.nodes)
 
@@ -166,6 +167,13 @@ func ASTFromRegex(postfix []RX_Token) *AST {
 			op := v.GetOperator()
 			switch op {
 			case AND, OR:
+				if stack.Length() < 2 {
+					panic(fmt.Sprintf("Can't generate AST from regex! Invalid regex, received %s but stack length is: %d!\nRegex:\n%s\nIdx: %d\n",
+						op.String(),
+						stack.Length(),
+						TokenStreamToString(postfix),
+						idx))
+				}
 				right := stack.Pop().GetValue()
 				left := stack.Pop().GetValue()
 
