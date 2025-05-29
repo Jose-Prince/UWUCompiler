@@ -51,6 +51,7 @@ func main() {
 	i := 0
 	keysCount := len(lexFileData.Rule)
 	for regex, info := range lexFileData.Rule {
+		fmt.Printf("Converting %s...\n", regex)
 		// What we want is to have something like: ((<REGEX>).(DUMMY))
 		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
 

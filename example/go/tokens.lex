@@ -111,18 +111,17 @@ let float_lit       = {decimal_lit}\.{decimal_lit}?([eE][+-]?{decimal_lit})?|\.{
 let imaginary_lit   = ({decimal_lit}|{float_lit})i
 
 (* String and character patterns *)
-let escaped_char    = \\[abfnrtv\\'"]|\\{octal_digit}{1,3}|\\x{hex_digit}{2}|\\u{hex_digit}{4}|\\U{hex_digit}{8}
 let unicode_char    = [^\n\r\\"]
-let char_lit        = '({unicode_char}|{escaped_char})'
-let string_lit      = "({unicode_char}|{escaped_char})*"|`[^`]*`
+let char_lit        = '{unicode_char}'
+let string_lit      = "{unicode_char}*"|`[^`]*`
 
 (* Identifier pattern *)
 let identifier      = {letter}({letter}|{decimal_digit})*
 
 (* Whitespace and comments *)
 let whitespace      = [ \t\r\n]+
-let line_comment    = "//"[^\n\r]*
-let block_comment   = "/*"([^*]|\*+[^*/])*\*+"/"
+let line_comment    = //[^\n\r]*
+(* let block_comment   = /\*([^*]|\*+[^*/])*\*+/ *)
 
 rule gettoken =
 	{whitespace}        { /* ignore whitespace */ }
@@ -130,82 +129,82 @@ rule gettoken =
 	| {block_comment}     { return COMMENT }
 
 (* Keywords *)
-	| "break"             { return BREAK }
-	| "case"              { return CASE }
-	| "chan"              { return CHAN }
-	| "const"             { return CONST }
-	| "continue"          { return CONTINUE }
-	| "default"           { return DEFAULT }
-	| "defer"             { return DEFER }
-	| "else"              { return ELSE }
-	| "fallthrough"       { return FALLTHROUGH }
-	| "for"               { return FOR }
-	| "func"              { return FUNC }
-	| "go"                { return GO }
-	| "goto"              { return GOTO }
-	| "if"                { return IF }
-	| "import"            { return IMPORT }
-	| "interface"         { return INTERFACE }
-	| "map"               { return MAP }
-	| "package"           { return PACKAGE }
-	| "range"             { return RANGE }
-	| "return"            { return RETURN }
-	| "select"            { return SELECT }
-	| "struct"            { return STRUCT }
-	| "switch"            { return SWITCH }
-	| "type"              { return TYPE }
-	| "var"               { return VAR }
+	| 'break'             { return BREAK }
+	| 'case'              { return CASE }
+	| 'chan'              { return CHAN }
+	| 'const'             { return CONST }
+	| 'continue'          { return CONTINUE }
+	| 'default'           { return DEFAULT }
+	| 'defer'             { return DEFER }
+	| 'else'              { return ELSE }
+	| 'fallthrough'       { return FALLTHROUGH }
+	| 'for'               { return FOR }
+	| 'func'              { return FUNC }
+	| 'go'                { return GO }
+	| 'goto'              { return GOTO }
+	| 'if'                { return IF }
+	| 'import'            { return IMPORT }
+	| 'interface'         { return INTERFACE }
+	| 'map'               { return MAP }
+	| 'package'           { return PACKAGE }
+	| 'range'             { return RANGE }
+	| 'return'            { return RETURN }
+	| 'select'            { return SELECT }
+	| 'struct'            { return STRUCT }
+	| 'switch'            { return SWITCH }
+	| 'type'              { return TYPE }
+	| 'var'               { return VAR }
 
 (* Operators - must be before single character operators *)
-	| "+="                { return ADD_ASSIGN }
-	| "-="                { return SUB_ASSIGN }
-	| "*="                { return MUL_ASSIGN }
-	| "/="                { return QUO_ASSIGN }
-	| "%="                { return REM_ASSIGN }
-	| "&="                { return AND_ASSIGN }
-	| "|="                { return OR_ASSIGN }
-	| "^="                { return XOR_ASSIGN }
-	| "<<="               { return SHL_ASSIGN }
-	| ">>="               { return SHR_ASSIGN }
-	| "&^="               { return AND_NOT_ASSIGN }
-	| "<<"                { return SHL }
-	| ">>"                { return SHR }
-	| "&^"                { return AND_NOT }
-	| "&&"                { return LAND }
-	| "||"                { return LOR }
-	| "<-"                { return ARROW }
-	| "++"                { return INC }
-	| "--"                { return DEC }
-	| "=="                { return EQL }
-	| "!="                { return NEQ }
-	| "<="                { return LEQ }
-	| ">="                { return GEQ }
-	| ":="                { return DEFINE }
-	| "..."               { return ELLIPSIS }
+	| '\+='                { return ADD_ASSIGN }
+	| '-='                { return SUB_ASSIGN }
+	| '\*='                { return MUL_ASSIGN }
+	| '/='                { return QUO_ASSIGN }
+	| '%='                { return REM_ASSIGN }
+	| '&='                { return AND_ASSIGN }
+	| '|='                { return OR_ASSIGN }
+	| '^='                { return XOR_ASSIGN }
+	| '<<='               { return SHL_ASSIGN }
+	| '>>='               { return SHR_ASSIGN }
+	| '&^='               { return AND_NOT_ASSIGN }
+	| '<<'                { return SHL }
+	| '>>'                { return SHR }
+	| '&^'                { return AND_NOT }
+	| '&&'                { return LAND }
+	| '||'                { return LOR }
+	| '<-'                { return ARROW }
+	| '\+\+'                { return INC }
+	| '--'                { return DEC }
+	| '=='                { return EQL }
+	| '!='                { return NEQ }
+	| '<='                { return LEQ }
+	| '>='                { return GEQ }
+	| ':='                { return DEFINE }
+	| '...'               { return ELLIPSIS }
 
 (* Single character operators and delimiters *)
-	| "+"                 { return ADD }
-	| "-"                 { return SUB }
-	| "*"                 { return MUL }
-	| "/"                 { return QUO }
-	| "%"                 { return REM }
-	| "&"                 { return AND }
-	| "|"                 { return OR }
-	| "^"                 { return XOR }
-	| "<"                 { return LSS }
-	| ">"                 { return GTR }
-	| "="                 { return ASSIGN }
-	| "!"                 { return NOT }
-	| "("                 { return LPAREN }
-	| "["                 { return LBRACK }
-	| "{"                 { return LBRACE }
-	| ","                 { return COMMA }
-	| "."                 { return PERIOD }
-	| ")"                 { return RPAREN }
-	| "]"                 { return RBRACK }
-	| "}"                 { return RBRACE }
-	| ""                 { return SEMICOLON; }
-	| ":"                 { return COLON }
+	| '\+'                 { return ADD }
+	| '-'                 { return SUB }
+	| '\*'                 { return MUL }
+	| '/'                 { return QUO }
+	| '%'                 { return REM }
+	| '&'                 { return AND }
+	| '|'                 { return OR }
+	| '^'                 { return XOR }
+	| '<'                 { return LSS }
+	| '>'                 { return GTR }
+	| '='                 { return ASSIGN }
+	| '!'                 { return NOT }
+	| '\('                 { return LPAREN }
+	| '\['                 { return LBRACK }
+	| '{'                 { return LBRACE }
+	| ','                 { return COMMA }
+	| '\.'                 { return PERIOD }
+	| '\)'                 { return RPAREN }
+	| '\]'                 { return RBRACK }
+	| '}'                 { return RBRACE }
+	| ';'                 { return SEMICOLON }
+	| ':'                 { return COLON }
 
 (* Literals *)
 	| {imaginary_lit}     { return IMAG }
