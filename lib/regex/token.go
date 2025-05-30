@@ -56,6 +56,10 @@ type DummyInfo struct {
 	Priority uint
 }
 
+func (info DummyInfo) String() string {
+	return fmt.Sprintf("{ Priority: %d, Regex: %s, Code: %s }", info.Priority, info.Regex, info.Regex)
+}
+
 func (self *DummyInfo) Equals(other *DummyInfo) bool {
 	return self.Regex == other.Regex
 }

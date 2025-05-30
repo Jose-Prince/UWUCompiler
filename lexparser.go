@@ -10,12 +10,35 @@ import (
 	"github.com/Jose-Prince/UWUCompiler/lib/regex"
 )
 
+type LexFileRule struct {
+	Regex string
+	Info  regex.DummyInfo
+}
+
 type LexFileData struct {
 	Header string
 	Footer string
 	// The key represents the regex expanded to only have valid regex items
 	// The value is the go code to execute when the regex matches
-	Rule map[string]regex.DummyInfo
+	Rules []LexFileRule
+}
+
+func (fileData LexFileData) String() string {
+	b := strings.Builder{}
+	b.WriteString("{\n")
+	b.WriteString("== HEADER ==\n")
+	b.WriteString(fileData.Header)
+	b.WriteString("== FOOTER ==\n")
+	b.WriteString(fileData.Footer)
+	b.WriteString("== RULES ==\n")
+	for _, rule := range fileData.Rules {
+		b.WriteString(rule.Regex)
+		b.WriteString(" -> ")
+		b.WriteString(rule.Info.String())
+		b.WriteRune('\n')
+	}
+	b.WriteString(" }")
+	return b.String()
 }
 
 // Example Lex file:
@@ -78,7 +101,8 @@ func LexParser(yalexFile string) (LexFileData, error) { // string represents the
 	scanner := bufio.NewScanner(file)
 	var header, footer strings.Builder
 	dummyRules := make(map[string]string)
-	rules := make(map[string]regex.DummyInfo)
+	// rules := make(map[string]regex.DummyInfo)
+	rules := []LexFileRule{}
 	state := 0 // 0: Reading header, 1: Reading rules, 2: Reading footer
 
 	// Regex to identify
@@ -134,7 +158,10 @@ func LexParser(yalexFile string) (LexFileData, error) { // string represents the
 			info.Priority = index
 			info.Regex = line
 
-			rules[line] = info
+			rules = append(rules, LexFileRule{
+				Regex: line,
+				Info:  info,
+			})
 
 			index++
 			continue
@@ -153,7 +180,10 @@ func LexParser(yalexFile string) (LexFileData, error) { // string represents the
 			info.Priority = index
 			info.Regex = line
 
-			rules[line] = info
+			rules = append(rules, LexFileRule{
+				Regex: line,
+				Info:  info,
+			})
 
 			index++
 			continue
@@ -175,7 +205,10 @@ func LexParser(yalexFile string) (LexFileData, error) { // string represents the
 			info.Priority = index
 			info.Regex = regexValue
 
-			rules[regexValue] = info
+			rules = append(rules, LexFileRule{
+				Regex: regexValue,
+				Info:  info,
+			})
 
 			index++
 			continue
@@ -200,7 +233,7 @@ func LexParser(yalexFile string) (LexFileData, error) { // string represents the
 	fileData := LexFileData{
 		Header: header.String(),
 		Footer: footer.String(),
-		Rule:   rules,
+		Rules:  rules,
 	}
 
 	return fileData, nil

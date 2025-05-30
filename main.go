@@ -45,26 +45,27 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("The lex file data is:", lexFileData.String())
 
 	// Combine all regexes into a single regex
 	infix := []regx.RX_Token{}
 	i := 0
-	keysCount := len(lexFileData.Rule)
-	for regex, info := range lexFileData.Rule {
-		fmt.Printf("Converting %s...\n", regex)
+	ruleCount := len(lexFileData.Rules)
+	for _, rule := range lexFileData.Rules {
+		fmt.Printf("Converting %s...\n", rule.Regex)
 		// What we want is to have something like: ((<REGEX>).(DUMMY))
 		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
 
 		infix = append(infix, regx.CreateOperatorToken(regx.LEFT_PAREN))
-		regxToTokens := DEFAULT_ALPHABET.InfixToTokens(regex)
+		regxToTokens := DEFAULT_ALPHABET.InfixToTokens(rule.Regex)
 		infix = append(infix, regxToTokens...)
 		infix = append(infix, regx.CreateOperatorToken(regx.RIGHT_PAREN))
 		infix = append(infix, regx.CreateOperatorToken(regx.AND))
-		infix = append(infix, regx.CreateDummyToken(info))
+		infix = append(infix, regx.CreateDummyToken(rule.Info))
 
 		infix = append(infix, regx.CreateOperatorToken(regx.RIGHT_PAREN))
 
-		if i+1 < keysCount {
+		if i+1 < ruleCount {
 			infix = append(infix, regx.CreateOperatorToken(regx.OR))
 		}
 		i++
