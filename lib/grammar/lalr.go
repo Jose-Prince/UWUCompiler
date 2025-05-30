@@ -304,3 +304,69 @@ func equalLookahead(a, b []GrammarToken) bool {
 	}
 	return true
 }
+
+func (a *automata) simplifyStates() {
+	coreMap := make(map[string][]int)
+
+	for stateIdx, state := range a.nodes {
+		core := getCoreKey(state)
+		coreMap[core] = append(coreMap[core], stateIdx)
+	}
+
+	newNodes := make(map[int]automataState)
+	stateMapping := make(map[int]int)
+
+	newIdx := 0
+
+	for _, group := range coreMap {
+		mergedItems := make(map[string]automataItem)
+
+		for _, idx := range group {
+			for _, item := range a.nodes[idx].Items {
+				key := itemToKeyWithoutLookAhead(item)
+				if existing, ok := mergedItems[key]; ok {
+					existing.Lookahead = unionLookaheads(existing.Lookahead, item.Lookahead)
+					mergedItems[key] = existing
+				} else {
+					mergedItems[key] = item
+				}
+			}
+		}
+
+		itemMap := make(map[int]automataItem)
+		i := 0
+		for _, v := range mergedItems {
+			itemMap[i] = v
+			i++
+		}
+
+		newNodes[newIdx] = automataState{
+			Items:       itemMap,
+			Productions: make(map[string]int),
+		}
+
+		for _, oldIdx := range group {
+			stateMapping[oldIdx] = newIdx
+		}
+		newIdx++
+	}
+
+	for oldIdx, oldState := range a.nodes {
+		newIdx := stateMapping[oldIdx]
+		for symbol, target := range oldState.Productions {
+			newTarget := stateMapping[target]
+			newNodes[newIdx].Productions[symbol] = newTarget
+		}
+	}
+
+	a.nodes = newNodes
+}
+
+func getCoreKey(state automataState) string {
+	coreItems := make([]string, 0)
+	for _, item := range state.Items {
+		coreItems = append(coreItems, itemToKeyWithoutLookAhead(item))
+	}
+	sort.Strings(coreItems)
+	return fmt.Sprintf("%v", coreItems)
+}

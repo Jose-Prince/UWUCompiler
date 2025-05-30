@@ -427,3 +427,54 @@ func lookaheadsEqual(a, b []GrammarToken) bool {
 	}
 	return true
 }
+
+func TestConvertToLALR(t *testing.T) {
+	// Gramática simple:
+	// S → CC
+	// C → cC | d
+
+	S := NewNonTerminalToken("S")
+	C := NewNonTerminalToken("C")
+	c := NewTerminalToken("c")
+	d := NewTerminalToken("d")
+
+	rules := []GrammarRule{
+		{Head: S, Production: []GrammarToken{C, C}},
+		{Head: C, Production: []GrammarToken{c, C}},
+		{Head: C, Production: []GrammarToken{d}},
+	}
+
+	nonTerminals := lib.NewSet[GrammarToken]()
+	nonTerminals.Add(S)
+	nonTerminals.Add(C)
+
+	terminals := lib.NewSet[GrammarToken]()
+	terminals.Add(c)
+	terminals.Add(d)
+
+	g := Grammar{
+		Rules:         rules,
+		Terminals:     terminals,
+		NonTerminals:  nonTerminals,
+		InitialSimbol: S,
+	}
+
+	initialRule := GrammarRule{Head: NewNonTerminalToken("S'"), Production: []GrammarToken{S}}
+
+	// Construir autómata LR(1)
+	lr1 := InitializeAutomata(initialRule, g)
+	lalr := lr1
+
+	lr1StateCount := len(lr1.nodes)
+	t.Logf("Estados LR(1): %d", lr1StateCount)
+
+	// Convertir a LALR
+	lalr.simplifyStates()
+
+	lalrStateCount := len(lalr.nodes)
+	t.Logf("Estados LALR: %d", lalrStateCount)
+
+	if lalrStateCount >= lr1StateCount {
+		t.Errorf("Esperábamos menos estados en LALR que en LR(1), pero LALR tiene %d y LR(1) tiene %d", lalrStateCount, lr1StateCount)
+	}
+}
