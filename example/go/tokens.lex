@@ -108,7 +108,6 @@ let decimal_lit     = (([1-9][0-9]*)|0)
 let octal_lit       = (0[0-7]*)
 let hex_lit         = (0[xX][0-9A-Fa-f]+)
 let float_lit = ({decimal_lit}\.{decimal_lit}?)
-(* let float_lit       = {decimal_lit}\.{decimal_lit}?([eE][+-]?{decimal_lit})?|\.{decimal_lit}([eE][+-]?{decimal_lit})?|{decimal_lit}[eE][+-]?{decimal_lit} *)
 let imaginary_lit   = ({decimal_lit}|{float_lit})i
 
 (* String and character patterns *)
@@ -122,12 +121,10 @@ let identifier      = ({letter}({letter}|{decimal_digit})*)
 (* Whitespace and comments *)
 let whitespace      = ([ \t\r\n]+)
 let line_comment    = (//[^\n\r]*)
-(* let block_comment   = /\*([^*]|\*+[^*/])*\*+/ *)
 
 rule gettoken =
 	{whitespace}        { /* ignore whitespace */ }
 	| {line_comment}      { return COMMENT }
-	| {block_comment}     { return COMMENT }
 
 (* Keywords *)
 	| 'break'             { return BREAK }
