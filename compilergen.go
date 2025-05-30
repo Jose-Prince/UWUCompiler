@@ -629,6 +629,10 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state reg.AFDState, alreadyWrittenS
 			w.WriteString("\\n")
 		case '\r':
 			w.WriteString("\\r")
+		case '\'':
+			w.WriteString("\\'")
+		case '\\':
+			w.WriteString("\\\\")
 		default:
 			w.WriteRune(input)
 		}
