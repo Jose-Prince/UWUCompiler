@@ -14,6 +14,8 @@ type automata struct {
 type automataState struct {
 	Items       map[int]automataItem
 	Productions map[string]int
+	Initial     bool
+	Accept      bool
 }
 
 type automataItem struct {
@@ -35,6 +37,8 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) automata {
 	state := automataState{
 		Items:       make(map[int]automataItem),
 		Productions: make(map[string]int),
+		Initial:     true,
+		Accept:      false,
 	}
 
 	state.Items[0] = initialItem
@@ -183,6 +187,8 @@ func generateStates(afd *automata, grammar Grammar) {
 	visited := lib.NewSet[int]()
 	changed := true
 
+	initialToken := NewNonTerminalToken("S'")
+
 	for changed {
 		changed = false
 
@@ -204,6 +210,8 @@ func generateStates(afd *automata, grammar Grammar) {
 						newState := automataState{
 							Items:       make(map[int]automataItem),
 							Productions: make(map[string]int),
+							Initial:     false,
+							Accept:      false,
 						}
 
 						newItem := val
@@ -211,6 +219,13 @@ func generateStates(afd *automata, grammar Grammar) {
 						newState.Items[0] = newItem
 
 						closure(newState, grammar)
+
+						for _, item := range newState.Items {
+							if item.Rule.Head.Equal(&initialToken) && item.DotPosition == len(item.Rule.Production) && item.Lookahead[0].IsEnd {
+								newState.Accept = true
+								break
+							}
+						}
 
 						for _, s := range afd.nodes {
 							if !equalState(s, newState) {
@@ -308,6 +323,8 @@ func (a *automata) simplifyStates() {
 		newNodes[newIdx] = automataState{
 			Items:       itemMap,
 			Productions: make(map[string]int),
+			Initial:     false,
+			Accept:      false,
 		}
 
 		for _, oldIdx := range group {
