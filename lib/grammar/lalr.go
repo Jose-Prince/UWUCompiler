@@ -3,6 +3,7 @@ package grammar
 import (
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
 )
@@ -285,7 +286,7 @@ func equalLookahead(a, b []GrammarToken) bool {
 	return true
 }
 
-func (a *automata) simplifyStates() {
+func (a *automata) SimplifyStates() {
 	coreMap := make(map[string][]int)
 
 	for stateIdx, state := range a.nodes {
@@ -300,8 +301,19 @@ func (a *automata) simplifyStates() {
 
 	for _, group := range coreMap {
 		mergedItems := make(map[string]automataItem)
+		initial := false
+		accept := false
 
 		for _, idx := range group {
+			origState := a.nodes[idx]
+
+			if origState.Initial {
+				initial = true
+			}
+			if origState.Accept {
+				accept = true
+			}
+
 			for _, item := range a.nodes[idx].Items {
 				key := itemToKeyWithoutLookAhead(item)
 				if existing, ok := mergedItems[key]; ok {
@@ -323,8 +335,8 @@ func (a *automata) simplifyStates() {
 		newNodes[newIdx] = automataState{
 			Items:       itemMap,
 			Productions: make(map[string]int),
-			Initial:     false,
-			Accept:      false,
+			Initial:     initial,
+			Accept:      accept,
 		}
 
 		for _, oldIdx := range group {
@@ -341,6 +353,17 @@ func (a *automata) simplifyStates() {
 		}
 	}
 
+	for stateIdx, st := range newNodes {
+		for itemIdx, item := range st.Items {
+			if item.DotPosition >= len(item.Rule.Production) {
+				item.Lookahead = append(item.Lookahead, NewEndToken())
+				st.Items[itemIdx] = item
+			}
+		}
+
+		newNodes[stateIdx] = st
+	}
+
 	a.nodes = newNodes
 }
 
@@ -353,12 +376,12 @@ func getCoreKey(state automataState) string {
 	return fmt.Sprintf("%v", coreItems)
 }
 
-func (lalr *automata) generateParsingTable(grammar *Grammar) ParsingTable {
+func (lalr *automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 	table := ParsingTable{
 		ActionTable:   make(map[AFDNodeId]map[GrammarToken]Action),
 		GoToTable:     make(map[AFDNodeId]map[GrammarToken]AFDNodeId),
 		Original:      *grammar,
-		InitialNodeId: "0",
+		InitialNodeId: lalr.findInitialState(),
 	}
 
 	for stateID, state := range lalr.nodes {
@@ -375,7 +398,7 @@ func (lalr *automata) generateParsingTable(grammar *Grammar) ParsingTable {
 		for _, item := range state.Items {
 			if item.DotPosition == len(item.Rule.Production) {
 				for _, lookahead := range item.Lookahead {
-					if item.Rule.Head.String() == grammar.InitialSimbol.String() && lookahead.IsEnd {
+					if item.Rule.Head.Equal(&grammar.InitialSimbol) && lookahead.IsEnd {
 
 						table.ActionTable[stateKey][item.Lookahead[0]] = Action{
 							Shift:  lib.CreateNull[AFDNodeId](),
@@ -413,4 +436,15 @@ func (lalr *automata) generateParsingTable(grammar *Grammar) ParsingTable {
 	}
 
 	return table
+}
+
+func (lalr *automata) findInitialState() string {
+	for key, state := range lalr.nodes {
+		if state.Initial {
+			keyStr := strconv.Itoa(key)
+			return keyStr
+		}
+	}
+
+	return "0"
 }

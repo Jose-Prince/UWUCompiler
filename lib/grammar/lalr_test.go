@@ -469,7 +469,7 @@ func TestConvertToLALR(t *testing.T) {
 	t.Logf("Estados LR(1): %d", lr1StateCount)
 
 	// Convertir a LALR
-	lalr.simplifyStates()
+	lalr.SimplifyStates()
 
 	lalrStateCount := len(lalr.nodes)
 	t.Logf("Estados LALR: %d", lalrStateCount)
@@ -507,7 +507,7 @@ func TestGenerateParsingTable(t *testing.T) {
 		Rules:         rules,
 		Terminals:     terminals,
 		NonTerminals:  nonTerminals,
-		InitialSimbol: S,
+		InitialSimbol: NewNonTerminalToken("S'"),
 	}
 
 	initialRule := GrammarRule{Head: NewNonTerminalToken("S'"), Production: []GrammarToken{S}}
@@ -515,9 +515,9 @@ func TestGenerateParsingTable(t *testing.T) {
 	// Construir autómata LR(1)
 	lr1 := InitializeAutomata(initialRule, g)
 	lalr := lr1
-	lalr.simplifyStates()
+	lalr.SimplifyStates()
 
-	parsingTable := lalr.generateParsingTable(&g)
+	parsingTable := lalr.GenerateParsingTable(&g)
 
 	foundShift := false
 	foundReduce := false

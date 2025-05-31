@@ -16,10 +16,6 @@ type GrammarToken struct {
 
 	// Determines if this token is the '$' token at the end of a grammar.
 	IsEnd bool
-	// Determines if this token is ',' for the look ahead.
-	IsLookAhead bool
-	// Determines if this token is '.' for making closure in the grammar
-	IsPointer bool
 }
 
 func (self GrammarToken) String() string {
@@ -48,18 +44,6 @@ func (self GrammarToken) String() string {
 func NewEndToken() GrammarToken {
 	return GrammarToken{
 		IsEnd: true,
-	}
-}
-
-func NewLookAheadToken() GrammarToken {
-	return GrammarToken{
-		IsLookAhead: true,
-	}
-}
-
-func NewPointerToken() GrammarToken {
-	return GrammarToken{
-		IsPointer: true,
 	}
 }
 
@@ -156,6 +140,10 @@ func (self *GrammarToken) IsNonTerminal() bool {
 }
 
 func (self *GrammarToken) Equal(other *GrammarToken) bool {
+	if self.IsEnd && other.IsEnd {
+		return true
+	}
+
 	if self.IsTerminal() && other.IsTerminal() {
 		return self.Terminal.Equals(&other.Terminal)
 	}

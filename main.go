@@ -85,76 +85,39 @@ func main() {
 	afd := table.ToAFD()
 	fmt.Println("The AFD is:", afd.String())
 
-	// TODO: Implement real parsing table
-	parsingTable := grammar.ParsingTable{
-		InitialNodeId: "0",
-		Original: grammar.Grammar{
-			InitialSimbol: grammar.NewNonTerminalToken("S"),
-			Rules: []grammar.GrammarRule{
-				{Head: grammar.NewNonTerminalToken("S"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("C"), grammar.NewNonTerminalToken("C")}},
-				{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("c"), grammar.NewNonTerminalToken("C")}},
-				{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("d")}},
-			},
-			TokenIds: map[grammar.GrammarToken]parsertypes.GrammarToken{
-				grammar.NewTerminalToken("c"):    0,
-				grammar.NewTerminalToken("d"):    1,
-				grammar.NewNonTerminalToken("S"): 2,
-				grammar.NewNonTerminalToken("C"): 3,
-				grammar.NewEndToken():            4,
-			},
-			Terminals: lib.Set[grammar.GrammarToken]{
-				grammar.NewTerminalToken("c"): struct{}{},
-				grammar.NewTerminalToken("d"): struct{}{},
-				grammar.NewEndToken():         struct{}{},
-			},
-			NonTerminals: lib.Set[grammar.GrammarToken]{
-				grammar.NewNonTerminalToken("C"): struct{}{},
-				grammar.NewNonTerminalToken("S"): struct{}{},
-			},
+	// // TODO Parse yal fil
+	g := grammar.Grammar{
+		InitialSimbol: grammar.NewNonTerminalToken("S"),
+		Rules: []grammar.GrammarRule{
+			{Head: grammar.NewNonTerminalToken("S"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("C"), grammar.NewNonTerminalToken("C")}},
+			{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("c"), grammar.NewNonTerminalToken("C")}},
+			{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("d")}},
 		},
-		GoToTable: map[grammar.AFDNodeId]map[grammar.GrammarToken]grammar.AFDNodeId{
-			"0": map[grammar.GrammarToken]grammar.AFDNodeId{
-				grammar.NewNonTerminalToken("S"): "1",
-				grammar.NewNonTerminalToken("C"): "2",
-			},
-			"2": map[grammar.GrammarToken]grammar.AFDNodeId{
-				grammar.NewNonTerminalToken("C"): "5",
-			},
-			"36": map[grammar.GrammarToken]grammar.AFDNodeId{
-				grammar.NewNonTerminalToken("C"): "89",
-			},
+		TokenIds: map[grammar.GrammarToken]parsertypes.GrammarToken{
+			grammar.NewTerminalToken("c"):    0,
+			grammar.NewTerminalToken("d"):    1,
+			grammar.NewNonTerminalToken("S"): 2,
+			grammar.NewNonTerminalToken("C"): 3,
+			grammar.NewEndToken():            4,
 		},
-		ActionTable: map[grammar.AFDNodeId]map[grammar.GrammarToken]grammar.Action{
-			"0": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewTerminalToken("c"): grammar.NewShiftAction("36"),
-				grammar.NewTerminalToken("d"): grammar.NewShiftAction("47"),
-			},
-			"1": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewEndToken(): grammar.NewAcceptAction(),
-			},
-			"2": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewTerminalToken("c"): grammar.NewShiftAction("36"),
-				grammar.NewTerminalToken("d"): grammar.NewShiftAction("47"),
-			},
-			"36": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewTerminalToken("c"): grammar.NewShiftAction("36"),
-				grammar.NewTerminalToken("d"): grammar.NewShiftAction("47"),
-			},
-			"47": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewTerminalToken("c"): grammar.NewReduceAction(2),
-				grammar.NewTerminalToken("d"): grammar.NewReduceAction(2),
-				grammar.NewEndToken():         grammar.NewReduceAction(2),
-			},
-			"5": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewEndToken(): grammar.NewReduceAction(0),
-			},
-			"89": map[grammar.GrammarToken]grammar.Action{
-				grammar.NewTerminalToken("c"): grammar.NewReduceAction(1),
-				grammar.NewTerminalToken("d"): grammar.NewReduceAction(1),
-				grammar.NewEndToken():         grammar.NewReduceAction(1),
-			},
+		Terminals: lib.Set[grammar.GrammarToken]{
+			grammar.NewTerminalToken("c"): struct{}{},
+			grammar.NewTerminalToken("d"): struct{}{},
+			grammar.NewEndToken():         struct{}{},
+		},
+		NonTerminals: lib.Set[grammar.GrammarToken]{
+			grammar.NewNonTerminalToken("C"): struct{}{},
+			grammar.NewNonTerminalToken("S"): struct{}{},
 		},
 	}
+
+	initialRule := grammar.GrammarRule{Head: grammar.NewNonTerminalToken("S'"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("S")}}
+
+	lalr := grammar.InitializeAutomata(initialRule, g)
+	lalr.SimplifyStates()
+
+	parsingTable := lalr.GenerateParsingTable(&g)
+
 	info := CompilerFileInfo{
 		LexInfo:      lexFileData,
 		LexAFD:       afd,
