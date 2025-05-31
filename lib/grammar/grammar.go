@@ -191,6 +191,35 @@ type Grammar struct {
 	TokenIds map[GrammarToken]parsertypes.GrammarToken
 }
 
+func (g *Grammar) GetTokenByString(tokenStr string) GrammarToken {
+	if tokenStr == "$" || tokenStr == "EOF" || tokenStr == "END" {
+		return NewEndToken()
+	}
+
+	for _, terminal := range g.Terminals.ToSlice() {
+		if terminal.String() == tokenStr {
+			return terminal
+		}
+	}
+
+	for _, nonTerminal := range g.NonTerminals.ToSlice() {
+		if nonTerminal.String() == tokenStr {
+			return nonTerminal
+		}
+	}
+
+	if len(tokenStr) > 0 {
+		firstChar := tokenStr[0]
+		if firstChar >= 'A' && firstChar <= 'Z' {
+			return NewNonTerminalToken(tokenStr)
+		} else {
+			return NewTerminalToken(tokenStr)
+		}
+	}
+
+	return NewTerminalToken(tokenStr)
+}
+
 func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
 	alreadyEvaluatedFirsts := lib.NewSet[GrammarToken]()
 

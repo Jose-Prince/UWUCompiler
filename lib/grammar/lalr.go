@@ -126,41 +126,6 @@ func closure(state automataState, grammar Grammar) {
 	}
 }
 
-func itemsEqual(a, b automataItem) bool {
-
-	if a.Rule.Head.String() != b.Rule.Head.String() {
-		return false
-	}
-
-	if len(a.Rule.Production) != len(b.Rule.Production) {
-		return false
-	}
-
-	for i := range a.Rule.Production {
-		if !a.Rule.Production[i].Equal(&b.Rule.Production[i]) {
-			return false
-		}
-	}
-
-	if len(a.Lookahead) != len(b.Lookahead) {
-		return false
-	}
-
-	// Comparar conjuntos de lookahead
-	setA := make(map[string]bool)
-	for _, tok := range a.Lookahead {
-		setA[tok.String()] = true
-	}
-
-	for _, tok := range b.Lookahead {
-		if !setA[tok.String()] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
 	if len(sequence) == 0 {
 		return []GrammarToken{}
@@ -369,4 +334,66 @@ func getCoreKey(state automataState) string {
 	}
 	sort.Strings(coreItems)
 	return fmt.Sprintf("%v", coreItems)
+}
+
+func (lalr *automata) generateParsingTable(grammar *Grammar) ParsingTable {
+	table := ParsingTable{
+		ActionTable:   make(map[AFDNodeId]map[GrammarToken]Action),
+		GoToTable:     make(map[AFDNodeId]map[GrammarToken]AFDNodeId),
+		Original:      *grammar,
+		InitialNodeId: "0",
+	}
+
+	for stateID, state := range lalr.nodes {
+		stateKey := fmt.Sprintf("%d", stateID)
+
+		if _, exists := table.ActionTable[stateKey]; !exists {
+			table.ActionTable[stateKey] = make(map[GrammarToken]Action)
+		}
+
+		if _, exists := table.GoToTable[stateKey]; !exists {
+			table.GoToTable[stateKey] = make(map[GrammarToken]AFDNodeId)
+		}
+
+		for _, item := range state.Items {
+			if item.DotPosition == len(item.Rule.Production) {
+				for _, lookahead := range item.Lookahead {
+					if item.Rule.Head.String() == grammar.InitialSimbol.String() && lookahead.IsEnd {
+
+						table.ActionTable[stateKey][item.Lookahead[0]] = Action{
+							Shift:  lib.CreateNull[AFDNodeId](),
+							Reduce: lib.CreateNull[int](),
+							Accept: true,
+						}
+
+					} else {
+						ruleIndex := -1
+						for i, rule := range grammar.Rules {
+							if rule.EqualRule(&item.Rule) {
+								ruleIndex = i
+								break
+							}
+						}
+						if ruleIndex != -1 {
+							table.ActionTable[stateKey][lookahead] = NewReduceAction(ruleIndex)
+						}
+					}
+				}
+			}
+		}
+
+		for symbol, targetStateID := range state.Productions {
+			targetKey := fmt.Sprintf("%d", targetStateID)
+
+			symbolToken := grammar.GetTokenByString(symbol)
+
+			if symbolToken.IsTerminal() {
+				table.ActionTable[stateKey][symbolToken] = NewShiftAction(targetKey)
+			} else {
+				table.GoToTable[stateKey][symbolToken] = targetKey
+			}
+		}
+	}
+
+	return table
 }

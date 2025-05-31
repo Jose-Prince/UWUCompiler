@@ -478,3 +478,74 @@ func TestConvertToLALR(t *testing.T) {
 		t.Errorf("Esperábamos menos estados en LALR que en LR(1), pero LALR tiene %d y LR(1) tiene %d", lalrStateCount, lr1StateCount)
 	}
 }
+
+func TestGenerateParsingTable(t *testing.T) {
+	// Gramática simple:
+	// S → CC
+	// C → cC | d
+
+	S := NewNonTerminalToken("S")
+	C := NewNonTerminalToken("C")
+	c := NewTerminalToken("c")
+	d := NewTerminalToken("d")
+
+	rules := []GrammarRule{
+		{Head: S, Production: []GrammarToken{C, C}},
+		{Head: C, Production: []GrammarToken{c, C}},
+		{Head: C, Production: []GrammarToken{d}},
+	}
+
+	nonTerminals := lib.NewSet[GrammarToken]()
+	nonTerminals.Add(S)
+	nonTerminals.Add(C)
+
+	terminals := lib.NewSet[GrammarToken]()
+	terminals.Add(c)
+	terminals.Add(d)
+
+	g := Grammar{
+		Rules:         rules,
+		Terminals:     terminals,
+		NonTerminals:  nonTerminals,
+		InitialSimbol: S,
+	}
+
+	initialRule := GrammarRule{Head: NewNonTerminalToken("S'"), Production: []GrammarToken{S}}
+
+	// Construir autómata LR(1)
+	lr1 := InitializeAutomata(initialRule, g)
+	lalr := lr1
+	lalr.simplifyStates()
+
+	parsingTable := lalr.generateParsingTable(&g)
+
+	foundShift := false
+	foundReduce := false
+	foundAccept := false
+
+	for stateID, actions := range parsingTable.ActionTable {
+		for symbol, action := range actions {
+			t.Logf("State %v on symbol %v => Action: %+v", stateID, symbol.String(), action)
+
+			if action.Accept {
+				foundAccept = true
+			}
+			if action.Shift.HasValue() {
+				foundShift = true
+			}
+			if action.Reduce.HasValue() {
+				foundReduce = true
+			}
+		}
+	}
+
+	if !foundAccept {
+		t.Error("No se encontró ninguna acción de aceptación (Accept)")
+	}
+	if !foundShift {
+		t.Error("No se encontró ninguna acción Shift en la tabla de parseo")
+	}
+	if !foundReduce {
+		t.Error("No se encontró ninguna acción Reduce en la tabla de parseo")
+	}
+}
