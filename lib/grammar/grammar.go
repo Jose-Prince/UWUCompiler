@@ -420,7 +420,7 @@ func ParseYalFile(filename string) (Grammar, error) {
 
 	scanner := bufio.NewScanner(file)
 	mode := "header"
-	tokenIdCounter := 1
+	tokenIdCounter := 0
 
 	// Buffer to accumulate multi-line rules
 	var currentRule strings.Builder
