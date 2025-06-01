@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/Jose-Prince/UWUCompiler/lib/grammar"
@@ -84,7 +85,10 @@ func main() {
 	fmt.Println("The AFD is:", afd.String())
 
 	// TODO Parse yal fil
-	g, _ := grammar.ParseYalFile(params.GrammarFilePath)
+	g, err := grammar.ParseYalFile(params.GrammarFilePath)
+	if err != nil {
+		log.Panicf("Failed to parse grammar file: %s", err)
+	}
 
 	// g := grammar.Grammar{
 	// 	InitialSimbol: grammar.NewNonTerminalToken("S"),
@@ -111,7 +115,7 @@ func main() {
 	// 	},
 	// }
 
-	initialRule := grammar.GrammarRule{Head: grammar.NewNonTerminalToken("S'"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("S")}}
+	initialRule := grammar.GrammarRule{Head: grammar.NewNonTerminalToken("S'"), Production: []grammar.GrammarToken{g.InitialSimbol}}
 
 	lalr := grammar.InitializeAutomata(initialRule, g)
 	lalr.SimplifyStates()
