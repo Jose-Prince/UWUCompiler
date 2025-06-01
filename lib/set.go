@@ -121,3 +121,12 @@ func (self *Set[T]) ToSlice() []T {
 
 	return slice
 }
+
+func (self Set[T]) ToSlice_() []T {
+	slice := make([]T, 0, len(self))
+	for k := range self {
+		slice = append(slice, k)
+	}
+
+	return slice
+}

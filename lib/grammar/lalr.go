@@ -132,6 +132,9 @@ func closure(state AutomataState, grammar Grammar) {
 }
 
 func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
+	table := NewFirstFollowTable()
+	GetFirsts(&grammar, &table)
+
 	if len(sequence) == 0 {
 		return []GrammarToken{}
 	}
@@ -140,7 +143,7 @@ func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
 		return []GrammarToken{firstToken}
 	}
 
-	return grammar.First(firstToken)
+	return table.table[firstToken].First.ToSlice_()
 }
 
 func itemToKeyWithoutLookAhead(item AutomataItem) string {
