@@ -76,7 +76,7 @@ func convertGrammar(g *Grammar) parsertypes.Grammar {
 	}
 
 	grammar.NonTerminals = parsertypes.NewSet[parsertypes.GrammarToken]()
-	for term := range g.Terminals {
+	for term := range g.NonTerminals {
 		grammar.NonTerminals.Add(g.TokenToParserType(&term))
 	}
 
