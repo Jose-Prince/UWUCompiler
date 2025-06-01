@@ -116,6 +116,12 @@ func main() {
 	lalr := grammar.InitializeAutomata(initialRule, g)
 	lalr.SimplifyStates()
 
+	err = GenerateHTML(lalr, "lalr_automata.html")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("LALR HTML generated")
+
 	parsingTable := lalr.GenerateParsingTable(&g)
 
 	info := CompilerFileInfo{

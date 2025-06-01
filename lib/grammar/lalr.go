@@ -8,35 +8,35 @@ import (
 	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
-type automata struct {
-	nodes map[int]automataState
+type Automata struct {
+	Nodes map[int]AutomataState
 }
 
-type automataState struct {
-	Items       map[int]automataItem
+type AutomataState struct {
+	Items       map[int]AutomataItem
 	Productions map[string]int
 	Initial     bool
 	Accept      bool
 }
 
-type automataItem struct {
+type AutomataItem struct {
 	Rule        GrammarRule
 	DotPosition int
 	Lookahead   []GrammarToken
 }
 
-func InitializeAutomata(initialRule GrammarRule, grammar Grammar) automata {
-	lr1 := automata{
-		nodes: make(map[int]automataState),
+func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
+	lr1 := Automata{
+		Nodes: make(map[int]AutomataState),
 	}
-	initialItem := automataItem{
+	initialItem := AutomataItem{
 		Rule:        initialRule,
 		DotPosition: 0,
 		Lookahead:   []GrammarToken{NewEndToken()},
 	}
 
-	state := automataState{
-		Items:       make(map[int]automataItem),
+	state := AutomataState{
+		Items:       make(map[int]AutomataItem),
 		Productions: make(map[string]int),
 		Initial:     true,
 		Accept:      false,
@@ -46,14 +46,14 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) automata {
 
 	closure(state, grammar)
 
-	lr1.nodes[0] = state
+	lr1.Nodes[0] = state
 
 	generateStates(&lr1, grammar)
 
 	return lr1
 }
 
-func closure(state automataState, grammar Grammar) {
+func closure(state AutomataState, grammar Grammar) {
 	workList := make([]int, 0)
 
 	for i := range state.Items {
@@ -94,7 +94,7 @@ func closure(state automataState, grammar Grammar) {
 				continue
 			}
 
-			newItem := automataItem{
+			newItem := AutomataItem{
 				Rule:        rule,
 				DotPosition: 0,
 				Lookahead:   firstSet,
@@ -143,11 +143,11 @@ func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
 	return grammar.First(firstToken)
 }
 
-func itemToKeyWithoutLookAhead(item automataItem) string {
+func itemToKeyWithoutLookAhead(item AutomataItem) string {
 	return item.Rule.ToString() + "|" + fmt.Sprintf("%d", item.DotPosition)
 }
 
-func itemToKey(item automataItem) string {
+func itemToKey(item AutomataItem) string {
 	lookStrs := make([]string, len(item.Lookahead))
 	for i, l := range item.Lookahead {
 		lookStrs[i] = l.String()
@@ -184,7 +184,7 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 	return union
 }
 
-func generateStates(afd *automata, grammar Grammar) {
+func generateStates(afd *Automata, grammar Grammar) {
 	visited := lib.NewSet[int]()
 	changed := true
 
@@ -198,8 +198,8 @@ func generateStates(afd *automata, grammar Grammar) {
 
 		terms := append(nonTerminals, terminals...)
 
-		for k := range afd.nodes {
-			state := afd.nodes[k]
+		for k := range afd.Nodes {
+			state := afd.Nodes[k]
 
 			for _, nt := range terms {
 				for _, val := range state.Items {
@@ -208,8 +208,8 @@ func generateStates(afd *automata, grammar Grammar) {
 					}
 
 					if val.Rule.Production[val.DotPosition].Equal(&nt) {
-						newState := automataState{
-							Items:       make(map[int]automataItem),
+						newState := AutomataState{
+							Items:       make(map[int]AutomataItem),
 							Productions: make(map[string]int),
 							Initial:     false,
 							Accept:      false,
@@ -228,10 +228,10 @@ func generateStates(afd *automata, grammar Grammar) {
 							}
 						}
 
-						for _, s := range afd.nodes {
+						for _, s := range afd.Nodes {
 							if !equalState(s, newState) {
-								state.Productions[nt.String()] = len(afd.nodes)
-								afd.nodes[len(afd.nodes)] = newState
+								state.Productions[nt.String()] = len(afd.Nodes)
+								afd.Nodes[len(afd.Nodes)] = newState
 								visited.Add(k)
 								break
 							}
@@ -246,7 +246,7 @@ func generateStates(afd *automata, grammar Grammar) {
 	}
 }
 
-func equalState(a, b automataState) bool {
+func equalState(a, b AutomataState) bool {
 	if len(a.Items) != len(b.Items) {
 		return false
 	}
@@ -286,26 +286,26 @@ func equalLookahead(a, b []GrammarToken) bool {
 	return true
 }
 
-func (a *automata) SimplifyStates() {
+func (a *Automata) SimplifyStates() {
 	coreMap := make(map[string][]int)
 
-	for stateIdx, state := range a.nodes {
+	for stateIdx, state := range a.Nodes {
 		core := getCoreKey(state)
 		coreMap[core] = append(coreMap[core], stateIdx)
 	}
 
-	newNodes := make(map[int]automataState)
+	newNodes := make(map[int]AutomataState)
 	stateMapping := make(map[int]int)
 
 	newIdx := 0
 
 	for _, group := range coreMap {
-		mergedItems := make(map[string]automataItem)
+		mergedItems := make(map[string]AutomataItem)
 		initial := false
 		accept := false
 
 		for _, idx := range group {
-			origState := a.nodes[idx]
+			origState := a.Nodes[idx]
 
 			if origState.Initial {
 				initial = true
@@ -314,7 +314,7 @@ func (a *automata) SimplifyStates() {
 				accept = true
 			}
 
-			for _, item := range a.nodes[idx].Items {
+			for _, item := range a.Nodes[idx].Items {
 				key := itemToKeyWithoutLookAhead(item)
 				if existing, ok := mergedItems[key]; ok {
 					existing.Lookahead = unionLookaheads(existing.Lookahead, item.Lookahead)
@@ -325,14 +325,14 @@ func (a *automata) SimplifyStates() {
 			}
 		}
 
-		itemMap := make(map[int]automataItem)
+		itemMap := make(map[int]AutomataItem)
 		i := 0
 		for _, v := range mergedItems {
 			itemMap[i] = v
 			i++
 		}
 
-		newNodes[newIdx] = automataState{
+		newNodes[newIdx] = AutomataState{
 			Items:       itemMap,
 			Productions: make(map[string]int),
 			Initial:     initial,
@@ -345,7 +345,7 @@ func (a *automata) SimplifyStates() {
 		newIdx++
 	}
 
-	for oldIdx, oldState := range a.nodes {
+	for oldIdx, oldState := range a.Nodes {
 		newIdx := stateMapping[oldIdx]
 		for symbol, target := range oldState.Productions {
 			newTarget := stateMapping[target]
@@ -364,10 +364,10 @@ func (a *automata) SimplifyStates() {
 		newNodes[stateIdx] = st
 	}
 
-	a.nodes = newNodes
+	a.Nodes = newNodes
 }
 
-func getCoreKey(state automataState) string {
+func getCoreKey(state AutomataState) string {
 	coreItems := make([]string, 0)
 	for _, item := range state.Items {
 		coreItems = append(coreItems, itemToKeyWithoutLookAhead(item))
@@ -376,7 +376,7 @@ func getCoreKey(state automataState) string {
 	return fmt.Sprintf("%v", coreItems)
 }
 
-func (lalr *automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
+func (lalr *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 	table := ParsingTable{
 		ActionTable:   make(map[AFDNodeId]map[GrammarToken]Action),
 		GoToTable:     make(map[AFDNodeId]map[GrammarToken]AFDNodeId),
@@ -384,7 +384,7 @@ func (lalr *automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 		InitialNodeId: lalr.findInitialState(),
 	}
 
-	for stateID, state := range lalr.nodes {
+	for stateID, state := range lalr.Nodes {
 		stateKey := fmt.Sprintf("%d", stateID)
 
 		if _, exists := table.ActionTable[stateKey]; !exists {
@@ -438,8 +438,8 @@ func (lalr *automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 	return table
 }
 
-func (lalr *automata) findInitialState() string {
-	for key, state := range lalr.nodes {
+func (lalr *Automata) findInitialState() string {
+	for key, state := range lalr.Nodes {
 		if state.Initial {
 			keyStr := strconv.Itoa(key)
 			return keyStr
