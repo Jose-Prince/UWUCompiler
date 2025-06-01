@@ -98,15 +98,15 @@ const (
 }
 
 (* Character classes *)
-let letter          = ([a-zA-Z_])
+let letter          = ([a-z]|_|[A-Z])
 let decimal_digit   = ([0-9])
 let octal_digit     = ([0-7])
-let hex_digit       = ([0-9A-Fa-f])
+let hex_digit       = ([0-9]|[A-F]|[a-f])
 
 (* Number patterns *)
-let decimal_lit     = (([1-9][0-9]*)|0)
+let decimal_lit     = (([1-9]{decimal_digit}*)|0)
 let octal_lit       = (0[0-7]*)
-let hex_lit         = (0[xX][0-9A-Fa-f]+)
+let hex_lit         = (0[xX]{hex_digit}+)
 let float_lit = ({decimal_lit}\.{decimal_lit}?)
 let imaginary_lit   = ({decimal_lit}|{float_lit})i
 
