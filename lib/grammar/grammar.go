@@ -1,7 +1,9 @@
 package grammar
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
@@ -396,4 +398,244 @@ func (r1 GrammarRule) EqualRule(r2 *GrammarRule) bool {
 	}
 
 	return true
+}
+
+func ParseYalFile(filename string) (Grammar, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return Grammar{}, err
+	}
+	defer file.Close()
+
+	var (
+		terminals     = lib.NewSet[GrammarToken]()
+		nonTerminals  = lib.NewSet[GrammarToken]()
+		rules         []GrammarRule
+		tokenIds      = make(map[GrammarToken]parsertypes.GrammarToken)
+		initialSymbol GrammarToken
+		foundStart    = false
+	)
+
+	scanner := bufio.NewScanner(file)
+	mode := "header"
+	tokenIdCounter := 0
+
+	// Buffer to accumulate multi-line rules
+	var currentRule strings.Builder
+	var currentHead string
+	inRule := false
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments (both // and /* */ style)
+		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") {
+			continue
+		}
+
+		// Handle section separator
+		if line == "%%" {
+			mode = "rules"
+			continue
+		}
+
+		if mode == "header" {
+			// Parse token declarations
+			if strings.HasPrefix(line, "%token") {
+				// Handle both single and multiple tokens on one line
+				tokenLine := strings.TrimPrefix(line, "%token")
+				tokenLine = strings.TrimSpace(tokenLine)
+				parts := strings.Fields(tokenLine)
+
+				for _, part := range parts {
+					// Skip commented out tokens
+					if strings.HasPrefix(part, "/*") || strings.HasSuffix(part, "*/") {
+						continue
+					}
+
+					tok := NewTerminalToken(part)
+					terminals.Add(tok)
+					tokenIds[tok] = parsertypes.GrammarToken(tokenIdCounter)
+					tokenIdCounter++
+				}
+			} else if strings.HasPrefix(line, "%start") {
+				// Parse start symbol
+				sym := strings.TrimSpace(strings.TrimPrefix(line, "%start"))
+				initialSymbol = NewNonTerminalToken(sym)
+				nonTerminals.Add(initialSymbol)
+				foundStart = true
+			}
+		} else if mode == "rules" {
+			// Handle rule parsing
+			if strings.Contains(line, ":") {
+				// Process any accumulated rule first
+				if inRule && currentRule.Len() > 0 {
+					processRule(currentHead, currentRule.String(), &rules, terminals, nonTerminals)
+					currentRule.Reset()
+				}
+
+				// Start new rule
+				parts := strings.SplitN(line, ":", 2)
+				currentHead = strings.TrimSpace(parts[0])
+				ruleBody := strings.TrimSpace(parts[1])
+
+				// Add head to non-terminals
+				headToken := NewNonTerminalToken(currentHead)
+				nonTerminals.Add(headToken)
+
+				// If there's no start symbol defined, use the first rule's head
+				if !foundStart {
+					initialSymbol = headToken
+					foundStart = true
+				}
+
+				inRule = true
+				if ruleBody != "" {
+					currentRule.WriteString(ruleBody)
+				}
+			} else if inRule {
+				// Continue accumulating rule body
+				if line != "" {
+					if currentRule.Len() > 0 {
+						currentRule.WriteString(" ")
+					}
+					currentRule.WriteString(line)
+				}
+			}
+
+			// Check if rule ends with semicolon
+			if strings.HasSuffix(line, ";") {
+				if inRule && currentRule.Len() > 0 {
+					ruleStr := currentRule.String()
+					if strings.HasSuffix(ruleStr, ";") {
+						ruleStr = strings.TrimSuffix(ruleStr, ";")
+					}
+					processRule(currentHead, ruleStr, &rules, terminals, nonTerminals)
+					currentRule.Reset()
+					inRule = false
+				}
+			}
+		}
+	}
+
+	// Process any remaining rule
+	if inRule && currentRule.Len() > 0 {
+		ruleStr := currentRule.String()
+		if strings.HasSuffix(ruleStr, ";") {
+			ruleStr = strings.TrimSuffix(ruleStr, ";")
+		}
+		processRule(currentHead, ruleStr, &rules, terminals, nonTerminals)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return Grammar{}, err
+	}
+
+	if !foundStart {
+		return Grammar{}, fmt.Errorf("no start symbol defined and no rules found")
+	}
+
+	// Assign token IDs to non-terminals
+	for nonTerminal := range nonTerminals {
+		if _, exists := tokenIds[nonTerminal]; !exists {
+			tokenIds[nonTerminal] = parsertypes.GrammarToken(tokenIdCounter)
+			tokenIdCounter++
+		}
+	}
+
+	// Add end token
+	endToken := NewEndToken()
+	tokenIds[endToken] = parsertypes.GrammarToken(tokenIdCounter)
+
+	gram := Grammar{
+		InitialSimbol: initialSymbol,
+		Rules:         rules,
+		Terminals:     terminals,
+		NonTerminals:  nonTerminals,
+		TokenIds:      tokenIds,
+	}
+
+	return gram, nil
+}
+
+// processRule processes a complete rule body and creates grammar rules
+func processRule(headName, ruleBody string, rules *[]GrammarRule, terminals lib.Set[GrammarToken], nonTerminals lib.Set[GrammarToken]) {
+	headToken := NewNonTerminalToken(headName)
+	nonTerminals.Add(headToken)
+
+	// Split by | for alternative productions
+	alternatives := strings.Split(ruleBody, "|")
+
+	for _, alt := range alternatives {
+		alt = strings.TrimSpace(alt)
+		if alt == "" {
+			continue
+		}
+
+		production := []GrammarToken{}
+		symbols := strings.Fields(alt)
+
+		for _, sym := range symbols {
+			sym = strings.TrimSpace(sym)
+			if sym == "" {
+				continue
+			}
+
+			var tok GrammarToken
+
+			// Check for epsilon
+			if sym == "ε" || sym == "epsilon" || sym == "EPSILON" {
+				tok = CreateEpsilonToken()
+			} else if isTerminal(sym, terminals) {
+				tok = NewTerminalToken(sym)
+			} else {
+				// It's a non-terminal
+				tok = NewNonTerminalToken(sym)
+				nonTerminals.Add(tok)
+			}
+
+			production = append(production, tok)
+		}
+
+		// Handle empty production (epsilon)
+		if len(production) == 0 {
+			production = append(production, CreateEpsilonToken())
+		}
+
+		*rules = append(*rules, GrammarRule{
+			Head:       headToken,
+			Production: production,
+		})
+	}
+}
+
+func isTerminal(symbol string, terminals lib.Set[GrammarToken]) bool {
+	testToken := NewTerminalToken(symbol)
+	return terminals.Contains(testToken)
+}
+
+// Helper function to print grammar for debugging
+func (g Grammar) PrintGrammar() {
+	fmt.Println("=== GRAMMAR ===")
+	fmt.Printf("Initial Symbol: %s\n", g.InitialSimbol.String())
+
+	fmt.Println("\nTerminals:")
+	for terminal := range g.Terminals {
+		fmt.Printf("  %s\n", terminal.String())
+	}
+
+	fmt.Println("\nNon-Terminals:")
+	for nonTerminal := range g.NonTerminals {
+		fmt.Printf("  %s\n", nonTerminal.String())
+	}
+
+	fmt.Println("\nRules:")
+	for i, rule := range g.Rules {
+		fmt.Printf("  %d: %s\n", i, rule.ToString())
+	}
+
+	fmt.Println("\nToken IDs:")
+	for token, id := range g.TokenIds {
+		fmt.Printf("  %s -> %d\n", token.String(), id)
+	}
 }

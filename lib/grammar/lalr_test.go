@@ -81,13 +81,13 @@ func TestInitializeAutomata(t *testing.T) {
 	auto := InitializeAutomata(extendedRule, grammar)
 
 	// Obtenemos el estado inicial
-	state0, exists := auto.nodes[0]
+	state0, exists := auto.Nodes[0]
 	if !exists {
 		t.Fatalf("No se encontró el estado inicial")
 	}
 
 	// Verificamos que existan las producciones esperadas en el estado inicial
-	expectedItems := []automataItem{
+	expectedItems := []AutomataItem{
 		{
 			Rule:        extendedRule,
 			DotPosition: 0,
@@ -166,13 +166,13 @@ func TestInitializeAutomataBrolo(t *testing.T) {
 	auto := InitializeAutomata(extendedRule, grammar)
 
 	// Obtenemos el estado inicial
-	state0, exists := auto.nodes[0]
+	state0, exists := auto.Nodes[0]
 	if !exists {
 		t.Fatalf("No se encontró el estado inicial")
 	}
 
 	// Verificamos que existan las producciones esperadas en el estado inicial
-	expectedItems := []automataItem{
+	expectedItems := []AutomataItem{
 		{
 			Rule:        extendedRule,
 			DotPosition: 0,
@@ -239,7 +239,7 @@ func TestGeneratedStatesFromInitial(t *testing.T) {
 	auto := InitializeAutomata(extended, grammar)
 
 	// Crear estado esperado 1 (después de transición sobre S)
-	expectedItemsS := map[int]automataItem{
+	expectedItemsS := map[int]AutomataItem{
 		0: {
 			Rule:        rules[0], // A -> a A
 			DotPosition: 1,
@@ -247,7 +247,7 @@ func TestGeneratedStatesFromInitial(t *testing.T) {
 		},
 	}
 
-	expectedItemsA := map[int]automataItem{
+	expectedItemsA := map[int]AutomataItem{
 		0: {
 			Rule:        rules[1], // A -> a A
 			DotPosition: 1,
@@ -255,7 +255,7 @@ func TestGeneratedStatesFromInitial(t *testing.T) {
 		},
 	}
 
-	expectedItemsa := map[int]automataItem{
+	expectedItemsa := map[int]AutomataItem{
 		0: {
 			Rule:        rules[2], // A -> a A
 			DotPosition: 1,
@@ -268,7 +268,7 @@ func TestGeneratedStatesFromInitial(t *testing.T) {
 		},
 	}
 
-	expectedItemsb := map[int]automataItem{
+	expectedItemsb := map[int]AutomataItem{
 		0: {
 			Rule:        rules[3], // A -> a A
 			DotPosition: 1,
@@ -277,31 +277,31 @@ func TestGeneratedStatesFromInitial(t *testing.T) {
 	}
 
 	// Verificar si el estado generado contiene exactamente esos ítems
-	initial := auto.nodes[0]
+	initial := auto.Nodes[0]
 	targetStateID, ok := initial.Productions[S.String()]
 	if !ok {
 		t.Fatalf("No se encontró transición sobre símbolo %s", S.String())
 	}
 
-	targetState := auto.nodes[targetStateID]
+	targetState := auto.Nodes[targetStateID]
 	if !compareStateItems(targetState.Items, expectedItemsS) {
 		t.Errorf("Los ítems del estado %d no coinciden con los esperados", targetStateID)
 	}
-	targetState = auto.nodes[targetStateID+1]
+	targetState = auto.Nodes[targetStateID+1]
 	if !compareStateItems(targetState.Items, expectedItemsA) {
 		t.Errorf("Los ítems del estado %d no coinciden con los esperados", targetStateID)
 	}
-	targetState = auto.nodes[targetStateID+2]
+	targetState = auto.Nodes[targetStateID+2]
 	if !compareStateItems(targetState.Items, expectedItemsa) {
 		t.Errorf("Los ítems del estado %d no coinciden con los esperados", targetStateID)
 	}
-	targetState = auto.nodes[targetStateID+3]
+	targetState = auto.Nodes[targetStateID+3]
 	if !compareStateItems(targetState.Items, expectedItemsb) {
 		t.Errorf("Los ítems del estado %d no coinciden con los esperados", targetStateID)
 	}
 }
 
-func compareStateItems(actual, expected map[int]automataItem) bool {
+func compareStateItems(actual, expected map[int]AutomataItem) bool {
 	if len(actual) != len(expected) {
 		return false
 	}
@@ -354,17 +354,17 @@ func TestClosure(t *testing.T) {
 	grammar.NonTerminals.Add(T)
 
 	// Item inicial: E → .E + T, $
-	initialItem := automataItem{
+	initialItem := AutomataItem{
 		Rule:        GrammarRule{Head: NewNonTerminalToken("S'"), Production: []GrammarToken{E}},
 		DotPosition: 0,
 		Lookahead:   []GrammarToken{end},
 	}
 
-	initialItems := map[int]automataItem{
+	initialItems := map[int]AutomataItem{
 		0: initialItem,
 	}
 
-	instialState := automataState{
+	instialState := AutomataState{
 		Items:       initialItems,
 		Productions: make(map[string]int),
 	}
@@ -373,7 +373,7 @@ func TestClosure(t *testing.T) {
 	closure(instialState, grammar)
 
 	// Esperamos ver los siguientes ítems:
-	expected := []automataItem{
+	expected := []AutomataItem{
 		initialItem,
 		{
 			Rule:        rules[0], // E → . E + T
@@ -465,13 +465,13 @@ func TestConvertToLALR(t *testing.T) {
 	lr1 := InitializeAutomata(initialRule, g)
 	lalr := lr1
 
-	lr1StateCount := len(lr1.nodes)
+	lr1StateCount := len(lr1.Nodes)
 	t.Logf("Estados LR(1): %d", lr1StateCount)
 
 	// Convertir a LALR
 	lalr.SimplifyStates()
 
-	lalrStateCount := len(lalr.nodes)
+	lalrStateCount := len(lalr.Nodes)
 	t.Logf("Estados LALR: %d", lalrStateCount)
 
 	if lalrStateCount >= lr1StateCount {

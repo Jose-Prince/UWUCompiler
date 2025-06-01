@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Jose-Prince/UWUCompiler/lib"
 	"github.com/Jose-Prince/UWUCompiler/lib/grammar"
 	regx "github.com/Jose-Prince/UWUCompiler/lib/regex"
-	parsertypes "github.com/Jose-Prince/UWUCompiler/parserTypes"
 )
 
 type programParams struct {
@@ -85,31 +83,33 @@ func main() {
 	afd := table.ToAFD()
 	fmt.Println("The AFD is:", afd.String())
 
-	// // TODO Parse yal fil
-	g := grammar.Grammar{
-		InitialSimbol: grammar.NewNonTerminalToken("S"),
-		Rules: []grammar.GrammarRule{
-			{Head: grammar.NewNonTerminalToken("S"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("C"), grammar.NewNonTerminalToken("C")}},
-			{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("c"), grammar.NewNonTerminalToken("C")}},
-			{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("d")}},
-		},
-		TokenIds: map[grammar.GrammarToken]parsertypes.GrammarToken{
-			grammar.NewTerminalToken("c"):    0,
-			grammar.NewTerminalToken("d"):    1,
-			grammar.NewNonTerminalToken("S"): 2,
-			grammar.NewNonTerminalToken("C"): 3,
-			grammar.NewEndToken():            4,
-		},
-		Terminals: lib.Set[grammar.GrammarToken]{
-			grammar.NewTerminalToken("c"): struct{}{},
-			grammar.NewTerminalToken("d"): struct{}{},
-			grammar.NewEndToken():         struct{}{},
-		},
-		NonTerminals: lib.Set[grammar.GrammarToken]{
-			grammar.NewNonTerminalToken("C"): struct{}{},
-			grammar.NewNonTerminalToken("S"): struct{}{},
-		},
-	}
+	// TODO Parse yal fil
+	g, _ := grammar.ParseYalFile(params.GrammarFilePath)
+
+	// g := grammar.Grammar{
+	// 	InitialSimbol: grammar.NewNonTerminalToken("S"),
+	// 	Rules: []grammar.GrammarRule{
+	// 		{Head: grammar.NewNonTerminalToken("S"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("C"), grammar.NewNonTerminalToken("C")}},
+	// 		{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("c"), grammar.NewNonTerminalToken("C")}},
+	// 		{Head: grammar.NewNonTerminalToken("C"), Production: []grammar.GrammarToken{grammar.NewTerminalToken("d")}},
+	// 	},
+	// 	TokenIds: map[grammar.GrammarToken]parsertypes.GrammarToken{
+	// 		grammar.NewTerminalToken("c"):    0,
+	// 		grammar.NewTerminalToken("d"):    1,
+	// 		grammar.NewNonTerminalToken("S"): 2,
+	// 		grammar.NewNonTerminalToken("C"): 3,
+	// 		grammar.NewEndToken():            4,
+	// 	},
+	// 	Terminals: lib.Set[grammar.GrammarToken]{
+	// 		grammar.NewTerminalToken("c"): struct{}{},
+	// 		grammar.NewTerminalToken("d"): struct{}{},
+	// 		grammar.NewEndToken():         struct{}{},
+	// 	},
+	// 	NonTerminals: lib.Set[grammar.GrammarToken]{
+	// 		grammar.NewNonTerminalToken("C"): struct{}{},
+	// 		grammar.NewNonTerminalToken("S"): struct{}{},
+	// 	},
+	// }
 
 	initialRule := grammar.GrammarRule{Head: grammar.NewNonTerminalToken("S'"), Production: []grammar.GrammarToken{grammar.NewNonTerminalToken("S")}}
 
