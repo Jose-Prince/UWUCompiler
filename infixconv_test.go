@@ -276,5 +276,27 @@ func TestPythonExample(t *testing.T) {
 	}
 
 	compareTokensStreams(t, infix, expected, result)
+}
 
+func TestMultipleOr(t *testing.T) {
+	infix := "[1-3][0-2]"
+	result := DEFAULT_ALPHABET.InfixToTokens(infix)
+	expected := []l.RX_Token{
+		l.CreateOperatorToken(l.LEFT_PAREN),
+		l.CreateValueToken('1'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('2'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('3'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
+		l.CreateOperatorToken(l.AND),
+		l.CreateOperatorToken(l.LEFT_PAREN),
+		l.CreateValueToken('0'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('1'),
+		l.CreateOperatorToken(l.OR),
+		l.CreateValueToken('2'),
+		l.CreateOperatorToken(l.RIGHT_PAREN),
+	}
+	compareTokensStreams(t, infix, expected, result)
 }
