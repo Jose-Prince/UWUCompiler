@@ -20,7 +20,7 @@ const (
 )
 }
 
-let letter = [a-zA-Z_]
+let letter = ([a-z]|_|[A-Z])
 let decimal_digit = [0-9]
 
 let identifier = ({letter}({letter}|{decimal_digit})*)
