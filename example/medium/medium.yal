@@ -1,0 +1,67 @@
+/* ========== PARSER DEFINITION FOR SIMPLE LANGUAGE ========== */
+
+/* INICIA Sección de TOKENS */
+%token LET IF WHILE ASSIGN PLUS MINUS MULT DIV GT LT EQ
+%token LPAREN RPAREN LBRACE RBRACE ID NUMBER WS
+IGNORE WS
+
+/* FINALIZA Sección de TOKENS */
+
+%%
+
+/* INICIA Sección de PRODUCCIONES */
+
+program:
+    program statement
+  | statement
+;
+
+statement:
+    var_decl
+  | if_stmt
+  | while_stmt
+  | expression
+  | block
+;
+
+var_decl:
+    LET ID ASSIGN expression
+;
+
+if_stmt:
+    IF expression block
+;
+
+while_stmt:
+    WHILE expression block
+;
+
+block:
+    LBRACE statement_list RBRACE
+;
+
+statement_list:
+    statement_list statement
+  | statement
+;
+
+expression:
+    expression PLUS expression
+  | expression MINUS expression
+  | expression EQ expression
+  | term
+;
+
+term:
+    term MULT factor
+  | term DIV factor
+  | factor
+;
+
+factor:
+    LPAREN expression RPAREN
+  | ID
+  | NUMBER
+;
+
+/* FINALIZA Sección de PRODUCCIONES */
