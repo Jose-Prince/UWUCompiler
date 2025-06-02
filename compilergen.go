@@ -485,6 +485,15 @@ func markRed(contents []byte, start, end int) string {
 	return fmt.Sprintf("%s\033[31;1;4m%s\033[0m%s", prefix, contents[start:end], postfix)
 }
 
+var TokenArrayMap = `)
+	writer.WriteString(removeModulesFromStaticType(fmt.Sprintf("%#v", info.ParsingTable.Original.TransposeTokenIds())))
+
+	writer.WriteString(`
+
+func TokenToHuman(tk int) string {
+	return fmt.Sprintf("%d (%s)", tk, TokenArrayMap[tk])
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Please supply only a source file as argument!\n")
@@ -601,7 +610,8 @@ ON (%s:%d:%d)
 
 					for k := range table.ActionTable[nodeId] {
 						b.WriteString("- ")
-						b.WriteString(strconv.FormatInt(int64(k), 10))
+						b.WriteString(TokenToHuman(k))
+						// b.WriteString(strconv.FormatInt(int64(k), 10))
 						b.WriteString("\n")
 					}
 

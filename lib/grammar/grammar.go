@@ -181,6 +181,27 @@ type Grammar struct {
 	TokenIds map[GrammarToken]parsertypes.GrammarToken
 }
 
+func (g *Grammar) TransposeTokenIds() []string {
+	ids := make([]string, len(g.TokenIds))
+
+	for k, v := range g.TokenIds {
+		str := "<EOF>"
+		if k.IsTerminal() {
+			if !k.Terminal.GetValue().HasValue() {
+				str = ""
+			} else {
+				str = k.Terminal.GetValue().GetValue()
+			}
+		} else if k.IsNonTerminal() {
+			str = fmt.Sprintf("<%s>", k.NonTerminal.GetValue())
+		}
+
+		ids[v] = str
+	}
+
+	return ids
+}
+
 func (g *Grammar) GetTokenByString(tokenStr string) GrammarToken {
 	if tokenStr == "$" || tokenStr == "EOF" || tokenStr == "END" {
 		return NewEndToken()
