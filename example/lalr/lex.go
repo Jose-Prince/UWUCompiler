@@ -1,21 +1,22 @@
+
 package main
+
 
 // Lexer imports
 import (
-	"cmp"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
+	"cmp"
+	"slices"
+)
+	const (
+C int = iota
+D
 )
 
-const (
-	C int = iota
-	D
-)
-
-const END_TOKEN_TYPE = 4
+const END_TOKEN_TYPE =4
 const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
 const IGNORE int = -3
@@ -331,6 +332,29 @@ func (item ParseItem) GetToken() GrammarToken {
 	return item.Token.GetValue()
 }
 
+func getLineAndCol(contents []byte, idx int) (int, int) {
+	line := 0
+	col := 0
+
+	for i := range idx {
+		if contents[i] == '\n' {
+			line++
+			col = 0
+		} else {
+			col++
+		}
+	}
+
+	return line + 1, col + 1
+}
+
+func markCharRed(contents []byte, idx int) string {
+	prefix := contents[:idx]
+	postfix := contents[idx+1:]
+
+	return fmt.Sprintf("%s\033[31;1;4m%c\033[0m%s", prefix, contents[idx], postfix)
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Please supply only a source file as argument!\n")
@@ -352,19 +376,30 @@ func main() {
 		j := 0
 		for j = i; j < len(sourceFileContent); j++ {
 			parsingResult := gettoken(&afdState, rune(sourceFileContent[j]))
-			if parsingResult == IGNORE {
 
-			} else if parsingResult == UNRECOGNIZABLE {
-				foundSomething := previousParsingResult != -1000
-				if foundSomething {
+			if parsingResult == UNRECOGNIZABLE {
+				foundSomething := previousParsingResult != -1000 
+				if previousParsingResult == IGNORE {
+
+				} else if foundSomething {
 					token := Token{Start: i, Type: previousParsingResult}
 					tokens = append(tokens, token)
 					fmt.Println(token.String())
 					i = j - 1
 					break
 				} else {
-					i = j
-					break
+					line, col := getLineAndCol(sourceFileContent, j)
+					start := i
+					if len(tokens) > 0 {
+						tokensBackwards := min(len(tokens), 5)
+						start = tokens[len(tokens)-tokensBackwards].Start
+					}
+					panic(fmt.Sprintf(`
+SYNTAX ERROR: Unexpected character (%c)
+==============================================
+ON (%s:%d:%d)
+%s`, sourceFileContent[j], sourceFilePath, line, col, markCharRed(sourceFileContent[start:j+2], j)))
+
 				}
 			} else if parsingResult != GIVE_NEXT {
 				previousParsingResult = parsingResult
@@ -372,9 +407,9 @@ func main() {
 		}
 	}
 
-	tokens = append(tokens, Token{Start: len(sourceFileContent), Type: END_TOKEN_TYPE})
+	tokens = append(tokens, Token {Start: len(sourceFileContent), Type: END_TOKEN_TYPE})
 
-	table := ParsingTable{ActionTable: map[string]map[int]Action{"0": map[int]Action{0: Action{Shift: Optional[string]{isValid: true, value: "0"}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: false}, 1: Action{Shift: Optional[string]{isValid: true, value: "2"}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: false}}, "1": map[int]Action{4: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 0}, Accept: false}}, "2": map[int]Action{0: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 2}, Accept: false}, 1: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 2}, Accept: false}, 4: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 2}, Accept: false}}, "3": map[int]Action{0: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 1}, Accept: false}, 1: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 1}, Accept: false}, 4: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: true, value: 1}, Accept: false}}, "4": map[int]Action{0: Action{Shift: Optional[string]{isValid: true, value: "0"}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: false}, 1: Action{Shift: Optional[string]{isValid: true, value: "2"}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: false}}, "5": map[int]Action{0: Action{Shift: Optional[string]{isValid: true, value: "0"}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: false}, 1: Action{Shift: Optional[string]{isValid: true, value: "2"}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: false}}, "6": map[int]Action{4: Action{Shift: Optional[string]{isValid: false, value: ""}, Reduce: Optional[int]{isValid: false, value: 0}, Accept: true}}}, GoToTable: map[string]map[int]string{"0": map[int]string{3: "3"}, "4": map[int]string{3: "1"}, "5": map[int]string{2: "6", 3: "4"}}, Original: Grammar{InitialSimbol: 2, Rules: []GrammarRule{GrammarRule{Head: 2, Production: []int{3, 3}}, GrammarRule{Head: 3, Production: []int{0, 3}}, GrammarRule{Head: 3, Production: []int{1}}}, Terminals: Set[int]{0: struct{}{}, 1: struct{}{}, 4: struct{}{}}, NonTerminals: Set[int]{2: struct{}{}, 3: struct{}{}}}, InitialNodeId: "5"}
+	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}, "1":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "2":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "3":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "4":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}, "5":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "6":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:0}, Accept:false}}}, GoToTable:map[string]map[int]string{"1":map[int]string{2:"5", 3:"2"}, "2":map[int]string{3:"6"}, "3":map[int]string{3:"0"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{2:struct {}{}, 3:struct {}{}}}, InitialNodeId:"1"}
 
 	isAccepted := false
 	stack := Stack[ParseItem]{}
@@ -459,50 +494,50 @@ func main() {
 }
 
 func gettoken(state *string, input rune) int {
-	switch *state {
-	case "[ 0, 1, 3, 5, 18, 22, ]":
-		switch input {
-		case '\n':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		case '\t':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		case ' ':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		case 'd':
-			*state = "[ 23, ]"
-			return D
-		case 'c':
-			*state = "[ 19, ]"
-			return C
-		case '\r':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		}
-	case "[ 23, ]":
-		switch input {
-		}
-	case "[ 19, ]":
-		switch input {
-		}
-	case "[ 7, 8, 10, 12, 16, ]":
-		switch input {
-		case '\t':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		case ' ':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		case '\r':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		case '\n':
-			*state = "[ 7, 8, 10, 12, 16, ]"
-			return IGNORE
-		}
+switch *state {
+case "[ 0, 1, 3, 5, 18, 22, ]":
+	switch input {
+case '\t':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case 'c':
+		*state = "[ 19, ]"
+return C
+case ' ':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case '\n':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case 'd':
+		*state = "[ 23, ]"
+return D
+case '\r':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+}
+case "[ 7, 8, 10, 12, 16, ]":
+	switch input {
+case '\n':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case '\t':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case ' ':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case '\r':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+}
+case "[ 19, ]":
+	switch input {
+}
+case "[ 23, ]":
+	switch input {
+}
 
-	}
-	return UNRECOGNIZABLE
+}
+return UNRECOGNIZABLE
 }
