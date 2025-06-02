@@ -102,6 +102,11 @@ func _simplifyIntoSwitch(afd *reg.AFD, state reg.AFDState, sw *afdSwitch, visite
 		for input, childrenState := range afd.Transitions[state] {
 			if childrenState == childState {
 				tranRune = input.GetValue().GetValue()
+				// if afd.StateHasOnlyDummyTransitions(childState) {
+				// 	sw.Transitions[state][tranRune] = afdLeafInfo{NewState: state, Code: code}
+				// } else {
+				// 	sw.Transitions[state][tranRune] = afdLeafInfo{NewState: childState, Code: code}
+				// }
 				sw.Transitions[state][tranRune] = afdLeafInfo{NewState: childState, Code: code}
 			}
 		}
@@ -138,6 +143,7 @@ const END_TOKEN_TYPE =`)
 	writer.WriteString(`
 const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
+const INVALID_TRANSITION int = -3
 
 const CMD_HELP = `)
 	writer.WriteRune('`')
@@ -475,10 +481,23 @@ func main() {
 	writer.WriteString(`" // INITIAL AFD STATE!
 
 		previousParsingResult := -1000
+		// previousParsingResult := UNRECOGNIZABLE
 		j := 0
 		for j = i; j < len(sourceFileContent); j++ {
 			parsingResult := gettoken(&afdState, rune(sourceFileContent[j]))
-			if parsingResult == UNRECOGNIZABLE {
+			if parsingResult == INVALID_TRANSITION {
+				line, col := getLineAndCol(sourceFileContent, j)
+				start := min(i, len(tokens), 3)
+				panic(fmt.Sprintf(`)
+	writer.WriteString("`")
+	writer.WriteString(`
+SYNTAX ERROR: Unexpected character (%c)
+==============================================
+ON (%s:%d:%d)
+%s`)
+	writer.WriteString("`, sourceFileContent[j], sourceFilePath, line, col, sourceFileContent[start:j+2]))")
+
+	writer.WriteString(`} else if parsingResult == UNRECOGNIZABLE {
 				foundSomething := previousParsingResult != -1000
 				if foundSomething {
 					token := Token{Start: i, Type: previousParsingResult}
@@ -588,6 +607,22 @@ func main() {
 	}
 }
 
+func getLineAndCol(contents []byte, idx int) (int, int) {
+	line := 0
+	col := 0
+
+	for i := range idx {
+		if contents[i] == '\n' {
+			line++
+			col = 0
+		} else {
+			col++
+		}
+	}
+
+	return line+1, col+1
+}
+
 func gettoken(state *string, input rune) int {
 `)
 
@@ -642,6 +677,11 @@ func _writeTo(s *afdSwitch, w *bufio.Writer, state reg.AFDState, alreadyWrittenS
 		w.WriteString("\"\n")
 		w.WriteString(caseInfo.Code)
 		w.WriteRune('\n')
+	}
+	if len(s.Transitions[state]) > 0 {
+		w.WriteString(`default:
+	return INVALID_TRANSITION
+`)
 	}
 	w.WriteString("}\n")
 
