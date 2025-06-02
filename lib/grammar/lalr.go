@@ -188,65 +188,103 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 }
 
 func generateStates(afd *Automata, grammar Grammar) {
+	stateQueue := []int{0}
 	visited := lib.NewSet[int]()
-	changed := true
 
+	for len(stateQueue) > 0 {
+		currentStateId := stateQueue[0]
+		stateQueue = stateQueue[1:]
+
+		if visited.Contains(currentStateId) {
+			continue
+		}
+		visited.Add(currentStateId)
+
+		currentState := afd.Nodes[currentStateId]
+
+		transitions := getTransitions(currentState, grammar)
+
+		for symbol, items := range transitions {
+			newState := createNewState(items, grammar)
+
+			existingStateId := findEquivalentState(afd, newState)
+
+			if existingStateId == -1 {
+				newStateId := len(afd.Nodes)
+				afd.Nodes[newStateId] = newState
+				currentState.Productions[symbol] = newStateId
+				stateQueue = append(stateQueue, newStateId)
+			} else {
+				currentState.Productions[symbol] = existingStateId
+			}
+		}
+
+		afd.Nodes[currentStateId] = currentState
+	}
+}
+
+func getTransitions(state AutomataState, grammar Grammar) map[string][]AutomataItem {
+	transitions := make(map[string][]AutomataItem)
+
+	for _, item := range state.Items {
+		if item.DotPosition < len(item.Rule.Production) {
+			symbol := item.Rule.Production[item.DotPosition]
+			symbolStr := symbol.String()
+
+			// Create new item with dot moved forward
+			newItem := AutomataItem{
+				Rule:        item.Rule,
+				DotPosition: item.DotPosition + 1,
+				Lookahead:   item.Lookahead,
+			}
+
+			transitions[symbolStr] = append(transitions[symbolStr], newItem)
+		}
+	}
+
+	return transitions
+}
+
+func createNewState(items []AutomataItem, grammar Grammar) AutomataState {
+	newState := AutomataState{
+		Items:       make(map[int]AutomataItem),
+		Productions: make(map[string]int),
+		Initial:     false,
+		Accept:      false,
+	}
+
+	// Add kernel items
+	for i, item := range items {
+		newState.Items[i] = item
+	}
+
+	// Compute closure
+	closure(newState, grammar)
+
+	// Check if this is an accept state
 	initialToken := NewNonTerminalToken("S'")
-
-	for changed {
-		changed = false
-
-		terminals := grammar.Terminals.ToSlice()
-		nonTerminals := grammar.NonTerminals.ToSlice()
-
-		terms := append(nonTerminals, terminals...)
-
-		for k := range afd.Nodes {
-			state := afd.Nodes[k]
-
-			for _, nt := range terms {
-				for _, val := range state.Items {
-					if val.DotPosition >= len(val.Rule.Production) {
-						continue
-					}
-
-					if val.Rule.Production[val.DotPosition].Equal(&nt) {
-						newState := AutomataState{
-							Items:       make(map[int]AutomataItem),
-							Productions: make(map[string]int),
-							Initial:     false,
-							Accept:      false,
-						}
-
-						newItem := val
-						newItem.DotPosition = val.DotPosition + 1
-						newState.Items[0] = newItem
-
-						closure(newState, grammar)
-
-						for _, item := range newState.Items {
-							if item.Rule.Head.Equal(&initialToken) && item.DotPosition == len(item.Rule.Production) && item.Lookahead[0].IsEnd {
-								newState.Accept = true
-								break
-							}
-						}
-
-						for _, s := range afd.Nodes {
-							if !equalState(s, newState) {
-								state.Productions[nt.String()] = len(afd.Nodes)
-								afd.Nodes[len(afd.Nodes)] = newState
-								visited.Add(k)
-								break
-							}
-						}
-
-						break
-
-					}
+	for _, item := range newState.Items {
+		if item.Rule.Head.Equal(&initialToken) &&
+			item.DotPosition == len(item.Rule.Production) {
+			for _, lookahead := range item.Lookahead {
+				if lookahead.IsEnd {
+					newState.Accept = true
+					break
 				}
 			}
 		}
 	}
+
+	return newState
+}
+
+func findEquivalentState(afd *Automata, newState AutomataState) int {
+	for stateId, existingState := range afd.Nodes {
+		if equalState(existingState, newState) {
+			return stateId
+		}
+	}
+	return -1
 }
 
 func equalState(a, b AutomataState) bool {
@@ -474,13 +512,13 @@ func (lalr *Automata) findRuleIndex(rule GrammarRule, grammar *Grammar) int {
 
 func (lalr *Automata) setAction(table *ParsingTable, stateKey string, symbol GrammarToken, newAction Action, conflicts map[string][]string) {
 	if existingAction, exists := table.ActionTable[stateKey][symbol]; exists {
-		conflictType := lalr.resolveConflict(existingAction, newAction, symbol)
+		conflictType := lalr.resolveConflict(existingAction, newAction)
 		if conflictType != "" {
 			conflictMsg := fmt.Sprintf("%s conflict on symbol %s: existing=%s, new=%s",
 				conflictType, symbol.String(), actionToString(existingAction), actionToString(newAction))
 			conflicts[stateKey] = append(conflicts[stateKey], conflictMsg)
 
-			resolvedAction := lalr.applyConflictResolution(existingAction, newAction, symbol)
+			resolvedAction := lalr.applyConflictResolution(existingAction, newAction)
 			table.ActionTable[stateKey][symbol] = resolvedAction
 		}
 	} else {
@@ -488,7 +526,7 @@ func (lalr *Automata) setAction(table *ParsingTable, stateKey string, symbol Gra
 	}
 }
 
-func (lalr *Automata) resolveConflict(existing, new Action, symbol GrammarToken) string {
+func (lalr *Automata) resolveConflict(existing, new Action) string {
 	if existing.Shift.HasValue() && new.Shift.HasValue() {
 		return "shift-shift"
 	}
@@ -502,7 +540,7 @@ func (lalr *Automata) resolveConflict(existing, new Action, symbol GrammarToken)
 	return ""
 }
 
-func (lalr *Automata) applyConflictResolution(existing, new Action, symbol GrammarToken) Action {
+func (lalr *Automata) applyConflictResolution(existing, new Action) Action {
 	if existing.Shift.HasValue() && new.Reduce.HasValue() {
 		return existing
 	}
