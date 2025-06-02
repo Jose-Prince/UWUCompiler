@@ -595,16 +595,32 @@ ON (%s:%d:%d)
 					msg = "Unexpected EOF Reached!"
 				}
 
+				meantOptions := "(No options)"
+				if len(table.ActionTable[nodeId]) > 0 {
+					b := strings.Builder{}
+
+					for k := range table.ActionTable[nodeId] {
+						b.WriteString("- ")
+						b.WriteString(strconv.FormatInt(int64(k), 10))
+						b.WriteString("\n")
+					}
+
+					meantOptions = b.String()
+				}
+
 				panic(fmt.Sprintf(`)
 	writer.WriteString("`")
 	writer.WriteString(`
 GRAMMAR ERROR: %s
+Maybe you meant:
+%s
 ==============================================
 ON (%s:%d:%d)
 %s`)
 	writer.WriteString("`")
 	writer.WriteString(`,
 					msg,
+					meantOptions,
 					sourceFilePath,
 					line, col,
 					markRed(sourceFileContent[previewStart:previewEnd], token.Start-previewStart, tokenEnd-previewStart)))
