@@ -5,6 +5,9 @@
 	)
 }
 
+let whitespace      = ([ \t\r\n]+)
+
 rule gettoken =
-	'c' {return C}
+	{whitespace} {return IGNORE}
+	| 'c' {return C}
 	| 'd' {return D}
