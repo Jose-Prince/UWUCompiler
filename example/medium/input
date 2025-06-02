@@ -1,5 +1,5 @@
-let abc := 5
+let abc :5 10
 
-if (abc == 5) {
+if abc == 5 {
 	2+2
 }
