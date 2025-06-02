@@ -21,6 +21,9 @@ const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
 const IGNORE int = -3
 
+
+const CONTEXT_TOKENS int = 10
+
 const CMD_HELP = `Tokenizes a specified source file
 Usage: lexer <source file>`
 
@@ -348,11 +351,14 @@ func getLineAndCol(contents []byte, idx int) (int, int) {
 	return line + 1, col + 1
 }
 
-func markCharRed(contents []byte, idx int) string {
-	prefix := contents[:idx]
-	postfix := contents[idx+1:]
+func markRed(contents []byte, start, end int) string {
+	prefix := contents[:start]
+	postfix := []byte{}
+	if end < len(contents) {
+		postfix = contents[end:]
+	}
 
-	return fmt.Sprintf("%s\033[31;1;4m%c\033[0m%s", prefix, contents[idx], postfix)
+	return fmt.Sprintf("%s\033[31;1;4m%s\033[0m%s", prefix, contents[start:end], postfix)
 }
 
 func main() {
@@ -391,14 +397,19 @@ func main() {
 					line, col := getLineAndCol(sourceFileContent, j)
 					start := i
 					if len(tokens) > 0 {
-						tokensBackwards := min(len(tokens), 5)
+						tokensBackwards := min(len(tokens), CONTEXT_TOKENS)
 						start = tokens[len(tokens)-tokensBackwards].Start
 					}
+					
+					end := min(len(sourceFileContent), j+10)
 					panic(fmt.Sprintf(`
 SYNTAX ERROR: Unexpected character (%c)
 ==============================================
 ON (%s:%d:%d)
-%s`, sourceFileContent[j], sourceFilePath, line, col, markCharRed(sourceFileContent[start:j+2], j)))
+%s`, sourceFileContent[j],
+	sourceFilePath,
+	line, col,
+	markRed(sourceFileContent[start:end], j-start, j-start+1)))
 
 				}
 			} else if parsingResult != GIVE_NEXT {
@@ -409,7 +420,7 @@ ON (%s:%d:%d)
 
 	tokens = append(tokens, Token {Start: len(sourceFileContent), Type: END_TOKEN_TYPE})
 
-	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}, "1":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "2":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "3":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"3"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"4"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "4":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}, "5":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "6":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:0}, Accept:false}}}, GoToTable:map[string]map[int]string{"1":map[int]string{2:"5", 3:"2"}, "2":map[int]string{3:"6"}, "3":map[int]string{3:"0"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{2:struct {}{}, 3:struct {}{}}}, InitialNodeId:"1"}
+	table := ParsingTable{ActionTable:map[string]map[int]Action{"0":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:1}, Accept:false}}, "1":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"5"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"6"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "2":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:false, value:0}, Accept:true}}, "3":map[int]Action{4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:0}, Accept:false}}, "4":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"5"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"6"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "5":map[int]Action{0:Action{Shift:Optional[string]{isValid:true, value:"5"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:true, value:"6"}, Reduce:Optional[int]{isValid:false, value:0}, Accept:false}}, "6":map[int]Action{0:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 1:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}, 4:Action{Shift:Optional[string]{isValid:false, value:""}, Reduce:Optional[int]{isValid:true, value:2}, Accept:false}}}, GoToTable:map[string]map[int]string{"1":map[int]string{2:"2", 3:"4"}, "4":map[int]string{3:"3"}, "5":map[int]string{3:"0"}}, Original:Grammar{InitialSimbol:2, Rules:[]GrammarRule{GrammarRule{Head:2, Production:[]int{3, 3}}, GrammarRule{Head:3, Production:[]int{0, 3}}, GrammarRule{Head:3, Production:[]int{1}}}, Terminals:Set[int]{0:struct {}{}, 1:struct {}{}, 4:struct {}{}}, NonTerminals:Set[int]{2:struct {}{}, 3:struct {}{}}}, InitialNodeId:"1"}
 
 	isAccepted := false
 	stack := Stack[ParseItem]{}
@@ -430,7 +441,35 @@ ON (%s:%d:%d)
 		// go check the action table
 		isTerminal := table.Original.Terminals.Contains(token.Type)
 		if isTerminal {
-			action := table.ActionTable[nodeId][token.Type]
+			action, found := table.ActionTable[nodeId][token.Type]
+			if !found {
+				if token.Type == END_TOKEN_TYPE {
+				}
+				tokenEnd := len(sourceFileContent)
+				if i+1 < len(tokens) {
+					tokenEnd = tokens[i+1].Start
+				}
+				line, col := getLineAndCol(sourceFileContent, token.Start)
+
+				previewStart := tokens[i-min(i, CONTEXT_TOKENS)].Start
+				previewEnd := tokens[i+min(len(tokens)-(i+1), CONTEXT_TOKENS)].Start
+
+				msg := fmt.Sprintf("Unexpected token (%s) : (%s)", sourceFileContent[token.Start:tokenEnd], token.String())
+				if token.Type == END_TOKEN_TYPE {
+					msg = "Unexpected EOF Reached!"
+				}
+
+				panic(fmt.Sprintf(`
+GRAMMAR ERROR: %s
+==============================================
+ON (%s:%d:%d)
+%s`,
+					msg,
+					sourceFilePath,
+					line, col,
+					markRed(sourceFileContent[previewStart:previewEnd], token.Start-previewStart, tokenEnd-previewStart)))
+			}
+
 			if action.Accept {
 				isAccepted = true
 				break
@@ -497,44 +536,44 @@ func gettoken(state *string, input rune) int {
 switch *state {
 case "[ 0, 1, 3, 5, 18, 22, ]":
 	switch input {
-case '\t':
-		*state = "[ 7, 8, 10, 12, 16, ]"
-return IGNORE
-case 'c':
-		*state = "[ 19, ]"
-return C
-case ' ':
-		*state = "[ 7, 8, 10, 12, 16, ]"
-return IGNORE
 case '\n':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case '\t':
 		*state = "[ 7, 8, 10, 12, 16, ]"
 return IGNORE
 case 'd':
 		*state = "[ 23, ]"
 return D
-case '\r':
-		*state = "[ 7, 8, 10, 12, 16, ]"
-return IGNORE
-}
-case "[ 7, 8, 10, 12, 16, ]":
-	switch input {
-case '\n':
-		*state = "[ 7, 8, 10, 12, 16, ]"
-return IGNORE
-case '\t':
-		*state = "[ 7, 8, 10, 12, 16, ]"
-return IGNORE
 case ' ':
 		*state = "[ 7, 8, 10, 12, 16, ]"
 return IGNORE
 case '\r':
 		*state = "[ 7, 8, 10, 12, 16, ]"
 return IGNORE
+case 'c':
+		*state = "[ 19, ]"
+return C
 }
-case "[ 19, ]":
+case "[ 7, 8, 10, 12, 16, ]":
 	switch input {
+case '\r':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case ' ':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case '\t':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
+case '\n':
+		*state = "[ 7, 8, 10, 12, 16, ]"
+return IGNORE
 }
 case "[ 23, ]":
+	switch input {
+}
+case "[ 19, ]":
 	switch input {
 }
 

@@ -140,6 +140,9 @@ const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
 const IGNORE int = -3
 
+
+const CONTEXT_TOKENS int = 10
+
 const CMD_HELP = `)
 	writer.WriteRune('`')
 	writer.WriteString(
@@ -472,11 +475,14 @@ func getLineAndCol(contents []byte, idx int) (int, int) {
 	return line + 1, col + 1
 }
 
-func markCharRed(contents []byte, idx int) string {
-	prefix := contents[:idx]
-	postfix := contents[idx+1:]
+func markRed(contents []byte, start, end int) string {
+	prefix := contents[:start]
+	postfix := []byte{}
+	if end < len(contents) {
+		postfix = contents[end:]
+	}
 
-	return fmt.Sprintf("%s\033[31;1;4m%c\033[0m%s", prefix, contents[idx], postfix)
+	return fmt.Sprintf("%s\033[31;1;4m%s\033[0m%s", prefix, contents[start:end], postfix)
 }
 
 func main() {
@@ -517,9 +523,11 @@ func main() {
 					line, col := getLineAndCol(sourceFileContent, j)
 					start := i
 					if len(tokens) > 0 {
-						tokensBackwards := min(len(tokens), 5)
+						tokensBackwards := min(len(tokens), CONTEXT_TOKENS)
 						start = tokens[len(tokens)-tokensBackwards].Start
 					}
+					
+					end := min(len(sourceFileContent), j+10)
 					panic(fmt.Sprintf(`)
 	writer.WriteRune('`')
 	writer.WriteString(`
@@ -528,7 +536,10 @@ SYNTAX ERROR: Unexpected character (%c)
 ON (%s:%d:%d)
 %s`)
 	writer.WriteRune('`')
-	writer.WriteString(`, sourceFileContent[j], sourceFilePath, line, col, markCharRed(sourceFileContent[start:j+2], j-start)))
+	writer.WriteString(`, sourceFileContent[j],
+	sourceFilePath,
+	line, col,
+	markRed(sourceFileContent[start:end], j-start, j-start+1)))
 
 				}
 			} else if parsingResult != GIVE_NEXT {
@@ -566,7 +577,39 @@ ON (%s:%d:%d)
 		// go check the action table
 		isTerminal := table.Original.Terminals.Contains(token.Type)
 		if isTerminal {
-			action := table.ActionTable[nodeId][token.Type]
+			action, found := table.ActionTable[nodeId][token.Type]
+			if !found {
+				if token.Type == END_TOKEN_TYPE {
+				}
+				tokenEnd := len(sourceFileContent)
+				if i+1 < len(tokens) {
+					tokenEnd = tokens[i+1].Start
+				}
+				line, col := getLineAndCol(sourceFileContent, token.Start)
+
+				previewStart := tokens[i-min(i, CONTEXT_TOKENS)].Start
+				previewEnd := tokens[i+min(len(tokens)-(i+1), CONTEXT_TOKENS)].Start
+
+				msg := fmt.Sprintf("Unexpected token (%s) : (%s)", sourceFileContent[token.Start:tokenEnd], token.String())
+				if token.Type == END_TOKEN_TYPE {
+					msg = "Unexpected EOF Reached!"
+				}
+
+				panic(fmt.Sprintf(`)
+	writer.WriteString("`")
+	writer.WriteString(`
+GRAMMAR ERROR: %s
+==============================================
+ON (%s:%d:%d)
+%s`)
+	writer.WriteString("`")
+	writer.WriteString(`,
+					msg,
+					sourceFilePath,
+					line, col,
+					markRed(sourceFileContent[previewStart:previewEnd], token.Start-previewStart, tokenEnd-previewStart)))
+			}
+
 			if action.Accept {
 				isAccepted = true
 				break
