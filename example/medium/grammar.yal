@@ -53,8 +53,8 @@ expression:
 ;
 
 term:
-    term MULT factor
-  | term DIV factor
+    term MULT term
+  | term DIV term
   | factor
 ;
 
