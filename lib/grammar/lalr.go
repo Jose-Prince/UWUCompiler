@@ -387,6 +387,8 @@ func (lalr *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 		InitialNodeId: lalr.findInitialState(),
 	}
 
+	conflicts := make(map[string][]string)
+
 	for stateID, state := range lalr.Nodes {
 		stateKey := fmt.Sprintf("%d", stateID)
 
@@ -398,47 +400,137 @@ func (lalr *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 			table.GoToTable[stateKey] = make(map[GrammarToken]AFDNodeId)
 		}
 
-		for _, item := range state.Items {
-			if item.DotPosition == len(item.Rule.Production) {
-				for _, lookahead := range item.Lookahead {
-					if item.Rule.Head.Equal(&grammar.InitialSimbol) && lookahead.IsEnd {
+		lalr.processReduceActions(state, stateKey, grammar, &table, conflicts)
 
-						table.ActionTable[stateKey][item.Lookahead[0]] = Action{
-							Shift:  lib.CreateNull[AFDNodeId](),
-							Reduce: lib.CreateNull[int](),
-							Accept: true,
-						}
+		lalr.processShiftAndGotoActions(state, stateKey, grammar, &table, conflicts)
+	}
 
-					} else {
-						ruleIndex := -1
-						for i, rule := range grammar.Rules {
-							if rule.EqualRule(&item.Rule) {
-								ruleIndex = i
-								break
-							}
-						}
-						if ruleIndex != -1 {
-							table.ActionTable[stateKey][lookahead] = NewReduceAction(ruleIndex)
-						}
-					}
-				}
-			}
-		}
-
-		for symbol, targetStateID := range state.Productions {
-			targetKey := fmt.Sprintf("%d", targetStateID)
-
-			symbolToken := grammar.GetTokenByString(symbol)
-
-			if symbolToken.IsTerminal() {
-				table.ActionTable[stateKey][symbolToken] = NewShiftAction(targetKey)
-			} else {
-				table.GoToTable[stateKey][symbolToken] = targetKey
+	if len(conflicts) > 0 {
+		fmt.Println("Parsing conflixts detected:")
+		for state, conflictList := range conflicts {
+			fmt.Printf("State %s:\n", state)
+			for _, conflict := range conflictList {
+				fmt.Printf("	%s\n", conflict)
 			}
 		}
 	}
 
 	return table
+}
+
+func (lalr *Automata) processReduceActions(state AutomataState, stateKey string, grammar *Grammar, table *ParsingTable, conflicts map[string][]string) {
+	for _, item := range state.Items {
+		if item.DotPosition == len(item.Rule.Production) {
+			if lalr.isAcceptItem(item, grammar) {
+				for _, lookahead := range item.Lookahead {
+					if lookahead.IsEnd {
+						lalr.setAction(table, stateKey, lookahead, NewAcceptAction(), conflicts)
+					}
+				}
+			} else {
+				ruleIndex := lalr.findRuleIndex(item.Rule, grammar)
+				if ruleIndex != -1 {
+					for _, lookahead := range item.Lookahead {
+						if !lookahead.IsEnd || !lalr.isAcceptItem(item, grammar) {
+							lalr.setAction(table, stateKey, lookahead, NewReduceAction(ruleIndex), conflicts)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (lalr *Automata) processShiftAndGotoActions(state AutomataState, stateKey string, grammar *Grammar, table *ParsingTable, conflicts map[string][]string) {
+	for symbol, targetStateID := range state.Productions {
+		targetKey := fmt.Sprintf("%d", targetStateID)
+		symbolToken := grammar.GetTokenByString(symbol)
+
+		if symbolToken.IsTerminal() && !symbolToken.IsEnd {
+			lalr.setAction(table, stateKey, symbolToken, NewShiftAction(targetKey), conflicts)
+		} else if symbolToken.IsNonTerminal() {
+			table.GoToTable[stateKey][symbolToken] = targetKey
+		}
+	}
+}
+
+func (lalr *Automata) isAcceptItem(item AutomataItem, grammar *Grammar) bool {
+	initialToken := NewNonTerminalToken("S'")
+	if item.Rule.Head.Equal(&initialToken) || (len(item.Rule.Production) == 1 && item.Rule.Production[0].Equal(&grammar.InitialSimbol)) {
+		return true
+	}
+	return false
+}
+
+func (lalr *Automata) findRuleIndex(rule GrammarRule, grammar *Grammar) int {
+	for i, grammarRule := range grammar.Rules {
+		if rule.EqualRule(&grammarRule) {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (lalr *Automata) setAction(table *ParsingTable, stateKey string, symbol GrammarToken, newAction Action, conflicts map[string][]string) {
+	if existingAction, exists := table.ActionTable[stateKey][symbol]; exists {
+		conflictType := lalr.resolveConflict(existingAction, newAction, symbol)
+		if conflictType != "" {
+			conflictMsg := fmt.Sprintf("%s conflict on symbol %s: existing=%s, new=%s",
+				conflictType, symbol.String(), actionToString(existingAction), actionToString(newAction))
+			conflicts[stateKey] = append(conflicts[stateKey], conflictMsg)
+
+			resolvedAction := lalr.applyConflictResolution(existingAction, newAction, symbol)
+			table.ActionTable[stateKey][symbol] = resolvedAction
+		}
+	} else {
+		table.ActionTable[stateKey][symbol] = newAction
+	}
+}
+
+func (lalr *Automata) resolveConflict(existing, new Action, symbol GrammarToken) string {
+	if existing.Shift.HasValue() && new.Shift.HasValue() {
+		return "shift-shift"
+	}
+	if existing.Reduce.HasValue() && new.Reduce.HasValue() {
+		return "reduce-reduce"
+	}
+	if (existing.Shift.HasValue() && new.Reduce.HasValue()) ||
+		(existing.Reduce.HasValue() && new.Shift.HasValue()) {
+		return "shift-reduce"
+	}
+	return ""
+}
+
+func (lalr *Automata) applyConflictResolution(existing, new Action, symbol GrammarToken) Action {
+	if existing.Shift.HasValue() && new.Reduce.HasValue() {
+		return existing
+	}
+	if existing.Reduce.HasValue() && new.Shift.HasValue() {
+		return new
+	}
+
+	if existing.Reduce.HasValue() && new.Reduce.HasValue() {
+		if existing.Reduce.GetValue() < new.Reduce.GetValue() {
+			return existing
+		}
+		return new
+	}
+
+	return existing
+}
+
+func actionToString(action Action) string {
+	if action.Accept {
+		return "accept"
+	}
+	if action.Shift.HasValue() {
+		return fmt.Sprintf("shift(%s)", action.Shift.GetValue())
+	}
+	if action.Reduce.HasValue() {
+		return fmt.Sprintf("reduce(%d)", action.Reduce.GetValue())
+	}
+	return "unknown"
 }
 
 func (lalr *Automata) findInitialState() string {
