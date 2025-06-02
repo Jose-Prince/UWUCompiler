@@ -528,7 +528,7 @@ SYNTAX ERROR: Unexpected character (%c)
 ON (%s:%d:%d)
 %s`)
 	writer.WriteRune('`')
-	writer.WriteString(`, sourceFileContent[j], sourceFilePath, line, col, markCharRed(sourceFileContent[start:j+2], j)))
+	writer.WriteString(`, sourceFileContent[j], sourceFilePath, line, col, markCharRed(sourceFileContent[start:j+2], j-start)))
 
 				}
 			} else if parsingResult != GIVE_NEXT {
