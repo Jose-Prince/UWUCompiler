@@ -164,15 +164,20 @@ func main() {
 
 	initialRule := grammar.GrammarRule{Head: grammar.NewNonTerminalToken("S'"), Production: []grammar.GrammarToken{g.InitialSimbol}}
 
+	fmt.Println("Creating automata...")
 	lalr := grammar.InitializeAutomata(initialRule, g)
+
+	fmt.Println("Simplifying states...")
 	lalr.SimplifyStates()
 
+	fmt.Println("Generating LARLR HTML...")
 	err = GenerateHTML(lalr, "lalr_automata.html")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("LALR HTML generated")
 
+	fmt.Println("Generating Parsing table from LALR AFD...")
 	parsingTable := lalr.GenerateParsingTable(&g)
 
 	info := CompilerFileInfo{
@@ -180,6 +185,7 @@ func main() {
 		LexAFD:       afd,
 		ParsingTable: parsingTable,
 	}
+	fmt.Println("Writing final compiler source code...")
 	err = WriteCompilerFile(params.OutGoPath, &info)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
