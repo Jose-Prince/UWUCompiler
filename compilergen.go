@@ -138,6 +138,7 @@ const END_TOKEN_TYPE =`)
 	writer.WriteString(`
 const UNRECOGNIZABLE int = -1
 const GIVE_NEXT int = -2
+const IGNORE int = -3
 
 const CMD_HELP = `)
 	writer.WriteRune('`')
@@ -455,6 +456,22 @@ func (item ParseItem) GetToken() GrammarToken {
 	return item.Token.GetValue()
 }
 
+func getLineAndCol(contents []byte, idx int) (int, int) {
+	line := 0
+	col := 0
+
+	for i := range idx {
+		if contents[i] == '\n' {
+			line++
+			col = 0
+		} else {
+			col++
+		}
+	}
+
+	return line + 1, col + 1
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Please supply only a source file as argument!\n")
@@ -478,17 +495,34 @@ func main() {
 		j := 0
 		for j = i; j < len(sourceFileContent); j++ {
 			parsingResult := gettoken(&afdState, rune(sourceFileContent[j]))
+
 			if parsingResult == UNRECOGNIZABLE {
-				foundSomething := previousParsingResult != -1000
-				if foundSomething {
+				foundSomething := previousParsingResult != -1000 
+				if previousParsingResult == IGNORE {
+
+				} else if foundSomething {
 					token := Token{Start: i, Type: previousParsingResult}
 					tokens = append(tokens, token)
 					fmt.Println(token.String())
 					i = j - 1
 					break
 				} else {
-					i = j
-					break
+					line, col := getLineAndCol(sourceFileContent, j)
+					start := i
+					if len(tokens) > 0 {
+						tokensBackwards := min(len(tokens), 5)
+						start = tokens[len(tokens)-tokensBackwards].Start
+					}
+					panic(fmt.Sprintf(`)
+	writer.WriteRune('`')
+	writer.WriteString(`
+SYNTAX ERROR: Unexpected character (%c)
+==============================================
+ON (%s:%d:%d)
+%s`)
+	writer.WriteRune('`')
+	writer.WriteString(`, sourceFileContent[j], sourceFilePath, line, col, sourceFileContent[start:j+2]))
+
 				}
 			} else if parsingResult != GIVE_NEXT {
 				previousParsingResult = parsingResult

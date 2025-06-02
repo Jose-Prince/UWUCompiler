@@ -28,7 +28,7 @@ let decimal_lit = (([1-9]{decimal_digit}*)|0)
 let whitespace = ([ \t\r\n]+)
 
 rule gettoken =
-	{whitespace}	{}
+	{whitespace}	{ return IGNORE }
 	| 'let'				{ return LET }
 	| 'if'				{ return IF }
 	| 'while'			{ return WHILE }
