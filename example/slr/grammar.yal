@@ -1,0 +1,18 @@
+%token NUMBER PLUS MULT LPAREN RPAREN
+
+%%
+
+e:
+	e PLUS t
+	| t
+;
+
+t:
+	t MULT f
+	| f
+;
+
+f:
+	LPAREN e RPAREN
+	| NUMBER
+;
