@@ -472,6 +472,13 @@ func getLineAndCol(contents []byte, idx int) (int, int) {
 	return line + 1, col + 1
 }
 
+func markCharRed(contents []byte, idx int) string {
+	prefix := contents[:idx]
+	postfix := contents[idx+1:]
+
+	return fmt.Sprintf("%s\033[31;1;4m%c\033[0m%s", prefix, contents[idx], postfix)
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Please supply only a source file as argument!\n")
@@ -521,7 +528,7 @@ SYNTAX ERROR: Unexpected character (%c)
 ON (%s:%d:%d)
 %s`)
 	writer.WriteRune('`')
-	writer.WriteString(`, sourceFileContent[j], sourceFilePath, line, col, sourceFileContent[start:j+2]))
+	writer.WriteString(`, sourceFileContent[j], sourceFilePath, line, col, markCharRed(sourceFileContent[start:j+2], j)))
 
 				}
 			} else if parsingResult != GIVE_NEXT {
