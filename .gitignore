@@ -1,3 +1,5 @@
 UWULexer
 UWUCompiler
 *.html
+out
+*comp.go
