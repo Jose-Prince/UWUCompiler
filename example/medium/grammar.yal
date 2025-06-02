@@ -12,8 +12,7 @@ IGNORE WS
 /* INICIA Sección de PRODUCCIONES */
 
 program:
-    program statement
-  | statement
+	statement_list
 ;
 
 statement:
@@ -46,21 +45,20 @@ statement_list:
 ;
 
 expression:
-    expression PLUS expression
-  | expression MINUS expression
-  | expression EQ expression
+		expression PLUS term
+  | expression MINUS term
+  | expression EQ term
   | term
 ;
 
 term:
-    term MULT term
-  | term DIV term
+    term MULT factor
+  | term DIV factor
   | factor
 ;
 
 factor:
-    LPAREN expression RPAREN
-  | ID
+		ID
   | NUMBER
 ;
 
