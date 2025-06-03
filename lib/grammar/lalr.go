@@ -331,6 +331,11 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 	return union
 }
 
+type InputStateRulesPair struct {
+	Input GrammarToken
+	Rules []AutomataRule
+}
+
 func generateStates(
 	currentIdx AutomataStateIndex,
 	automata *Automata,
@@ -340,27 +345,61 @@ func generateStates(
 
 	currentState := automata.Nodes[currentIdx]
 
-	evaluateLater := []AutomataStateIndex{}
+	alreadyScannedInputs := lib.NewSet[GrammarToken]()
+	transitionInputs := make([]InputStateRulesPair, 0, len(currentState.Rules))
 	for _, rule := range currentState.Rules {
 		if rule.Dot >= len(rule.Production) {
-			return // The dot has reached the end
+			continue
 		}
 
-		transitionToken := rule.Production[rule.Dot]
-		newStateInitialRule := AutomataRule{
-			Head:       rule.Head,
-			Production: rule.Production,
-			Dot:        rule.Dot + 1,
-			Lookahead:  rule.Lookahead,
+		dotOfRule := rule.Production[rule.Dot]
+		if !alreadyScannedInputs.Add(dotOfRule) {
+			continue
 		}
+
+		pair := InputStateRulesPair{
+			Input: dotOfRule,
+			Rules: []AutomataRule{},
+		}
+		for _, rr := range currentState.Rules {
+			if rr.Dot >= len(rr.Production) {
+				continue
+			}
+
+			dotOfRule2 := rr.Production[rr.Dot]
+			if dotOfRule.Equal(&dotOfRule2) {
+				pair.Rules = append(pair.Rules, rr)
+			}
+		}
+
+		transitionInputs = append(transitionInputs, pair)
+	}
+
+	evaluateLater := []AutomataStateIndex{}
+	for _, pair := range transitionInputs {
+		transitionToken := pair.Input
 		newState := AutomataState{
-			Rules: []AutomataRule{newStateInitialRule},
+			Rules: make([]AutomataRule, 0, len(pair.Rules)),
 		}
 
-		if newStateInitialRule.Dot < len(newStateInitialRule.Production) {
-			closureToken := newStateInitialRule.Production[newStateInitialRule.Dot]
-			set := lib.NewSet[GrammarToken]()
-			closure(closureToken, &newStateInitialRule, &newState, grammar, firsts, &set)
+		for _, rule := range pair.Rules {
+			if rule.Dot >= len(rule.Production) {
+				return // The dot has reached the end
+			}
+
+			newInitialRule := AutomataRule{
+				Head:       rule.Head,
+				Production: rule.Production,
+				Dot:        rule.Dot + 1,
+				Lookahead:  rule.Lookahead,
+			}
+			newState.Rules = append(newState.Rules, newInitialRule)
+
+			if newInitialRule.Dot < len(newInitialRule.Production) {
+				closureToken := newInitialRule.Production[newInitialRule.Dot]
+				set := lib.NewSet[GrammarToken]()
+				closure(closureToken, &newInitialRule, &newState, grammar, firsts, &set)
+			}
 		}
 
 		idx := automata.FindIndexOfState(&newState)
