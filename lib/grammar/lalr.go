@@ -51,6 +51,10 @@ type AutomataState struct {
 }
 
 func (state *AutomataState) EQ_WithoutLookAhead(other *AutomataState) bool {
+	if len(state.Rules) != len(other.Rules) {
+		return false
+	}
+
 	for i, r := range state.Rules {
 		other_r := other.Rules[i]
 		if !r.EqualsWithoutLookahead(&other_r) {
@@ -380,9 +384,10 @@ func generateStates(
 
 func (auto *Automata) SimplifyStates() {
 	for i, state := range auto.Nodes {
+	innerLoop:
 		for j, other := range auto.Nodes {
 			if i == j {
-				continue
+				continue innerLoop
 			}
 
 			if state.EQ_WithoutLookAhead(&other) {
@@ -411,9 +416,9 @@ func (auto *Automata) SimplifyStates() {
 					}
 				}
 			}
-
 		}
 	}
+
 }
 
 // func getTransitions(state AutomataState, grammar Grammar) map[string][]AutomataItem {

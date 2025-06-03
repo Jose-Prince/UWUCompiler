@@ -173,10 +173,11 @@ func main() {
 
 	fmt.Println("Creating automata...")
 	// grammar.InitializeAutomata(initialRule, g)
-	grammar.InitializeAutomata(initialRule, g)
+	lalr := grammar.InitializeAutomata(initialRule, g)
 
 	fmt.Println("Simplifying states...")
-	// lalr.SimplifyStates()
+	lalr.SimplifyStates()
+
 	//
 	// fmt.Println("Generating LARLR HTML...")
 	// err = GenerateHTML(lalr, "lalr_automata.html")
