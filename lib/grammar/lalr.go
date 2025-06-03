@@ -383,14 +383,18 @@ func generateStates(
 }
 
 func (auto *Automata) SimplifyStates() {
+
+	simplifiedSomething := false
+
+outerLoop:
 	for i, state := range auto.Nodes {
-	innerLoop:
 		for j, other := range auto.Nodes {
 			if i == j {
-				continue innerLoop
+				continue
 			}
 
 			if state.EQ_WithoutLookAhead(&other) {
+				simplifiedSomething = true
 				newState := AutomataState{
 					Rules: state.Rules,
 				}
@@ -415,10 +419,15 @@ func (auto *Automata) SimplifyStates() {
 						}
 					}
 				}
+
+				continue outerLoop
 			}
 		}
 	}
 
+	if simplifiedSomething {
+		auto.SimplifyStates()
+	}
 }
 
 // func getTransitions(state AutomataState, grammar Grammar) map[string][]AutomataItem {
