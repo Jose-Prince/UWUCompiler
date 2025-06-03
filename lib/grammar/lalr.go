@@ -5,10 +5,12 @@ import (
 	// "sort"
 	// "strconv"
 
+	"strconv"
+
 	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
-type AutomataStateIndex = int
+type AutomataStateIndex = string
 type AlphabetInput = GrammarToken
 
 type Automata struct {
@@ -16,11 +18,11 @@ type Automata struct {
 	Transitions      map[AutomataStateIndex]map[AlphabetInput]AutomataStateIndex
 	AcceptanceStates lib.Set[AutomataStateIndex]
 
-	Nodes []AutomataState
+	Nodes map[AutomataStateIndex]AutomataState
 }
 
-func (auto *Automata) FindIndexOfState(state *AutomataState) int {
-	finalIdx := -1
+func (auto *Automata) FindIndexOfState(state *AutomataState) AutomataStateIndex {
+	finalIdx := ""
 
 NodeLoop:
 	for idx, st := range auto.Nodes {
@@ -47,11 +49,39 @@ type AutomataState struct {
 	Rules []AutomataRule
 }
 
+func (state *AutomataState) EQ_WithoutLookAhead(other *AutomataState) bool {
+	for i, r := range state.Rules {
+		other_r := other.Rules[i]
+		if !r.EqualsWithoutLookahead(&other_r) {
+			return false
+		}
+	}
+	return true
+}
+
 type AutomataRule struct {
 	Head       GrammarToken
 	Production []GrammarToken
 	Dot        int
 	Lookahead  lib.Set[GrammarToken]
+}
+
+func (rule *AutomataRule) EqualsWithoutLookahead(other *AutomataRule) bool {
+	if len(rule.Production) != len(other.Production) {
+		return false
+	}
+
+	if !rule.Head.Equal(&other.Head) || rule.Dot != rule.Dot {
+		return false
+	}
+
+	for i, prod := range rule.Production {
+		other_i := other.Production[i]
+		if !prod.Equal(&other_i) {
+			return false
+		}
+	}
+	return true
 }
 
 func (rule *AutomataRule) Equals(other *AutomataRule) bool {
@@ -81,10 +111,10 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 	GetFirsts(&grammar, &firsts)
 
 	lr1 := Automata{
-		InitialState:     -1,
+		InitialState:     "",
 		Transitions:      make(map[AutomataStateIndex]map[AlphabetInput]AutomataStateIndex),
 		AcceptanceStates: lib.NewSet[AutomataStateIndex](),
-		Nodes:            []AutomataState{},
+		Nodes:            make(map[AutomataStateIndex]AutomataState),
 	}
 
 	lookAhead := lib.NewSet[GrammarToken]()
@@ -103,8 +133,8 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 	set := lib.NewSet[GrammarToken]()
 	closure(initRule.Production[initRule.Dot], &initRule, &state, &grammar, &firsts, &set)
 
-	lr1.InitialState = 0
-	lr1.Nodes = append(lr1.Nodes, state)
+	lr1.InitialState = "0"
+	lr1.Nodes[lr1.InitialState] = state
 
 	generateStates(0, &lr1, &grammar, &firsts)
 
@@ -297,7 +327,7 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 }
 
 func generateStates(
-	currentIdx int,
+	currentIdx AutomataStateIndex,
 	automata *Automata,
 	grammar *Grammar,
 	firsts *FirstFollowTable,
@@ -305,7 +335,7 @@ func generateStates(
 
 	currentState := automata.Nodes[currentIdx]
 
-	evaluateLater := []int{}
+	evaluateLater := []AutomataStateIndex{}
 	for _, rule := range currentState.Rules {
 		if rule.Dot >= len(rule.Production) {
 			return // The dot has reached the end
@@ -329,10 +359,10 @@ func generateStates(
 		}
 
 		idx := automata.FindIndexOfState(&newState)
-		newStateNotDefined := idx == -1
+		newStateNotDefined := idx == ""
 		if newStateNotDefined {
-			idx = len(automata.Nodes)
-			automata.Nodes = append(automata.Nodes, newState)
+			idx = strconv.FormatInt(int64(len(automata.Nodes)), 10)
+			automata.Nodes[idx] = newState
 			evaluateLater = append(evaluateLater, idx)
 		}
 
@@ -344,6 +374,23 @@ func generateStates(
 
 	for _, childState := range evaluateLater {
 		generateStates(childState, automata, grammar, firsts)
+	}
+}
+
+func (auto *Automata) SimplifyStates() {
+	for i, state := range auto.Nodes {
+		for j, other := range auto.Nodes {
+			if i == j {
+				continue
+			}
+
+			if state.EQ_WithoutLookAhead(&other) {
+				// previous := min(i, j)
+				// later := max(i, j)
+
+			}
+
+		}
 	}
 }
 
