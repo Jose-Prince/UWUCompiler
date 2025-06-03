@@ -237,6 +237,12 @@ func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
 	for nonTerminal := range grammar.NonTerminals {
 		getFirstFor(grammar, table, &nonTerminal, &alreadyEvaluatedFirsts)
 	}
+
+	for terminal := range grammar.Terminals {
+		table.AppendFirst(terminal, terminal)
+	}
+
+	table.AppendFirst(NewEndToken(), NewEndToken())
 }
 
 func getAllRulesWhereTokenIsHead(grammar *Grammar, token *GrammarToken) []GrammarRule {

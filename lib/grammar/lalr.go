@@ -1,135 +1,244 @@
 package grammar
 
 import (
-	"fmt"
-	"sort"
-	"strconv"
+	// "fmt"
+	// "sort"
+	// "strconv"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
 )
 
+type AutomataStateIndex = int
+type AlphabetInput = GrammarToken
+
 type Automata struct {
-	Nodes map[int]AutomataState
+	InitialState     AutomataStateIndex
+	Transitions      map[AutomataStateIndex]map[AlphabetInput]AutomataStateIndex
+	AcceptanceStates lib.Set[AutomataStateIndex]
+
+	Nodes []AutomataState
+}
+
+func (auto *Automata) FindIndexOfState(state *AutomataState) int {
+	finalIdx := -1
+
+NodeLoop:
+	for idx, st := range auto.Nodes {
+		if len(st.Rules) != len(state.Rules) {
+			continue
+		}
+
+		for i, rule := range st.Rules {
+			stateIRule := state.Rules[i]
+
+			if !rule.Equals(&stateIRule) {
+				continue NodeLoop
+			}
+		}
+
+		finalIdx = idx
+		break
+	}
+
+	return finalIdx
 }
 
 type AutomataState struct {
-	Items       map[int]AutomataItem
-	Productions map[string]int
-	Initial     bool
-	Accept      bool
+	Rules []AutomataRule
 }
 
-type AutomataItem struct {
-	Rule        GrammarRule
-	DotPosition int
-	Lookahead   []GrammarToken
+type AutomataRule struct {
+	Head       GrammarToken
+	Production []GrammarToken
+	Dot        int
+	Lookahead  lib.Set[GrammarToken]
+}
+
+func (rule *AutomataRule) Equals(other *AutomataRule) bool {
+	if len(rule.Production) != len(other.Production) {
+		return false
+	}
+
+	if !rule.Head.Equal(&other.Head) || rule.Dot != rule.Dot {
+		return false
+	}
+
+	if !rule.Lookahead.Equals(&other.Lookahead) {
+		return false
+	}
+
+	for i, prod := range rule.Production {
+		other_i := other.Production[i]
+		if !prod.Equal(&other_i) {
+			return false
+		}
+	}
+	return true
 }
 
 func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
+	firsts := NewFirstFollowTable()
+	GetFirsts(&grammar, &firsts)
+
 	lr1 := Automata{
-		Nodes: make(map[int]AutomataState),
+		InitialState:     -1,
+		Transitions:      make(map[AutomataStateIndex]map[AlphabetInput]AutomataStateIndex),
+		AcceptanceStates: lib.NewSet[AutomataStateIndex](),
+		Nodes:            []AutomataState{},
 	}
-	initialItem := AutomataItem{
-		Rule:        initialRule,
-		DotPosition: 0,
-		Lookahead:   []GrammarToken{NewEndToken()},
+
+	lookAhead := lib.NewSet[GrammarToken]()
+	lookAhead.Add(NewEndToken())
+	initRule := AutomataRule{
+		Head:       initialRule.Head,
+		Production: initialRule.Production,
+		Dot:        0,
+		Lookahead:  lookAhead,
 	}
 
 	state := AutomataState{
-		Items:       make(map[int]AutomataItem),
-		Productions: make(map[string]int),
-		Initial:     true,
-		Accept:      false,
+		Rules: []AutomataRule{initRule},
 	}
 
-	state.Items[0] = initialItem
+	set := lib.NewSet[GrammarToken]()
+	closure(initRule.Production[initRule.Dot], &initRule, &state, &grammar, &firsts, &set)
 
-	closure(state, grammar)
+	lr1.InitialState = 0
+	lr1.Nodes = append(lr1.Nodes, state)
 
-	lr1.Nodes[0] = state
-
-	generateStates(&lr1, grammar)
+	generateStates(0, &lr1, &grammar, &firsts)
 
 	return lr1
 }
 
-func closure(state AutomataState, grammar Grammar) {
-	workList := make([]int, 0)
+type GrammarTokenRulePair struct {
+	Token GrammarToken
+	Rule  AutomataRule
+}
 
-	for i := range state.Items {
-		workList = append(workList, i)
+func closure(
+	token GrammarToken,
+	initRule *AutomataRule,
+	state *AutomataState,
+	grammar *Grammar,
+	firsts *FirstFollowTable,
+	alreadyComputed *lib.Set[GrammarToken],
+) {
+	if !alreadyComputed.Add(token) {
+		return
 	}
 
-	itemIndex := make(map[string]int)
-	for i, item := range state.Items {
-		key := itemToKey(item)
-		itemIndex[key] = i
+	nextTokens := []GrammarTokenRulePair{}
+	for _, rule := range grammar.Rules {
+		if rule.Head.Equal(&token) {
+			dotToken := rule.Production[0]
+
+			lookAhead := lib.NewSet[GrammarToken]()
+			if initRule.Dot+1 < len(initRule.Production) {
+				tk := initRule.Production[initRule.Dot+1]
+				firsts := firsts.table[tk].First
+				lookAhead.Merge(&firsts)
+			}
+
+			newRule := AutomataRule{
+				Head:       rule.Head,
+				Production: rule.Production,
+				Dot:        0,
+				Lookahead:  lookAhead,
+			}
+
+			nextTokens = append(nextTokens, GrammarTokenRulePair{
+				Token: dotToken,
+				Rule:  newRule,
+			})
+			state.Rules = append(state.Rules, newRule)
+		}
 	}
 
-	for len(workList) > 0 {
-		currentIdx := workList[0]
-		workList = workList[1:]
-
-		item := state.Items[currentIdx]
-
-		if item.DotPosition >= len(item.Rule.Production) {
-			continue
-		}
-
-		currentSymbol := item.Rule.Production[item.DotPosition]
-		if !currentSymbol.IsNonTerminal() {
-			continue
-		}
-
-		beta := make([]GrammarToken, 0)
-		if item.DotPosition+1 < len(item.Rule.Production) {
-			beta = item.Rule.Production[item.DotPosition+1:]
-		}
-
-		betaAlpha := append(beta, item.Lookahead...)
-		firstSet := first(betaAlpha, grammar)
-
-		for _, rule := range grammar.Rules {
-			if !rule.Head.Equal(&currentSymbol) {
-				continue
-			}
-
-			newItem := AutomataItem{
-				Rule:        rule,
-				DotPosition: 0,
-				Lookahead:   firstSet,
-			}
-
-			key := itemToKeyWithoutLookAhead(newItem)
-
-			if existingIdx, exists := itemIndex[key]; exists {
-				existing := state.Items[existingIdx]
-				originalSize := len(existing.Lookahead)
-				existing.Lookahead = unionLookaheads(existing.Lookahead, firstSet)
-
-				if len(existing.Lookahead) != originalSize {
-					state.Items[existingIdx] = existing
-
-					found := false
-					for _, idx := range workList {
-						if idx == existingIdx {
-							found = true
-							break
-						}
-					}
-					if !found {
-						workList = append(workList, existingIdx)
-					}
-				}
-			} else {
-				newIdx := len(state.Items)
-				state.Items[newIdx] = newItem
-				itemIndex[key] = newIdx
-				workList = append(workList, newIdx)
-			}
+	for _, pair := range nextTokens {
+		if pair.Token.IsNonTerminal() {
+			closure(pair.Token, &pair.Rule, state, grammar, firsts, alreadyComputed)
 		}
 	}
 }
+
+// func closure(rule AutomataRule, state AutomataState, grammar Grammar) {
+// 	workList := make([]int, 0)
+//
+// 	for i := range state.Items {
+// 		workList = append(workList, i)
+// 	}
+//
+// 	itemIndex := make(map[string]int)
+// 	for i, item := range state.Items {
+// 		key := itemToKey(item)
+// 		itemIndex[key] = i
+// 	}
+//
+// 	for len(workList) > 0 {
+// 		currentIdx := workList[0]
+// 		workList = workList[1:]
+//
+// 		item := state.Items[currentIdx]
+//
+// 		if item.DotPosition >= len(item.Rule.Production) {
+// 			continue
+// 		}
+//
+// 		currentSymbol := item.Rule.Production[item.DotPosition]
+// 		if !currentSymbol.IsNonTerminal() {
+// 			continue
+// 		}
+//
+// 		beta := make([]GrammarToken, 0)
+// 		if item.DotPosition+1 < len(item.Rule.Production) {
+// 			beta = item.Rule.Production[item.DotPosition+1:]
+// 		}
+//
+// 		betaAlpha := append(beta, item.Lookahead...)
+// 		firstSet := first(betaAlpha, grammar)
+//
+// 		for _, rule := range grammar.Rules {
+// 			if !rule.Head.Equal(&currentSymbol) {
+// 				continue
+// 			}
+//
+// 			newItem := AutomataItem{
+// 				Rule:        rule,
+// 				DotPosition: 0,
+// 				Lookahead:   firstSet,
+// 			}
+//
+// 			key := itemToKeyWithoutLookAhead(newItem)
+//
+// 			if existingIdx, exists := itemIndex[key]; exists {
+// 				existing := state.Items[existingIdx]
+// 				originalSize := len(existing.Lookahead)
+// 				existing.Lookahead = unionLookaheads(existing.Lookahead, firstSet)
+//
+// 				if len(existing.Lookahead) != originalSize {
+// 					state.Items[existingIdx] = existing
+//
+// 					found := false
+// 					for _, idx := range workList {
+// 						if idx == existingIdx {
+// 							found = true
+// 							break
+// 						}
+// 					}
+// 					if !found {
+// 						workList = append(workList, existingIdx)
+// 					}
+// 				}
+// 			} else {
+// 				newIdx := len(state.Items)
+// 				state.Items[newIdx] = newItem
+// 				itemIndex[key] = newIdx
+// 				workList = append(workList, newIdx)
+// 			}
+// 		}
+// 	}
+// }
 
 func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
 	table := NewFirstFollowTable()
@@ -146,23 +255,23 @@ func first(sequence []GrammarToken, grammar Grammar) []GrammarToken {
 	return table.table[firstToken].First.ToSlice_()
 }
 
-func itemToKeyWithoutLookAhead(item AutomataItem) string {
-	return item.Rule.ToString() + "|" + fmt.Sprintf("%d", item.DotPosition)
-}
+// func itemToKeyWithoutLookAhead(item AutomataItem) string {
+// 	return item.Rule.ToString() + "|" + fmt.Sprintf("%d", item.DotPosition)
+// }
 
-func itemToKey(item AutomataItem) string {
-	lookStrs := make([]string, len(item.Lookahead))
-	for i, l := range item.Lookahead {
-		lookStrs[i] = l.String()
-	}
-	sort.Strings(lookStrs) // Ordenar alfabéticamente
-
-	look := ""
-	for _, l := range lookStrs {
-		look += l + ","
-	}
-	return item.Rule.ToString() + "|" + string(rune(item.DotPosition)) + "|" + look
-}
+// func itemToKey(item AutomataItem) string {
+// 	lookStrs := make([]string, len(item.Lookahead))
+// 	for i, l := range item.Lookahead {
+// 		lookStrs[i] = l.String()
+// 	}
+// 	sort.Strings(lookStrs) // Ordenar alfabéticamente
+//
+// 	look := ""
+// 	for _, l := range lookStrs {
+// 		look += l + ","
+// 	}
+// 	return item.Rule.ToString() + "|" + string(rune(item.DotPosition)) + "|" + look
+// }
 
 func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 	seen := make(map[string]bool)
@@ -187,397 +296,412 @@ func unionLookaheads(a, b []GrammarToken) []GrammarToken {
 	return union
 }
 
-func generateStates(afd *Automata, grammar Grammar) {
-	stateQueue := []int{0}
-	visited := lib.NewSet[int]()
+func generateStates(
+	currentIdx int,
+	automata *Automata,
+	grammar *Grammar,
+	firsts *FirstFollowTable,
+) {
 
-	for len(stateQueue) > 0 {
-		currentStateId := stateQueue[0]
-		stateQueue = stateQueue[1:]
+	currentState := automata.Nodes[currentIdx]
 
-		if visited.Contains(currentStateId) {
-			continue
-		}
-		visited.Add(currentStateId)
-
-		currentState := afd.Nodes[currentStateId]
-
-		transitions := getTransitions(currentState, grammar)
-
-		for symbol, items := range transitions {
-			newState := createNewState(items, grammar)
-
-			existingStateId := findEquivalentState(afd, newState)
-
-			if existingStateId == -1 {
-				newStateId := len(afd.Nodes)
-				afd.Nodes[newStateId] = newState
-				currentState.Productions[symbol] = newStateId
-				stateQueue = append(stateQueue, newStateId)
-			} else {
-				currentState.Productions[symbol] = existingStateId
-			}
+	evaluateLater := []int{}
+	for _, rule := range currentState.Rules {
+		if rule.Dot >= len(rule.Production) {
+			return // The dot has reached the end
 		}
 
-		afd.Nodes[currentStateId] = currentState
+		transitionToken := rule.Production[rule.Dot]
+		newStateInitialRule := AutomataRule{
+			Head:       rule.Head,
+			Production: rule.Production,
+			Dot:        rule.Dot + 1,
+			Lookahead:  rule.Lookahead,
+		}
+		newState := AutomataState{
+			Rules: []AutomataRule{newStateInitialRule},
+		}
+
+		if newStateInitialRule.Dot < len(newStateInitialRule.Production) {
+			closureToken := newStateInitialRule.Production[newStateInitialRule.Dot]
+			set := lib.NewSet[GrammarToken]()
+			closure(closureToken, &newStateInitialRule, &newState, grammar, firsts, &set)
+		}
+
+		idx := automata.FindIndexOfState(&newState)
+		newStateNotDefined := idx == -1
+		if newStateNotDefined {
+			idx = len(automata.Nodes)
+			automata.Nodes = append(automata.Nodes, newState)
+			evaluateLater = append(evaluateLater, idx)
+		}
+
+		if _, found := automata.Transitions[currentIdx]; !found {
+			automata.Transitions[currentIdx] = make(map[AlphabetInput]AutomataStateIndex)
+		}
+		automata.Transitions[currentIdx][transitionToken] = idx
+	}
+
+	for _, childState := range evaluateLater {
+		generateStates(childState, automata, grammar, firsts)
 	}
 }
 
-func getTransitions(state AutomataState, grammar Grammar) map[string][]AutomataItem {
-	transitions := make(map[string][]AutomataItem)
-
-	for _, item := range state.Items {
-		if item.DotPosition < len(item.Rule.Production) {
-			symbol := item.Rule.Production[item.DotPosition]
-			symbolStr := symbol.String()
-
-			// Create new item with dot moved forward
-			newItem := AutomataItem{
-				Rule:        item.Rule,
-				DotPosition: item.DotPosition + 1,
-				Lookahead:   item.Lookahead,
-			}
-
-			transitions[symbolStr] = append(transitions[symbolStr], newItem)
-		}
-	}
-
-	return transitions
-}
-
-func createNewState(items []AutomataItem, grammar Grammar) AutomataState {
-	newState := AutomataState{
-		Items:       make(map[int]AutomataItem),
-		Productions: make(map[string]int),
-		Initial:     false,
-		Accept:      false,
-	}
-
-	// Add kernel items
-	for i, item := range items {
-		newState.Items[i] = item
-	}
-
-	// Compute closure
-	closure(newState, grammar)
-
-	// Check if this is an accept state
-	initialToken := NewNonTerminalToken("S'")
-	for _, item := range newState.Items {
-		if item.Rule.Head.Equal(&initialToken) &&
-			item.DotPosition == len(item.Rule.Production) {
-			for _, lookahead := range item.Lookahead {
-				if lookahead.IsEnd {
-					newState.Accept = true
-					break
-				}
-			}
-		}
-	}
-
-	return newState
-}
-
-func findEquivalentState(afd *Automata, newState AutomataState) int {
-	for stateId, existingState := range afd.Nodes {
-		if equalState(existingState, newState) {
-			return stateId
-		}
-	}
-	return -1
-}
-
-func equalState(a, b AutomataState) bool {
-	if len(a.Items) != len(b.Items) {
-		return false
-	}
-
-	for _, itemA := range a.Items {
-		found := false
-		for _, itemB := range b.Items {
-			if itemA.Rule.EqualRule(&itemB.Rule) &&
-				itemA.DotPosition == itemB.DotPosition &&
-				equalLookahead(itemA.Lookahead, itemB.Lookahead) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	return true
-}
-
-func equalLookahead(a, b []GrammarToken) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	count := make(map[string]int)
-	for _, tok := range a {
-		count[tok.String()]++
-	}
-	for _, tok := range b {
-		if count[tok.String()] == 0 {
-			return false
-		}
-		count[tok.String()]--
-	}
-	return true
-}
-
-func (a *Automata) SimplifyStates() {
-	coreMap := make(map[string][]int)
-
-	for stateIdx, state := range a.Nodes {
-		core := getCoreKey(state)
-		coreMap[core] = append(coreMap[core], stateIdx)
-	}
-
-	newNodes := make(map[int]AutomataState)
-	stateMapping := make(map[int]int)
-
-	newIdx := 0
-
-	for _, group := range coreMap {
-		mergedItems := make(map[string]AutomataItem)
-		initial := false
-		accept := false
-
-		for _, idx := range group {
-			origState := a.Nodes[idx]
-
-			if origState.Initial {
-				initial = true
-			}
-			if origState.Accept {
-				accept = true
-			}
-
-			for _, item := range a.Nodes[idx].Items {
-				key := itemToKeyWithoutLookAhead(item)
-				if existing, ok := mergedItems[key]; ok {
-					existing.Lookahead = unionLookaheads(existing.Lookahead, item.Lookahead)
-					mergedItems[key] = existing
-				} else {
-					mergedItems[key] = item
-				}
-			}
-		}
-
-		itemMap := make(map[int]AutomataItem)
-		i := 0
-		for _, v := range mergedItems {
-			itemMap[i] = v
-			i++
-		}
-
-		newNodes[newIdx] = AutomataState{
-			Items:       itemMap,
-			Productions: make(map[string]int),
-			Initial:     initial,
-			Accept:      accept,
-		}
-
-		for _, oldIdx := range group {
-			stateMapping[oldIdx] = newIdx
-		}
-		newIdx++
-	}
-
-	for oldIdx, oldState := range a.Nodes {
-		newIdx := stateMapping[oldIdx]
-		for symbol, target := range oldState.Productions {
-			newTarget := stateMapping[target]
-			newNodes[newIdx].Productions[symbol] = newTarget
-		}
-	}
-
-	for stateIdx, st := range newNodes {
-		for itemIdx, item := range st.Items {
-			if item.DotPosition >= len(item.Rule.Production) {
-				item.Lookahead = append(item.Lookahead, NewEndToken())
-				st.Items[itemIdx] = item
-			}
-		}
-
-		newNodes[stateIdx] = st
-	}
-
-	a.Nodes = newNodes
-}
-
-func getCoreKey(state AutomataState) string {
-	coreItems := make([]string, 0)
-	for _, item := range state.Items {
-		coreItems = append(coreItems, itemToKeyWithoutLookAhead(item))
-	}
-	sort.Strings(coreItems)
-	return fmt.Sprintf("%v", coreItems)
-}
-
-func (lalr *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
-	table := ParsingTable{
-		ActionTable:   make(map[AFDNodeId]map[GrammarToken]Action),
-		GoToTable:     make(map[AFDNodeId]map[GrammarToken]AFDNodeId),
-		Original:      *grammar,
-		InitialNodeId: lalr.findInitialState(),
-	}
-
-	conflicts := make(map[string][]string)
-
-	for stateID, state := range lalr.Nodes {
-		stateKey := fmt.Sprintf("%d", stateID)
-
-		if _, exists := table.ActionTable[stateKey]; !exists {
-			table.ActionTable[stateKey] = make(map[GrammarToken]Action)
-		}
-
-		if _, exists := table.GoToTable[stateKey]; !exists {
-			table.GoToTable[stateKey] = make(map[GrammarToken]AFDNodeId)
-		}
-
-		lalr.processReduceActions(state, stateKey, grammar, &table, conflicts)
-
-		lalr.processShiftAndGotoActions(state, stateKey, grammar, &table, conflicts)
-	}
-
-	if len(conflicts) > 0 {
-		fmt.Println("Parsing conflixts detected:")
-		for state, conflictList := range conflicts {
-			fmt.Printf("State %s:\n", state)
-			for _, conflict := range conflictList {
-				fmt.Printf("	%s\n", conflict)
-			}
-		}
-	}
-
-	return table
-}
-
-func (lalr *Automata) processReduceActions(state AutomataState, stateKey string, grammar *Grammar, table *ParsingTable, conflicts map[string][]string) {
-	for _, item := range state.Items {
-		if item.DotPosition == len(item.Rule.Production) {
-			if lalr.isAcceptItem(item, grammar) {
-				for _, lookahead := range item.Lookahead {
-					if lookahead.IsEnd {
-						lalr.setAction(table, stateKey, lookahead, NewAcceptAction(), conflicts)
-					}
-				}
-			} else {
-				ruleIndex := lalr.findRuleIndex(item.Rule, grammar)
-				if ruleIndex != -1 {
-					for _, lookahead := range item.Lookahead {
-						if !lookahead.IsEnd || !lalr.isAcceptItem(item, grammar) {
-							lalr.setAction(table, stateKey, lookahead, NewReduceAction(ruleIndex), conflicts)
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-func (lalr *Automata) processShiftAndGotoActions(state AutomataState, stateKey string, grammar *Grammar, table *ParsingTable, conflicts map[string][]string) {
-	for symbol, targetStateID := range state.Productions {
-		targetKey := fmt.Sprintf("%d", targetStateID)
-		symbolToken := grammar.GetTokenByString(symbol)
-
-		if symbolToken.IsTerminal() && !symbolToken.IsEnd {
-			lalr.setAction(table, stateKey, symbolToken, NewShiftAction(targetKey), conflicts)
-		} else if symbolToken.IsNonTerminal() {
-			table.GoToTable[stateKey][symbolToken] = targetKey
-		}
-	}
-}
-
-func (lalr *Automata) isAcceptItem(item AutomataItem, grammar *Grammar) bool {
-	initialToken := NewNonTerminalToken("S'")
-	if item.Rule.Head.Equal(&initialToken) || (len(item.Rule.Production) == 1 && item.Rule.Production[0].Equal(&grammar.InitialSimbol)) {
-		return true
-	}
-	return false
-}
-
-func (lalr *Automata) findRuleIndex(rule GrammarRule, grammar *Grammar) int {
-	for i, grammarRule := range grammar.Rules {
-		if rule.EqualRule(&grammarRule) {
-			return i
-		}
-	}
-
-	return -1
-}
-
-func (lalr *Automata) setAction(table *ParsingTable, stateKey string, symbol GrammarToken, newAction Action, conflicts map[string][]string) {
-	if existingAction, exists := table.ActionTable[stateKey][symbol]; exists {
-		conflictType := lalr.resolveConflict(existingAction, newAction)
-		if conflictType != "" {
-			conflictMsg := fmt.Sprintf("%s conflict on symbol %s: existing=%s, new=%s",
-				conflictType, symbol.String(), actionToString(existingAction), actionToString(newAction))
-			conflicts[stateKey] = append(conflicts[stateKey], conflictMsg)
-
-			resolvedAction := lalr.applyConflictResolution(existingAction, newAction)
-			table.ActionTable[stateKey][symbol] = resolvedAction
-		}
-	} else {
-		table.ActionTable[stateKey][symbol] = newAction
-	}
-}
-
-func (lalr *Automata) resolveConflict(existing, new Action) string {
-	if existing.Shift.HasValue() && new.Shift.HasValue() {
-		return "shift-shift"
-	}
-	if existing.Reduce.HasValue() && new.Reduce.HasValue() {
-		return "reduce-reduce"
-	}
-	if (existing.Shift.HasValue() && new.Reduce.HasValue()) ||
-		(existing.Reduce.HasValue() && new.Shift.HasValue()) {
-		return "shift-reduce"
-	}
-	return ""
-}
-
-func (lalr *Automata) applyConflictResolution(existing, new Action) Action {
-	if existing.Shift.HasValue() && new.Reduce.HasValue() {
-		return existing
-	}
-	if existing.Reduce.HasValue() && new.Shift.HasValue() {
-		return new
-	}
-
-	if existing.Reduce.HasValue() && new.Reduce.HasValue() {
-		if existing.Reduce.GetValue() < new.Reduce.GetValue() {
-			return existing
-		}
-		return new
-	}
-
-	return existing
-}
-
-func actionToString(action Action) string {
-	if action.Accept {
-		return "accept"
-	}
-	if action.Shift.HasValue() {
-		return fmt.Sprintf("shift(%s)", action.Shift.GetValue())
-	}
-	if action.Reduce.HasValue() {
-		return fmt.Sprintf("reduce(%d)", action.Reduce.GetValue())
-	}
-	return "unknown"
-}
-
-func (lalr *Automata) findInitialState() string {
-	for key, state := range lalr.Nodes {
-		if state.Initial {
-			keyStr := strconv.Itoa(key)
-			return keyStr
-		}
-	}
-
-	return "0"
-}
+// func getTransitions(state AutomataState, grammar Grammar) map[string][]AutomataItem {
+// 	transitions := make(map[string][]AutomataItem)
+//
+// 	for _, item := range state.Items {
+// 		if item.DotPosition < len(item.Rule.Production) {
+// 			symbol := item.Rule.Production[item.DotPosition]
+// 			symbolStr := symbol.String()
+//
+// 			// Create new item with dot moved forward
+// 			newItem := AutomataItem{
+// 				Rule:        item.Rule,
+// 				DotPosition: item.DotPosition + 1,
+// 				Lookahead:   item.Lookahead,
+// 			}
+//
+// 			transitions[symbolStr] = append(transitions[symbolStr], newItem)
+// 		}
+// 	}
+//
+// 	return transitions
+// }
+//
+// func createNewState(items []AutomataItem, grammar Grammar) AutomataState {
+// 	newState := AutomataState{
+// 		Items:       make(map[int]AutomataItem),
+// 		Productions: make(map[string]int),
+// 		Initial:     false,
+// 		Accept:      false,
+// 	}
+//
+// 	// Add kernel items
+// 	for i, item := range items {
+// 		newState.Items[i] = item
+// 	}
+//
+// 	// Compute closure
+// 	closure(newState, grammar)
+//
+// 	// Check if this is an accept state
+// 	initialToken := NewNonTerminalToken("S'")
+// 	for _, item := range newState.Items {
+// 		if item.Rule.Head.Equal(&initialToken) &&
+// 			item.DotPosition == len(item.Rule.Production) {
+// 			for _, lookahead := range item.Lookahead {
+// 				if lookahead.IsEnd {
+// 					newState.Accept = true
+// 					break
+// 				}
+// 			}
+// 		}
+// 	}
+//
+// 	return newState
+// }
+//
+// func findEquivalentState(afd *Automata, newState AutomataState) int {
+// 	for stateId, existingState := range afd.Nodes {
+// 		if equalState(existingState, newState) {
+// 			return stateId
+// 		}
+// 	}
+// 	return -1
+// }
+//
+// func equalState(a, b AutomataState) bool {
+// 	if len(a.Items) != len(b.Items) {
+// 		return false
+// 	}
+//
+// 	for _, itemA := range a.Items {
+// 		found := false
+// 		for _, itemB := range b.Items {
+// 			if itemA.Rule.EqualRule(&itemB.Rule) &&
+// 				itemA.DotPosition == itemB.DotPosition &&
+// 				equalLookahead(itemA.Lookahead, itemB.Lookahead) {
+// 				found = true
+// 				break
+// 			}
+// 		}
+// 		if !found {
+// 			return false
+// 		}
+// 	}
+//
+// 	return true
+// }
+//
+// func equalLookahead(a, b []GrammarToken) bool {
+// 	if len(a) != len(b) {
+// 		return false
+// 	}
+// 	count := make(map[string]int)
+// 	for _, tok := range a {
+// 		count[tok.String()]++
+// 	}
+// 	for _, tok := range b {
+// 		if count[tok.String()] == 0 {
+// 			return false
+// 		}
+// 		count[tok.String()]--
+// 	}
+// 	return true
+// }
+//
+// func (a *Automata) SimplifyStates() {
+// 	coreMap := make(map[string][]int)
+//
+// 	for stateIdx, state := range a.Nodes {
+// 		core := getCoreKey(state)
+// 		coreMap[core] = append(coreMap[core], stateIdx)
+// 	}
+//
+// 	newNodes := make(map[int]AutomataState)
+// 	stateMapping := make(map[int]int)
+//
+// 	newIdx := 0
+//
+// 	for _, group := range coreMap {
+// 		mergedItems := make(map[string]AutomataItem)
+// 		initial := false
+// 		accept := false
+//
+// 		for _, idx := range group {
+// 			origState := a.Nodes[idx]
+//
+// 			if origState.Initial {
+// 				initial = true
+// 			}
+// 			if origState.Accept {
+// 				accept = true
+// 			}
+//
+// 			for _, item := range a.Nodes[idx].Items {
+// 				key := itemToKeyWithoutLookAhead(item)
+// 				if existing, ok := mergedItems[key]; ok {
+// 					existing.Lookahead = unionLookaheads(existing.Lookahead, item.Lookahead)
+// 					mergedItems[key] = existing
+// 				} else {
+// 					mergedItems[key] = item
+// 				}
+// 			}
+// 		}
+//
+// 		itemMap := make(map[int]AutomataItem)
+// 		i := 0
+// 		for _, v := range mergedItems {
+// 			itemMap[i] = v
+// 			i++
+// 		}
+//
+// 		newNodes[newIdx] = AutomataState{
+// 			Items:       itemMap,
+// 			Productions: make(map[string]int),
+// 			Initial:     initial,
+// 			Accept:      accept,
+// 		}
+//
+// 		for _, oldIdx := range group {
+// 			stateMapping[oldIdx] = newIdx
+// 		}
+// 		newIdx++
+// 	}
+//
+// 	for oldIdx, oldState := range a.Nodes {
+// 		newIdx := stateMapping[oldIdx]
+// 		for symbol, target := range oldState.Productions {
+// 			newTarget := stateMapping[target]
+// 			newNodes[newIdx].Productions[symbol] = newTarget
+// 		}
+// 	}
+//
+// 	for stateIdx, st := range newNodes {
+// 		for itemIdx, item := range st.Items {
+// 			if item.DotPosition >= len(item.Rule.Production) {
+// 				item.Lookahead = append(item.Lookahead, NewEndToken())
+// 				st.Items[itemIdx] = item
+// 			}
+// 		}
+//
+// 		newNodes[stateIdx] = st
+// 	}
+//
+// 	a.Nodes = newNodes
+// }
+//
+// func getCoreKey(state AutomataState) string {
+// 	coreItems := make([]string, 0)
+// 	for _, item := range state.Items {
+// 		coreItems = append(coreItems, itemToKeyWithoutLookAhead(item))
+// 	}
+// 	sort.Strings(coreItems)
+// 	return fmt.Sprintf("%v", coreItems)
+// }
+//
+// func (lalr *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
+// 	table := ParsingTable{
+// 		ActionTable:   make(map[AFDNodeId]map[GrammarToken]Action),
+// 		GoToTable:     make(map[AFDNodeId]map[GrammarToken]AFDNodeId),
+// 		Original:      *grammar,
+// 		InitialNodeId: lalr.findInitialState(),
+// 	}
+//
+// 	conflicts := make(map[string][]string)
+//
+// 	for stateID, state := range lalr.Nodes {
+// 		stateKey := fmt.Sprintf("%d", stateID)
+//
+// 		if _, exists := table.ActionTable[stateKey]; !exists {
+// 			table.ActionTable[stateKey] = make(map[GrammarToken]Action)
+// 		}
+//
+// 		if _, exists := table.GoToTable[stateKey]; !exists {
+// 			table.GoToTable[stateKey] = make(map[GrammarToken]AFDNodeId)
+// 		}
+//
+// 		lalr.processReduceActions(state, stateKey, grammar, &table, conflicts)
+//
+// 		lalr.processShiftAndGotoActions(state, stateKey, grammar, &table, conflicts)
+// 	}
+//
+// 	if len(conflicts) > 0 {
+// 		fmt.Println("Parsing conflixts detected:")
+// 		for state, conflictList := range conflicts {
+// 			fmt.Printf("State %s:\n", state)
+// 			for _, conflict := range conflictList {
+// 				fmt.Printf("	%s\n", conflict)
+// 			}
+// 		}
+// 	}
+//
+// 	return table
+// }
+//
+// func (lalr *Automata) processReduceActions(state AutomataState, stateKey string, grammar *Grammar, table *ParsingTable, conflicts map[string][]string) {
+// 	for _, item := range state.Items {
+// 		if item.DotPosition == len(item.Rule.Production) {
+// 			if lalr.isAcceptItem(item, grammar) {
+// 				for _, lookahead := range item.Lookahead {
+// 					if lookahead.IsEnd {
+// 						lalr.setAction(table, stateKey, lookahead, NewAcceptAction(), conflicts)
+// 					}
+// 				}
+// 			} else {
+// 				ruleIndex := lalr.findRuleIndex(item.Rule, grammar)
+// 				if ruleIndex != -1 {
+// 					for _, lookahead := range item.Lookahead {
+// 						if !lookahead.IsEnd || !lalr.isAcceptItem(item, grammar) {
+// 							lalr.setAction(table, stateKey, lookahead, NewReduceAction(ruleIndex), conflicts)
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+//
+// func (lalr *Automata) processShiftAndGotoActions(state AutomataState, stateKey string, grammar *Grammar, table *ParsingTable, conflicts map[string][]string) {
+// 	for symbol, targetStateID := range state.Productions {
+// 		targetKey := fmt.Sprintf("%d", targetStateID)
+// 		symbolToken := grammar.GetTokenByString(symbol)
+//
+// 		if symbolToken.IsTerminal() && !symbolToken.IsEnd {
+// 			lalr.setAction(table, stateKey, symbolToken, NewShiftAction(targetKey), conflicts)
+// 		} else if symbolToken.IsNonTerminal() {
+// 			table.GoToTable[stateKey][symbolToken] = targetKey
+// 		}
+// 	}
+// }
+//
+// func (lalr *Automata) isAcceptItem(item AutomataItem, grammar *Grammar) bool {
+// 	initialToken := NewNonTerminalToken("S'")
+// 	if item.Rule.Head.Equal(&initialToken) || (len(item.Rule.Production) == 1 && item.Rule.Production[0].Equal(&grammar.InitialSimbol)) {
+// 		return true
+// 	}
+// 	return false
+// }
+//
+// func (lalr *Automata) findRuleIndex(rule GrammarRule, grammar *Grammar) int {
+// 	for i, grammarRule := range grammar.Rules {
+// 		if rule.EqualRule(&grammarRule) {
+// 			return i
+// 		}
+// 	}
+//
+// 	return -1
+// }
+//
+// func (lalr *Automata) setAction(table *ParsingTable, stateKey string, symbol GrammarToken, newAction Action, conflicts map[string][]string) {
+// 	if existingAction, exists := table.ActionTable[stateKey][symbol]; exists {
+// 		conflictType := lalr.resolveConflict(existingAction, newAction)
+// 		if conflictType != "" {
+// 			conflictMsg := fmt.Sprintf("%s conflict on symbol %s: existing=%s, new=%s",
+// 				conflictType, symbol.String(), actionToString(existingAction), actionToString(newAction))
+// 			conflicts[stateKey] = append(conflicts[stateKey], conflictMsg)
+//
+// 			resolvedAction := lalr.applyConflictResolution(existingAction, newAction)
+// 			table.ActionTable[stateKey][symbol] = resolvedAction
+// 		}
+// 	} else {
+// 		table.ActionTable[stateKey][symbol] = newAction
+// 	}
+// }
+//
+// func (lalr *Automata) resolveConflict(existing, new Action) string {
+// 	if existing.Shift.HasValue() && new.Shift.HasValue() {
+// 		return "shift-shift"
+// 	}
+// 	if existing.Reduce.HasValue() && new.Reduce.HasValue() {
+// 		return "reduce-reduce"
+// 	}
+// 	if (existing.Shift.HasValue() && new.Reduce.HasValue()) ||
+// 		(existing.Reduce.HasValue() && new.Shift.HasValue()) {
+// 		return "shift-reduce"
+// 	}
+// 	return ""
+// }
+//
+// func (lalr *Automata) applyConflictResolution(existing, new Action) Action {
+// 	if existing.Shift.HasValue() && new.Reduce.HasValue() {
+// 		return existing
+// 	}
+// 	if existing.Reduce.HasValue() && new.Shift.HasValue() {
+// 		return new
+// 	}
+//
+// 	if existing.Reduce.HasValue() && new.Reduce.HasValue() {
+// 		if existing.Reduce.GetValue() < new.Reduce.GetValue() {
+// 			return existing
+// 		}
+// 		return new
+// 	}
+//
+// 	return existing
+// }
+//
+// func actionToString(action Action) string {
+// 	if action.Accept {
+// 		return "accept"
+// 	}
+// 	if action.Shift.HasValue() {
+// 		return fmt.Sprintf("shift(%s)", action.Shift.GetValue())
+// 	}
+// 	if action.Reduce.HasValue() {
+// 		return fmt.Sprintf("reduce(%d)", action.Reduce.GetValue())
+// 	}
+// 	return "unknown"
+// }
+//
+// func (lalr *Automata) findInitialState() string {
+// 	for key, state := range lalr.Nodes {
+// 		if state.Initial {
+// 			keyStr := strconv.Itoa(key)
+// 			return keyStr
+// 		}
+// 	}
+//
+// 	return "0"
+// }
