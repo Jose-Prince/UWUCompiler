@@ -467,7 +467,15 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 
 		initialDefaultToken := NewNonTerminalToken("S'")
 		for _, rule := range state.Rules {
-			if len(rule.Lookahead) <= 0 || rule.Head.Equal(&initialDefaultToken) {
+			if len(rule.Lookahead) <= 0 {
+				continue
+			}
+
+			if rule.Head.Equal(&initialDefaultToken) {
+				continue
+			}
+
+			if rule.Dot < len(rule.Production) {
 				continue
 			}
 
