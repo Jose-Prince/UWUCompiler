@@ -397,8 +397,10 @@ func generateStates(
 
 			if newInitialRule.Dot < len(newInitialRule.Production) {
 				closureToken := newInitialRule.Production[newInitialRule.Dot]
-				set := lib.NewSet[GrammarToken]()
-				closure(closureToken, &newInitialRule, &newState, grammar, firsts, &set)
+				if closureToken.IsNonTerminal() {
+					set := lib.NewSet[GrammarToken]()
+					closure(closureToken, &newInitialRule, &newState, grammar, firsts, &set)
+				}
 			}
 		}
 
