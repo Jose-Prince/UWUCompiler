@@ -395,13 +395,21 @@ outerLoop:
 
 			if state.EQ_WithoutLookAhead(&other) {
 				simplifiedSomething = true
-				newState := AutomataState{
-					Rules: state.Rules,
+				rules := state.Rules
+				for i := range rules {
+					rules[i].Lookahead.Clear()
 				}
+				newState := AutomataState{
+					Rules: rules,
+				}
+				newStateId := fmt.Sprintf("%s-%s", i, j)
+
 				delete(auto.Nodes, i)
 				delete(auto.Nodes, j)
 
-				newStateId := fmt.Sprintf("%s-%s", i, j)
+				if i == auto.InitialState || j == auto.InitialState {
+					auto.InitialState = newStateId
+				}
 				auto.Nodes[newStateId] = newState
 
 				if _, found := auto.Transitions[newStateId]; !found {
@@ -428,6 +436,52 @@ outerLoop:
 	if simplifiedSomething {
 		auto.SimplifyStates()
 	}
+}
+
+func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
+	table := ParsingTable{
+		ActionTable:   make(map[AFDNodeId]map[GrammarToken]Action),
+		GoToTable:     make(map[AFDNodeId]map[GrammarToken]AFDNodeId),
+		Original:      *grammar,
+		InitialNodeId: auto.InitialState,
+	}
+
+	for nodeId, state := range auto.Nodes {
+
+		if _, found := table.ActionTable[nodeId]; !found {
+			table.ActionTable[nodeId] = make(map[GrammarToken]Action)
+		}
+		if _, found := table.GoToTable[nodeId]; !found {
+			table.GoToTable[nodeId] = make(map[GrammarToken]AFDNodeId)
+		}
+
+		for input, outNodeId := range auto.Transitions[nodeId] {
+			if input.IsNonTerminal() {
+				table.GoToTable[nodeId][input] = outNodeId
+			} else if input.IsEnd {
+				table.ActionTable[nodeId][input] = NewAcceptAction()
+			} else {
+				table.ActionTable[nodeId][input] = NewShiftAction(outNodeId)
+			}
+		}
+
+		initialDefaultToken := NewNonTerminalToken("S'")
+		for _, rule := range state.Rules {
+			if len(rule.Lookahead) <= 0 || rule.Head.Equal(&initialDefaultToken) {
+				continue
+			}
+
+			ruleId := grammar.FindIndexOfRule(&rule)
+			if ruleId == -1 {
+				panic(fmt.Sprintf("Failed to find rule: %#v\non grammar %s", rule, grammar))
+			}
+			for input := range rule.Lookahead {
+				table.ActionTable[nodeId][input] = NewReduceAction(ruleId)
+			}
+		}
+	}
+
+	return table
 }
 
 // func getTransitions(state AutomataState, grammar Grammar) map[string][]AutomataItem {

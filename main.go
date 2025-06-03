@@ -186,18 +186,17 @@ func main() {
 	// }
 	// fmt.Println("LALR HTML generated")
 	//
-	// fmt.Println("Generating Parsing table from LALR AFD...")
-	// parsingTable := lalr.GenerateParsingTable(&g)
-	//
-	// info := CompilerFileInfo{
-	// 	LexInfo:      lexFileData,
-	// 	LexAFD:       afd,
-	// 	ParsingTable: parsingTable,
-	// }
-	// fmt.Println("Writing final compiler source code...")
-	// err = WriteCompilerFile(params.OutGoPath, &info)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
-	// 	panic(err)
-	// }
+	fmt.Println("Generating Parsing table from LALR AFD...")
+	parsingTable := lalr.GenerateParsingTable(&g)
+
+	info := CompilerFileInfo{
+		LexInfo:      lexFileData,
+		LexAFD:       afd,
+		ParsingTable: parsingTable,
+	}
+	fmt.Println("Writing final compiler source code...")
+	err = WriteCompilerFile(params.OutGoPath, &info)
+	if err != nil {
+		log.Fatalf("An error ocurred writing final lexer file! %v", err)
+	}
 }
