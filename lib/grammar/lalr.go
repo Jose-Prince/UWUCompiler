@@ -5,6 +5,7 @@ import (
 	// "sort"
 	// "strconv"
 
+	"fmt"
 	"strconv"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
@@ -136,7 +137,7 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 	lr1.InitialState = "0"
 	lr1.Nodes[lr1.InitialState] = state
 
-	generateStates(0, &lr1, &grammar, &firsts)
+	generateStates(lr1.InitialState, &lr1, &grammar, &firsts)
 
 	return lr1
 }
@@ -385,9 +386,30 @@ func (auto *Automata) SimplifyStates() {
 			}
 
 			if state.EQ_WithoutLookAhead(&other) {
-				// previous := min(i, j)
-				// later := max(i, j)
+				newState := AutomataState{
+					Rules: state.Rules,
+				}
+				delete(auto.Nodes, i)
+				delete(auto.Nodes, j)
 
+				newStateId := fmt.Sprintf("%s-%s", i, j)
+				auto.Nodes[newStateId] = newState
+
+				if _, found := auto.Transitions[newStateId]; !found {
+					auto.Transitions[newStateId] = make(map[AlphabetInput]AutomataStateIndex)
+				}
+
+				for inputState := range auto.Transitions {
+					for input, outState := range auto.Transitions[inputState] {
+						if outState == i || outState == j {
+							auto.Transitions[inputState][input] = newStateId
+						}
+
+						if inputState == i || inputState == j {
+							auto.Transitions[newStateId][input] = outState
+						}
+					}
+				}
 			}
 
 		}
