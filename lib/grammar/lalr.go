@@ -446,8 +446,8 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 		InitialNodeId: auto.InitialState,
 	}
 
+	initialDefaultToken := NewNonTerminalToken("S'")
 	for nodeId, state := range auto.Nodes {
-
 		if _, found := table.ActionTable[nodeId]; !found {
 			table.ActionTable[nodeId] = make(map[GrammarToken]Action)
 		}
@@ -458,14 +458,13 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 		for input, outNodeId := range auto.Transitions[nodeId] {
 			if input.IsNonTerminal() {
 				table.GoToTable[nodeId][input] = outNodeId
-			} else if input.IsEnd {
+			} else if input.Equal(&grammar.InitialSimbol) {
 				table.ActionTable[nodeId][input] = NewAcceptAction()
 			} else {
 				table.ActionTable[nodeId][input] = NewShiftAction(outNodeId)
 			}
 		}
 
-		initialDefaultToken := NewNonTerminalToken("S'")
 		for _, rule := range state.Rules {
 			if len(rule.Lookahead) <= 0 {
 				continue
