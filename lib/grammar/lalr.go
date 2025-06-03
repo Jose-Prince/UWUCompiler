@@ -417,6 +417,7 @@ outerLoop:
 				}
 
 				for inputState := range auto.Transitions {
+					matchedInputState := false
 					for input, outState := range auto.Transitions[inputState] {
 						if outState == i || outState == j {
 							auto.Transitions[inputState][input] = newStateId
@@ -424,7 +425,12 @@ outerLoop:
 
 						if inputState == i || inputState == j {
 							auto.Transitions[newStateId][input] = outState
+							matchedInputState = true
 						}
+					}
+
+					if matchedInputState {
+						delete(auto.Transitions, inputState)
 					}
 				}
 
