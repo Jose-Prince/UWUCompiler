@@ -397,7 +397,8 @@ outerLoop:
 				simplifiedSomething = true
 				rules := state.Rules
 				for i := range rules {
-					rules[i].Lookahead.Clear()
+					other_i := other.Rules[i]
+					rules[i].Lookahead.Merge(&other_i.Lookahead)
 				}
 				newState := AutomataState{
 					Rules: rules,
