@@ -175,6 +175,10 @@ func closure(
 			dotToken := rule.Production[0]
 
 			lookAhead := lib.NewSet[GrammarToken]()
+			if 1 < len(rule.Production) {
+				firsts := firsts.table[rule.Production[1]].First
+				lookAhead.Merge(&firsts)
+			}
 			if initRule.Dot+1 < len(initRule.Production) {
 				tk := initRule.Production[initRule.Dot+1]
 				firsts := firsts.table[tk].First
