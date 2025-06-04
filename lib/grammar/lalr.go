@@ -169,15 +169,10 @@ func closure(
 		return
 	}
 
-	grammarsVisited := lib.NewSet[*GrammarRule]()
-
 	nextTokens := []GrammarTokenRulePair{}
 	for _, rule := range grammar.Rules {
 		if rule.Head.Equal(&token) {
 			dotToken := rule.Production[0]
-			if grammarsVisited.Contains(&rule) {
-				continue
-			}
 
 			lookAhead := lib.NewSet[GrammarToken]()
 			if initRule.Dot+1 < len(initRule.Production) {
@@ -204,7 +199,6 @@ func closure(
 				})
 			}
 			state.Rules = append(state.Rules, newRule)
-			grammarsVisited.Add(&rule)
 		}
 	}
 
