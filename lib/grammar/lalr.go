@@ -94,12 +94,12 @@ func (rule *AutomataRule) Equals(other *AutomataRule) bool {
 		return false
 	}
 
-	if !rule.Head.Equal(&other.Head) || rule.Dot != rule.Dot {
+	if !rule.Head.Equal(&other.Head) || rule.Dot != other.Dot {
 		return false
 	}
 
-	if !rule.Lookahead.Equals(&other.Lookahead) {
-		return false
+	for i := range other.Lookahead {
+		rule.Lookahead.Add(i)
 	}
 
 	for i, prod := range rule.Production {
@@ -169,10 +169,18 @@ func closure(
 		return
 	}
 
+	grammarsVisited := lib.NewSet[*GrammarRule]()
+
 	nextTokens := []GrammarTokenRulePair{}
 	for _, rule := range grammar.Rules {
 		if rule.Head.Equal(&token) {
 			dotToken := rule.Production[0]
+<<<<<<< HEAD
+=======
+			if grammarsVisited.Contains(&rule) {
+				continue
+			}
+>>>>>>> c773e0e9954bf70cc32d5d244a77f58ecabe7844
 
 			lookAhead := lib.NewSet[GrammarToken]()
 			if initRule.Dot+1 < len(initRule.Production) {
@@ -199,6 +207,7 @@ func closure(
 				})
 			}
 			state.Rules = append(state.Rules, newRule)
+			grammarsVisited.Add(&rule)
 		}
 	}
 
@@ -263,7 +272,7 @@ func generateStates(
 
 		for _, rule := range pair.Rules {
 			if rule.Dot >= len(rule.Production) {
-				return // The dot has reached the end
+				continue // The dot has reached the end
 			}
 
 			newInitialRule := AutomataRule{
@@ -294,7 +303,9 @@ func generateStates(
 		if _, found := automata.Transitions[currentIdx]; !found {
 			automata.Transitions[currentIdx] = make(map[AlphabetInput]AutomataStateIndex)
 		}
-		automata.Transitions[currentIdx][transitionToken] = idx
+		if _, exists := automata.Transitions[currentIdx][transitionToken]; !exists {
+			automata.Transitions[currentIdx][transitionToken] = idx
+		}
 	}
 }
 
