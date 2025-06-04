@@ -169,11 +169,13 @@ func closure(
 		return
 	}
 
+	grammarsVisited := lib.NewSet[*GrammarRule]()
+
 	nextTokens := []GrammarTokenRulePair{}
 	for _, rule := range grammar.Rules {
 		if rule.Head.Equal(&token) {
 			dotToken := rule.Production[0]
-			if dotToken.Equal(&token) {
+			if grammarsVisited.Contains(&rule) {
 				continue
 			}
 
@@ -198,6 +200,7 @@ func closure(
 				Rule:  newRule,
 			})
 			state.Rules = append(state.Rules, newRule)
+			grammarsVisited.Add(&rule)
 		}
 	}
 
@@ -544,7 +547,7 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 		}
 	}
 
-	// Find Accept 
+	// Find Accept
 	acceptNodeId := auto.Transitions[auto.InitialState][grammar.InitialSimbol]
 	table.ActionTable[acceptNodeId][NewEndToken()] = NewAcceptAction()
 
