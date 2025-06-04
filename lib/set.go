@@ -3,11 +3,18 @@ package lib
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
 
 type Set[T comparable] map[T]struct{}
+
+func (set Set[T]) Copy() Set[T] {
+	dest := NewSet[T]()
+	maps.Copy(dest, set)
+	return dest
+}
 
 // Prints a set as a string.
 //

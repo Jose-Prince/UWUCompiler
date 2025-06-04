@@ -6,7 +6,9 @@ import (
 	// "strconv"
 
 	"fmt"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/Jose-Prince/UWUCompiler/lib"
 )
@@ -22,17 +24,18 @@ type Automata struct {
 	Nodes map[AutomataStateIndex]AutomataState
 }
 
-func (auto *Automata) FindIndexOfState(state *AutomataState) AutomataStateIndex {
+func (auto *Automata) FindIndexOfState(state *AutomataState) (AutomataStateIndex, bool) {
 	finalIdx := ""
+	foundSomething := false
 
 NodeLoop:
 	for idx, st := range auto.Nodes {
-		if len(st.Rules) != len(state.Rules) {
+		if len(st.Items) != len(state.Items) {
 			continue
 		}
 
-		for i, rule := range st.Rules {
-			stateIRule := state.Rules[i]
+		for i, rule := range st.Items {
+			stateIRule := state.Items[i]
 
 			if !rule.Equals(&stateIRule) {
 				continue NodeLoop
@@ -40,23 +43,24 @@ NodeLoop:
 		}
 
 		finalIdx = idx
+		foundSomething = true
 		break
 	}
 
-	return finalIdx
+	return finalIdx, foundSomething
 }
 
 type AutomataState struct {
-	Rules []AutomataRule
+	Items []AutomataItem
 }
 
 func (state *AutomataState) EQ_WithoutLookAhead(other *AutomataState) bool {
-	if len(state.Rules) != len(other.Rules) {
+	if len(state.Items) != len(other.Items) {
 		return false
 	}
 
-	for i, r := range state.Rules {
-		other_r := other.Rules[i]
+	for i, r := range state.Items {
+		other_r := other.Items[i]
 		if !r.EqualsWithoutLookahead(&other_r) {
 			return false
 		}
@@ -64,14 +68,18 @@ func (state *AutomataState) EQ_WithoutLookAhead(other *AutomataState) bool {
 	return true
 }
 
-type AutomataRule struct {
+type AutomataItem struct {
 	Head       GrammarToken
 	Production []GrammarToken
 	Dot        int
 	Lookahead  lib.Set[GrammarToken]
 }
 
-func (rule *AutomataRule) EqualsWithoutLookahead(other *AutomataRule) bool {
+func (item *AutomataItem) DotIsAtEnd() bool {
+	return item.Dot >= len(item.Production)
+}
+
+func (rule *AutomataItem) EqualsWithoutLookahead(other *AutomataItem) bool {
 	if len(rule.Production) != len(other.Production) {
 		return false
 	}
@@ -89,7 +97,7 @@ func (rule *AutomataRule) EqualsWithoutLookahead(other *AutomataRule) bool {
 	return true
 }
 
-func (rule *AutomataRule) Equals(other *AutomataRule) bool {
+func (rule *AutomataItem) Equals(other *AutomataItem) bool {
 	if len(rule.Production) != len(other.Production) {
 		return false
 	}
@@ -124,7 +132,7 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 
 	lookAhead := lib.NewSet[GrammarToken]()
 	lookAhead.Add(NewEndToken())
-	initRule := AutomataRule{
+	initRule := AutomataItem{
 		Head:       initialRule.Head,
 		Production: initialRule.Production,
 		Dot:        0,
@@ -132,11 +140,10 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 	}
 
 	state := AutomataState{
-		Rules: []AutomataRule{initRule},
+		Items: []AutomataItem{initRule},
 	}
 
-	set := lib.NewSet[GrammarToken]()
-	closure(initRule.Production[initRule.Dot], &initRule, &state, &grammar, &firsts, &set)
+	closure(&state, &grammar, &firsts)
 
 	lr1.InitialState = "0"
 	lr1.Nodes[lr1.InitialState] = state
@@ -154,66 +161,187 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 
 type GrammarTokenRulePair struct {
 	Token GrammarToken
-	Rule  AutomataRule
+	Rule  AutomataItem
+}
+
+func (item *AutomataItem) ExpansionKey() string {
+	b := strings.Builder{}
+
+	b.WriteString(item.Head.String())
+	// b.WriteString(" -> [ ")
+	// for _, prod := range item.Production {
+	// 	b.WriteString(prod.String())
+	// 	b.WriteString(" ")
+	// }
+	// b.WriteString("] ")
+	// b.WriteString(strconv.FormatInt(int64(item.Dot), 10))
+
+	b.WriteString(" LK: { ")
+	for k := range item.Lookahead {
+		b.WriteString(k.String())
+		b.WriteString(" ")
+	}
+	b.WriteString("} ")
+
+	return b.String()
+}
+
+func (item *AutomataItem) ToUniqueString() string {
+	b := strings.Builder{}
+
+	b.WriteString(item.Head.String())
+	b.WriteString(" -> [ ")
+	for _, prod := range item.Production {
+		b.WriteString(prod.String())
+		b.WriteString(" ")
+	}
+	b.WriteString("] ")
+	b.WriteString(strconv.FormatInt(int64(item.Dot), 10))
+
+	b.WriteString(" LK: { ")
+
+	lkSlices := make([]string, 0, len(item.Lookahead))
+	slices.Sort(lkSlices)
+	for _, k := range lkSlices {
+		b.WriteString(k)
+		b.WriteString(" ")
+	}
+	b.WriteString("} ")
+
+	return b.String()
 }
 
 func closure(
-	token GrammarToken,
-	initRule *AutomataRule,
 	state *AutomataState,
 	grammar *Grammar,
 	firsts *FirstFollowTable,
-	alreadyComputed *lib.Set[GrammarToken],
 ) {
-	if !alreadyComputed.Add(token) {
-		return
+
+	alreadyComputedItems := lib.NewSet[string]()
+	queueOfRules := lib.NewQueue[AutomataItem]()
+	for _, v := range state.Items {
+		alreadyComputedItems.Add(v.ToUniqueString())
+		queueOfRules.Enqueue(v)
 	}
 
-	nextTokens := []GrammarTokenRulePair{}
-	for _, rule := range grammar.Rules {
-		if rule.Head.Equal(&token) {
-			dotToken := rule.Production[0]
+	addedNewItem := true
+	for addedNewItem {
+		addedNewItem = false
 
-			lookAhead := lib.NewSet[GrammarToken]()
-			if 1 < len(rule.Production) {
-				firsts := firsts.table[rule.Production[1]].First
-				lookAhead.Merge(&firsts)
-			}
-			if initRule.Dot+1 < len(initRule.Production) {
-				tk := initRule.Production[initRule.Dot+1]
-				firsts := firsts.table[tk].First
-				lookAhead.Merge(&firsts)
-			} else if initRule.Lookahead.IsEmpty() {
-				lookAhead.Add(NewEndToken())
-			} else {
-				lookAhead.Merge(&initRule.Lookahead)
-			}
+		// From https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/c86c6ebce6973a6f8441f200a3b34fbd_MIT6_035S10_lec03b.pdf
+		// repeat
+		// 	for all items [A → α • X β c] in I
+		// 		for any production X → γ
+		// 			for any d ∈ First(βc)
+		// 				I = I ∪ { [X → • γ d] }
+		// until I does not change
 
-			newRule := AutomataRule{
-				Head:       rule.Head,
-				Production: rule.Production,
-				Dot:        0,
-				Lookahead:  lookAhead,
+		for _, rule := range state.Items {
+			if rule.Dot >= len(rule.Production) {
+				continue
 			}
+			dotToken := rule.Production[rule.Dot]
 
-			if !alreadyComputed.Contains(dotToken) && dotToken.IsNonTerminal() {
-				nextTokens = append(nextTokens, GrammarTokenRulePair{
-					Token: dotToken,
-					Rule:  newRule,
-				})
+			for _, prod := range grammar.Rules {
+				if !prod.Head.Equal(&dotToken) {
+					continue
+				}
+
+				lookAhead := lib.NewSet[GrammarToken]()
+				if rule.Dot+1 < len(rule.Production) {
+					merge := firsts.table[rule.Production[rule.Dot+1]]
+					lookAhead.Merge(&merge.First)
+				} else {
+					lookAhead.Merge(&rule.Lookahead)
+				}
+
+				newRule := AutomataItem{
+					Head:       dotToken,
+					Production: prod.Production,
+					Dot:        0,
+					Lookahead:  lookAhead,
+				}
+
+				if alreadyComputedItems.Add(newRule.ToUniqueString()) {
+					addedNewItem = true
+					state.Items = append(state.Items, newRule)
+				}
 			}
-			state.Rules = append(state.Rules, newRule)
 		}
 	}
 
-	for _, pair := range nextTokens {
-		closure(pair.Token, &pair.Rule, state, grammar, firsts, alreadyComputed)
+	// nextTokens := []GrammarTokenRulePair{}
+	// for _, rule := range grammar.Rules {
+	// 	if rule.Head.Equal(&token) {
+	// 		dotToken := rule.Production[0]
+	//
+	// 		lookAhead := lib.NewSet[GrammarToken]()
+	// 		if 1 < len(rule.Production) {
+	// 			firsts := firsts.table[rule.Production[1]].First
+	// 			lookAhead.Merge(&firsts)
+	// 		}
+	// 		if initRule.Dot+1 < len(initRule.Production) {
+	// 			tk := initRule.Production[initRule.Dot+1]
+	// 			firsts := firsts.table[tk].First
+	// 			lookAhead.Merge(&firsts)
+	// 		} else if initRule.Lookahead.IsEmpty() {
+	// 			lookAhead.Add(NewEndToken())
+	// 		} else {
+	// 			lookAhead.Merge(&initRule.Lookahead)
+	// 		}
+	//
+	// 		newRule := AutomataRule{
+	// 			Head:       rule.Head,
+	// 			Production: rule.Production,
+	// 			Dot:        0,
+	// 			Lookahead:  lookAhead,
+	// 		}
+	//
+	// 		if !alreadyComputed.Contains(dotToken) && dotToken.IsNonTerminal() {
+	// 			nextTokens = append(nextTokens, GrammarTokenRulePair{
+	// 				Token: dotToken,
+	// 				Rule:  newRule,
+	// 			})
+	// 		}
+	// 		state.Rules = append(state.Rules, newRule)
+	// 	}
+	// }
+
+	// for _, pair := range nextTokens {
+	// 	closure(pair.Token, &pair.Rule, state, grammar, firsts, alreadyComputed)
+	// }
+}
+
+func goTo(
+	state *AutomataState,
+	token GrammarToken,
+	grammar *Grammar,
+	firsts *FirstFollowTable,
+) AutomataState {
+	// https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/c86c6ebce6973a6f8441f200a3b34fbd_MIT6_035S10_lec03b.pdf
+	// Goto(I, X)
+	// 	J = { }
+	// 	for any item [A → α • X β c] in I
+	// 		J = J ∪ {[A → α X • β c] }
+	// 	return Closure(J)
+
+	newState := AutomataState{
+		Items: make([]AutomataItem, 0, len(state.Items)),
 	}
+
+	for _, r := range state.Items {
+		if r.Dot < len(r.Production) {
+			newState.Items = append(newState.Items, r)
+		}
+	}
+
+	closure(&newState, grammar, firsts)
+	return newState
 }
 
 type InputStateRulesPair struct {
 	Input GrammarToken
-	Rules []AutomataRule
+	Rules []AutomataItem
 }
 
 func generateStates(
@@ -229,67 +357,15 @@ func generateStates(
 	}
 	currentState := automata.Nodes[currentIdx]
 
-	alreadyScannedInputs := lib.NewSet[GrammarToken]()
-	transitionInputs := make([]InputStateRulesPair, 0, len(currentState.Rules))
-	for _, rule := range currentState.Rules {
-		if rule.Dot >= len(rule.Production) {
+	for _, item := range currentState.Items {
+		if item.DotIsAtEnd() {
 			continue
 		}
+		dotToken := item.Production[item.Dot]
 
-		dotOfRule := rule.Production[rule.Dot]
-		if !alreadyScannedInputs.Add(dotOfRule) {
-			continue
-		}
-
-		pair := InputStateRulesPair{
-			Input: dotOfRule,
-			Rules: []AutomataRule{},
-		}
-		for _, rr := range currentState.Rules {
-			if rr.Dot >= len(rr.Production) {
-				continue
-			}
-
-			dotOfRule2 := rr.Production[rr.Dot]
-			if dotOfRule.Equal(&dotOfRule2) {
-				pair.Rules = append(pair.Rules, rr)
-			}
-		}
-
-		transitionInputs = append(transitionInputs, pair)
-	}
-
-	for _, pair := range transitionInputs {
-		transitionToken := pair.Input
-		newState := AutomataState{
-			Rules: make([]AutomataRule, 0, len(pair.Rules)),
-		}
-
-		for _, rule := range pair.Rules {
-			if rule.Dot >= len(rule.Production) {
-				continue // The dot has reached the end
-			}
-
-			newInitialRule := AutomataRule{
-				Head:       rule.Head,
-				Production: rule.Production,
-				Dot:        rule.Dot + 1,
-				Lookahead:  rule.Lookahead,
-			}
-			newState.Rules = append(newState.Rules, newInitialRule)
-
-			if newInitialRule.Dot < len(newInitialRule.Production) {
-				closureToken := newInitialRule.Production[newInitialRule.Dot]
-				if closureToken.IsNonTerminal() {
-					set := lib.NewSet[GrammarToken]()
-					closure(closureToken, &newInitialRule, &newState, grammar, firsts, &set)
-				}
-			}
-		}
-
-		idx := automata.FindIndexOfState(&newState)
-		newStateNotDefined := idx == ""
-		if newStateNotDefined {
+		newState := goTo(&currentState, dotToken, grammar, firsts)
+		idx, found := automata.FindIndexOfState(&newState)
+		if !found {
 			idx = strconv.FormatInt(int64(len(automata.Nodes)), 10)
 			automata.Nodes[idx] = newState
 			queue.Enqueue(idx)
@@ -298,10 +374,87 @@ func generateStates(
 		if _, found := automata.Transitions[currentIdx]; !found {
 			automata.Transitions[currentIdx] = make(map[AlphabetInput]AutomataStateIndex)
 		}
-		if _, exists := automata.Transitions[currentIdx][transitionToken]; !exists {
-			automata.Transitions[currentIdx][transitionToken] = idx
-		}
+		// if _, exists := automata.Transitions[currentIdx][dotToken]; !exists {
+		automata.Transitions[currentIdx][dotToken] = idx
+		// } else {
+		// 	fmt.Printf("State transition collision, taking oldest...")
+		// 	// panic("State transition collision!")
+		// }
 	}
+
+	// alreadyScannedInputs := lib.NewSet[GrammarToken]()
+	// transitionInputs := make([]InputStateRulesPair, 0, len(currentState.Rules))
+	// for _, rule := range currentState.Rules {
+	// 	if rule.Dot >= len(rule.Production) {
+	// 		continue
+	// 	}
+	//
+	// 	dotOfRule := rule.Production[rule.Dot]
+	// 	if !alreadyScannedInputs.Add(dotOfRule) {
+	// 		continue
+	// 	}
+	//
+	// 	pair := InputStateRulesPair{
+	// 		Input: dotOfRule,
+	// 		Rules: []AutomataRule{},
+	// 	}
+	// 	for _, rr := range currentState.Rules {
+	// 		if rr.Dot >= len(rr.Production) {
+	// 			continue
+	// 		}
+	//
+	// 		dotOfRule2 := rr.Production[rr.Dot]
+	// 		if dotOfRule.Equal(&dotOfRule2) {
+	// 			pair.Rules = append(pair.Rules, rr)
+	// 		}
+	// 	}
+	//
+	// 	transitionInputs = append(transitionInputs, pair)
+	// }
+	//
+	// for _, pair := range transitionInputs {
+	// 	transitionToken := pair.Input
+	// 	newState := AutomataState{
+	// 		Rules: make([]AutomataRule, 0, len(pair.Rules)),
+	// 	}
+	//
+	// 	for _, rule := range pair.Rules {
+	// 		if rule.Dot >= len(rule.Production) {
+	// 			continue // The dot has reached the end
+	// 		}
+	//
+	// 		newInitialRule := AutomataRule{
+	// 			Head:       rule.Head,
+	// 			Production: rule.Production,
+	// 			Dot:        rule.Dot + 1,
+	// 			Lookahead:  rule.Lookahead,
+	// 		}
+	// 		newState.Rules = append(newState.Rules, newInitialRule)
+	//
+	// 		if newInitialRule.Dot < len(newInitialRule.Production) {
+	// 			closureToken := newInitialRule.Production[newInitialRule.Dot]
+	// 			if closureToken.IsNonTerminal() {
+	// 				set := lib.NewSet[GrammarToken]()
+	// 				closure(closureToken, &newInitialRule, &newState, grammar, firsts, &set)
+	// 			}
+	// 		}
+	// 	}
+	//
+	// 	idx := automata.FindIndexOfState(&newState)
+	// 	newStateNotDefined := idx == ""
+	// 	if newStateNotDefined {
+	// 		idx = strconv.FormatInt(int64(len(automata.Nodes)), 10)
+	// 		automata.Nodes[idx] = newState
+	// 		queue.Enqueue(idx)
+	// 	}
+	//
+	// 	if _, found := automata.Transitions[currentIdx]; !found {
+	// 		automata.Transitions[currentIdx] = make(map[AlphabetInput]AutomataStateIndex)
+	// 	}
+	// 	if _, exists := automata.Transitions[currentIdx][transitionToken]; !exists {
+	// 		automata.Transitions[currentIdx][transitionToken] = idx
+	// 	}
+	// }
 }
 
 func (auto *Automata) SimplifyStates() {
@@ -317,13 +470,13 @@ outerLoop:
 
 			if state.EQ_WithoutLookAhead(&other) {
 				simplifiedSomething = true
-				rules := state.Rules
+				rules := state.Items
 				for i := range rules {
-					other_i := other.Rules[i]
+					other_i := other.Items[i]
 					rules[i].Lookahead.Merge(&other_i.Lookahead)
 				}
 				newState := AutomataState{
-					Rules: rules,
+					Items: rules,
 				}
 				newStateId := fmt.Sprintf("%s-%s", i, j)
 
@@ -392,7 +545,7 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 			}
 		}
 
-		for _, rule := range state.Rules {
+		for _, rule := range state.Items {
 			if len(rule.Lookahead) <= 0 {
 				continue
 			}
@@ -417,6 +570,9 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 
 	// Find Accept
 	acceptNodeId := auto.Transitions[auto.InitialState][grammar.InitialSimbol]
+	if _, found := table.ActionTable[acceptNodeId]; !found {
+		table.ActionTable[acceptNodeId] = make(map[GrammarToken]Action)
+	}
 	table.ActionTable[acceptNodeId][NewEndToken()] = NewAcceptAction()
 
 	return table

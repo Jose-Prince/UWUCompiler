@@ -181,7 +181,7 @@ type Grammar struct {
 	TokenIds map[GrammarToken]parsertypes.GrammarToken
 }
 
-func (g *Grammar) FindIndexOfRule(rule *AutomataRule) int {
+func (g *Grammar) FindIndexOfRule(rule *AutomataItem) int {
 	idx := -1
 
 ruleLoop:
