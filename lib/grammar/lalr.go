@@ -94,12 +94,12 @@ func (rule *AutomataRule) Equals(other *AutomataRule) bool {
 		return false
 	}
 
-	if !rule.Head.Equal(&other.Head) || rule.Dot != rule.Dot {
+	if !rule.Head.Equal(&other.Head) || rule.Dot != other.Dot {
 		return false
 	}
 
-	if !rule.Lookahead.Equals(&other.Lookahead) {
-		return false
+	for i := range other.Lookahead {
+		rule.Lookahead.Add(i)
 	}
 
 	for i, prod := range rule.Production {
@@ -401,7 +401,7 @@ func generateStates(
 
 		for _, rule := range pair.Rules {
 			if rule.Dot >= len(rule.Production) {
-				return // The dot has reached the end
+				continue // The dot has reached the end
 			}
 
 			newInitialRule := AutomataRule{
@@ -432,7 +432,9 @@ func generateStates(
 		if _, found := automata.Transitions[currentIdx]; !found {
 			automata.Transitions[currentIdx] = make(map[AlphabetInput]AutomataStateIndex)
 		}
-		automata.Transitions[currentIdx][transitionToken] = idx
+		if _, exists := automata.Transitions[currentIdx][transitionToken]; !exists {
+			automata.Transitions[currentIdx][transitionToken] = idx
+		}
 	}
 }
 
