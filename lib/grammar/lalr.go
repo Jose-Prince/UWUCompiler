@@ -130,6 +130,7 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 		Nodes:            make(map[AutomataStateIndex]AutomataState),
 	}
 
+	// S' -> .Expr , $
 	lookAhead := lib.NewSet[GrammarToken]()
 	lookAhead.Add(NewEndToken())
 	initRule := AutomataItem{
@@ -201,7 +202,11 @@ func (item *AutomataItem) ToUniqueString() string {
 	b.WriteString(" LK: { ")
 
 	lkSlices := make([]string, 0, len(item.Lookahead))
+	for lk := range item.Lookahead {
+		lkSlices = append(lkSlices, lk.String())
+	}
 	slices.Sort(lkSlices)
+
 	for _, k := range lkSlices {
 		b.WriteString(k)
 		b.WriteString(" ")
@@ -224,23 +229,27 @@ func closure(
 		queueOfRules.Enqueue(v)
 	}
 
+	// A → α • X β c
+	// S -> lkajsdlfkjasd •  X ( asdf ) , $
+	// S -> lkajsdlfkjasd • 	X , $
+
+	// From https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/c86c6ebce6973a6f8441f200a3b34fbd_MIT6_035S10_lec03b.pdf
+	// repeat
+	// 	for all items [A → α • X β c] in I
+	// 		for any production X → γ
+	// 			for any d ∈ First(βc)
+	// 				I = I ∪ { [X → • γ d] }
+	// until I does not change
+
 	addedNewItem := true
 	for addedNewItem {
 		addedNewItem = false
 
-		// From https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/c86c6ebce6973a6f8441f200a3b34fbd_MIT6_035S10_lec03b.pdf
-		// repeat
-		// 	for all items [A → α • X β c] in I
-		// 		for any production X → γ
-		// 			for any d ∈ First(βc)
-		// 				I = I ∪ { [X → • γ d] }
-		// until I does not change
-
-		for _, rule := range state.Items {
-			if rule.Dot >= len(rule.Production) {
+		for _, item := range state.Items {
+			if item.Dot >= len(item.Production) {
 				continue
 			}
-			dotToken := rule.Production[rule.Dot]
+			dotToken := item.Production[item.Dot]
 
 			for _, prod := range grammar.Rules {
 				if !prod.Head.Equal(&dotToken) {
@@ -248,23 +257,23 @@ func closure(
 				}
 
 				lookAhead := lib.NewSet[GrammarToken]()
-				if rule.Dot+1 < len(rule.Production) {
-					merge := firsts.table[rule.Production[rule.Dot+1]]
+				if item.Dot+1 < len(item.Production) {
+					merge := firsts.table[item.Production[item.Dot+1]]
 					lookAhead.Merge(&merge.First)
 				} else {
-					lookAhead.Merge(&rule.Lookahead)
+					lookAhead.Merge(&item.Lookahead)
 				}
 
-				newRule := AutomataItem{
+				newItem := AutomataItem{
 					Head:       dotToken,
 					Production: prod.Production,
 					Dot:        0,
 					Lookahead:  lookAhead,
 				}
 
-				if alreadyComputedItems.Add(newRule.ToUniqueString()) {
+				if alreadyComputedItems.Add(newItem.ToUniqueString()) {
 					addedNewItem = true
-					state.Items = append(state.Items, newRule)
+					state.Items = append(state.Items, newItem)
 				}
 			}
 		}
@@ -328,10 +337,26 @@ func goTo(
 	newState := AutomataState{
 		Items: make([]AutomataItem, 0, len(state.Items)),
 	}
+	alreadyAddedItems := lib.NewSet[string]()
 
-	for _, r := range state.Items {
-		if r.Dot < len(r.Production) {
-			newState.Items = append(newState.Items, r)
+	for _, item := range state.Items {
+		if item.DotIsAtEnd() {
+			continue
+		}
+		dotToken := item.Production[item.Dot]
+
+		if !dotToken.Equal(&token) {
+			continue
+		}
+
+		transformedItem := AutomataItem{
+			Head:       item.Head,
+			Production: item.Production,
+			Dot:        item.Dot + 1,
+			Lookahead:  item.Lookahead.Copy(),
+		}
+		if alreadyAddedItems.Add(transformedItem.ToUniqueString()) {
+			newState.Items = append(newState.Items, transformedItem)
 		}
 	}
 

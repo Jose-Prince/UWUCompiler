@@ -123,7 +123,7 @@ let whitespace      = ([ \t\r\n]+)
 let line_comment    = (//[^\n\r]*)
 
 rule gettoken =
-	{whitespace}        { /* ignore whitespace */ }
+	{whitespace}        {return IGNORE}
 	| {line_comment}      { return COMMENT }
 
 (* Keywords *)
