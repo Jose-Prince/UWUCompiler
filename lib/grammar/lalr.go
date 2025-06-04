@@ -173,12 +173,17 @@ func closure(
 	for _, rule := range grammar.Rules {
 		if rule.Head.Equal(&token) {
 			dotToken := rule.Production[0]
+			if dotToken.Equal(&token) {
+				continue
+			}
 
 			lookAhead := lib.NewSet[GrammarToken]()
 			if initRule.Dot+1 < len(initRule.Production) {
 				tk := initRule.Production[initRule.Dot+1]
 				firsts := firsts.table[tk].First
 				lookAhead.Merge(&firsts)
+			} else {
+				lookAhead.Add(NewEndToken())
 			}
 
 			newRule := AutomataRule{
@@ -511,8 +516,6 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 		for input, outNodeId := range auto.Transitions[nodeId] {
 			if input.IsNonTerminal() {
 				table.GoToTable[nodeId][input] = outNodeId
-			} else if input.Equal(&grammar.InitialSimbol) {
-				table.ActionTable[nodeId][input] = NewAcceptAction()
 			} else {
 				table.ActionTable[nodeId][input] = NewShiftAction(outNodeId)
 			}
@@ -540,6 +543,10 @@ func (auto *Automata) GenerateParsingTable(grammar *Grammar) ParsingTable {
 			}
 		}
 	}
+
+	// Find Accept 
+	acceptNodeId := auto.Transitions[auto.InitialState][grammar.InitialSimbol]
+	table.ActionTable[acceptNodeId][NewEndToken()] = NewAcceptAction()
 
 	return table
 }
