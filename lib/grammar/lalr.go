@@ -222,17 +222,6 @@ func closure(
 	firsts *FirstFollowTable,
 ) {
 
-	alreadyComputedItems := lib.NewSet[string]()
-	queueOfRules := lib.NewQueue[AutomataItem]()
-	for _, v := range state.Items {
-		alreadyComputedItems.Add(v.ToUniqueString())
-		queueOfRules.Enqueue(v)
-	}
-
-	// A → α • X β c
-	// S -> lkajsdlfkjasd •  X ( asdf ) , $
-	// S -> lkajsdlfkjasd • 	X , $
-
 	// From https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/c86c6ebce6973a6f8441f200a3b34fbd_MIT6_035S10_lec03b.pdf
 	// repeat
 	// 	for all items [A → α • X β c] in I
@@ -240,6 +229,11 @@ func closure(
 	// 			for any d ∈ First(βc)
 	// 				I = I ∪ { [X → • γ d] }
 	// until I does not change
+
+	alreadyComputedItems := lib.NewSet[string]()
+	for _, v := range state.Items {
+		alreadyComputedItems.Add(v.ToUniqueString())
+	}
 
 	addedNewItem := true
 	for addedNewItem {
