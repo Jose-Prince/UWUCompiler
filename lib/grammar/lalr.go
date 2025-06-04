@@ -175,12 +175,9 @@ func closure(
 	for _, rule := range grammar.Rules {
 		if rule.Head.Equal(&token) {
 			dotToken := rule.Production[0]
-<<<<<<< HEAD
-=======
 			if grammarsVisited.Contains(&rule) {
 				continue
 			}
->>>>>>> c773e0e9954bf70cc32d5d244a77f58ecabe7844
 
 			lookAhead := lib.NewSet[GrammarToken]()
 			if initRule.Dot+1 < len(initRule.Production) {
