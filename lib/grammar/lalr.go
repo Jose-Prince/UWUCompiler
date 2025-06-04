@@ -141,7 +141,13 @@ func InitializeAutomata(initialRule GrammarRule, grammar Grammar) Automata {
 	lr1.InitialState = "0"
 	lr1.Nodes[lr1.InitialState] = state
 
-	generateStates(lr1.InitialState, &lr1, &grammar, &firsts)
+	alreadyVisited := lib.NewSet[AutomataStateIndex]()
+	queue := lib.NewQueue[AutomataStateIndex]()
+	queue.Enqueue(lr1.InitialState)
+	for !queue.IsEmpty() {
+		currentState, _ := queue.Dequeue()
+		generateStates(currentState, &lr1, &grammar, &firsts, queue, &alreadyVisited)
+	}
 
 	return lr1
 }
@@ -341,8 +347,12 @@ func generateStates(
 	automata *Automata,
 	grammar *Grammar,
 	firsts *FirstFollowTable,
+	queue *lib.Queue[AutomataStateIndex],
+	alreadyVisited *lib.Set[AutomataStateIndex],
 ) {
-
+	if !alreadyVisited.Add(currentIdx) {
+		return
+	}
 	currentState := automata.Nodes[currentIdx]
 
 	alreadyScannedInputs := lib.NewSet[GrammarToken]()
@@ -375,7 +385,6 @@ func generateStates(
 		transitionInputs = append(transitionInputs, pair)
 	}
 
-	evaluateLater := []AutomataStateIndex{}
 	for _, pair := range transitionInputs {
 		transitionToken := pair.Input
 		newState := AutomataState{
@@ -409,17 +418,13 @@ func generateStates(
 		if newStateNotDefined {
 			idx = strconv.FormatInt(int64(len(automata.Nodes)), 10)
 			automata.Nodes[idx] = newState
-			evaluateLater = append(evaluateLater, idx)
+			queue.Enqueue(idx)
 		}
 
 		if _, found := automata.Transitions[currentIdx]; !found {
 			automata.Transitions[currentIdx] = make(map[AlphabetInput]AutomataStateIndex)
 		}
 		automata.Transitions[currentIdx][transitionToken] = idx
-	}
-
-	for _, childState := range evaluateLater {
-		generateStates(childState, automata, grammar, firsts)
 	}
 }
 
