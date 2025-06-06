@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
+	// "os"
 
 	// "github.com/Jose-Prince/UWUCompiler/lib"
 	"github.com/Jose-Prince/UWUCompiler/lib/grammar"
@@ -163,20 +163,29 @@ func main() {
 	// }
 
 	initialRule := grammar.GrammarRule{Head: grammar.NewNonTerminalToken("S'"), Production: []grammar.GrammarToken{g.InitialSimbol}}
+	// extendedGrammar := grammar.Grammar{
+	// 	InitialSimbol: g.InitialSimbol,
+	// 	Rules:         append(g.Rules),
+	// 	Terminals:     g.Terminals,
+	// 	NonTerminals:  g.NonTerminals,
+	// 	TokenIds:      g.TokenIds,
+	// }
 
 	fmt.Println("Creating automata...")
+	// grammar.InitializeAutomata(initialRule, g)
 	lalr := grammar.InitializeAutomata(initialRule, g)
 
 	fmt.Println("Simplifying states...")
 	lalr.SimplifyStates()
 
-	fmt.Println("Generating LARLR HTML...")
-	err = GenerateHTML(lalr, "lalr_automata.html")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("LALR HTML generated")
-
+	//
+	// fmt.Println("Generating LARLR HTML...")
+	// err = GenerateHTML(lalr, "lalr_automata.html")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("LALR HTML generated")
+	//
 	fmt.Println("Generating Parsing table from LALR AFD...")
 	parsingTable := lalr.GenerateParsingTable(&g)
 
@@ -188,7 +197,6 @@ func main() {
 	fmt.Println("Writing final compiler source code...")
 	err = WriteCompilerFile(params.OutGoPath, &info)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error ocurred writing final lexer file! %v", err)
-		panic(err)
+		log.Fatalf("An error ocurred writing final lexer file! %v", err)
 	}
 }

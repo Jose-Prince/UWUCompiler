@@ -181,6 +181,34 @@ type Grammar struct {
 	TokenIds map[GrammarToken]parsertypes.GrammarToken
 }
 
+func (g *Grammar) FindIndexOfRule(rule *AutomataItem) int {
+	idx := -1
+
+ruleLoop:
+	for i, r := range g.Rules {
+		if !r.Head.Equal(&rule.Head) {
+			continue
+		}
+
+		if len(r.Production) != len(rule.Production) {
+			continue
+		}
+
+		for j, r_prod := range r.Production {
+			rule_j := rule.Production[j]
+
+			if !r_prod.Equal(&rule_j) {
+				continue ruleLoop
+			}
+		}
+
+		idx = i
+		break
+	}
+
+	return idx
+}
+
 func (g *Grammar) TransposeTokenIds() []string {
 	ids := make([]string, len(g.TokenIds))
 
@@ -237,6 +265,12 @@ func GetFirsts(grammar *Grammar, table *FirstFollowTable) {
 	for nonTerminal := range grammar.NonTerminals {
 		getFirstFor(grammar, table, &nonTerminal, &alreadyEvaluatedFirsts)
 	}
+
+	for terminal := range grammar.Terminals {
+		table.AppendFirst(terminal, terminal)
+	}
+
+	table.AppendFirst(NewEndToken(), NewEndToken())
 }
 
 func getAllRulesWhereTokenIsHead(grammar *Grammar, token *GrammarToken) []GrammarRule {
